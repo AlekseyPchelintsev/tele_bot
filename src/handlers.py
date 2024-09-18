@@ -6,11 +6,11 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from contextlib import suppress
 from aiogram.exceptions import TelegramBadRequest
+from sqlalchemy import select
 
 from src.database.models import async_session, User
-from sqlalchemy import select
-import src.keyboard as kb
 from src.database.requests import get_names
+import src.keyboard as kb
 
 router = Router()
 

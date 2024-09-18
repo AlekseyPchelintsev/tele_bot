@@ -1,10 +1,7 @@
 from aiogram.types import (ReplyKeyboardMarkup, KeyboardButton, 
                            InlineKeyboardMarkup, InlineKeyboardButton)
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from sqlalchemy.ext.asyncio import AsyncSession
-from aiogram.filters.callback_data import CallbackData, CallbackQuery
-from src.database.requests import get_names
-from src.database.models import User
+from aiogram.filters.callback_data import CallbackData
 
 main = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='🗄 Главное меню')],
                                      [KeyboardButton(text='🚑 Помощь')], 
