@@ -7,3 +7,10 @@ async def set_user(tg_id, name):
     if not user_id:
       session.add(User(tg_id=tg_id, name=name))
       await session.commit()
+
+async def get_names():
+  async with async_session() as session:
+    async with session.begin():
+      result = await session.execute(select(User.name))
+      names = [row for row in result.scalars()]
+      return names
