@@ -1,9 +1,9 @@
 # tele_bot
 
 frameworks:
-  aiogram 3
-  sqlAlchemy 2.0.35
-  aiosqlite 0.20.0
+  </br>aiogram 3
+  </br>sqlAlchemy 2.0.35
+  </br>aiosqlite 0.20.0
 
 При первом запуске пользователь добавляется в бд с кастомным именем.
 В меню "помощь" ссылки на внешние ресурсы.
