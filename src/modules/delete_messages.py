@@ -1,0 +1,15 @@
+import asyncio
+
+async def del_messages(chat_id, delete_messages):
+  from main import bot
+  for message_id in delete_messages:
+      try:
+        await bot.delete_message(chat_id=chat_id, message_id=message_id)
+      except:
+        pass
+      
+async def del_last_message(callback_message):
+  try:
+    await callback_message.delete()
+  except:
+    pass
