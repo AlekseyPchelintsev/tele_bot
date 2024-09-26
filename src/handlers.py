@@ -1,6 +1,6 @@
 from time import sleep
 import asyncio
-from aiogram.types import Message, CallbackQuery, InputMediaPhoto
+from aiogram.types import Message, CallbackQuery, InputMediaPhoto, InputMediaVideo
 from aiogram.methods.get_user_profile_photos import GetUserProfilePhotos
 from aiogram.filters import CommandStart
 from aiogram import F, Router
@@ -15,7 +15,8 @@ from src.modules.delete_messages import del_messages, del_last_message
 from src.database.models import async_session, User
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
-from src.database.requests import get_data, get_user_data, check_hobbie, get_users_by_hobby, delete_hobby
+from src.database.requests import (get_data, get_user_data, check_hobbie, 
+                                   get_users_by_hobby, delete_hobby, update_user_photo)
 from config import no_photo_id
 import src.keyboard as kb
 
@@ -24,6 +25,7 @@ router = Router()
 class Registration(StatesGroup):
   name = State()
   photo = State()
+  avatar = State()
   gender = State()
   age = State()
   message = State()
@@ -142,13 +144,6 @@ async def open_main_menu(callback: CallbackQuery, state: FSMContext):
   await del_last_message(callback.message)
   await asyncio.sleep(.5)
   await callback.message.answer('Главное меню:', reply_markup=kb.users)
-  
-@router.callback_query(F.data == 'help')
-async def open_help(callback: CallbackQuery):
-  await callback.answer('Загружаю...')
-  await del_last_message(callback.message)
-  await asyncio.sleep(.5)
-  await callback.message.answer('Помощь:', reply_markup=kb.help_about)
 
 @router.callback_query(F.data == 'back')
 async def back_to_main(callback: CallbackQuery):
@@ -158,6 +153,7 @@ async def back_to_main(callback: CallbackQuery):
 
 @router.callback_query(F.data == 'my_profile')
 async def about_me(callback: CallbackQuery, state: FSMContext):
+  from main import bot
   await callback.answer('Загружаю...')
   await state.clear()
   await del_messages(callback.message.chat.id, delete_messages)
@@ -165,12 +161,19 @@ async def about_me(callback: CallbackQuery, state: FSMContext):
     await del_last_message(callback.message)
   except:
     pass
+  await asyncio.sleep(.5)
   user_id = callback.from_user.id
   data = await get_user_data(user_id)
   gender = await check_gender(data[0][3])
   hobbies = await hobbies_list(data[1])
-  await asyncio.sleep(.5)
-  await callback.message.answer_photo(photo=f'{data[0][1]}',
+  file_info = await bot.get_file(data[0][1])
+  if file_info.file_path.endswith(('.jpg', '.jpeg', '.png', '.gif')):
+    await callback.message.answer_photo(photo=f'{data[0][1]}',
+                              caption=f'\n<b>Имя:</b> {data[0][0]}\n<b>Возраст:</b> {data[0][4]}\n<b>Пол:</b> {gender}\n<b>Интересы:</b> {hobbies}', 
+                              parse_mode='HTML', 
+                              reply_markup=kb.about_me)
+  elif file_info.file_path.endswith(('.mp4', '.mov')):
+    await callback.message.answer_video(video=f'{data[0][1]}',
                               caption=f'\n<b>Имя:</b> {data[0][0]}\n<b>Возраст:</b> {data[0][4]}\n<b>Пол:</b> {gender}\n<b>Интересы:</b> {hobbies}', 
                               parse_mode='HTML', 
                               reply_markup=kb.about_me)
@@ -226,9 +229,6 @@ async def add_hobbie(message: Message, state: FSMContext):
     delete_last_message.append(response_message_third.message_id)
   await state.set_state(Registration.hobbie)
 
-  
-  
-
 @router.callback_query(F.data == 'del_hobbie')
 async def del_hobby(callback: CallbackQuery, state: FSMContext):
   try:
@@ -249,7 +249,7 @@ async def del_hobby(callback: CallbackQuery, state: FSMContext):
                                 parse_mode='HTML', 
                                 reply_markup=kb.add_hobby)
   delete_messages.append(response_message.message_id)
-    
+
 @router.message(Registration.hobby_del)
 async def del_hobby_from_db(message: Message, state: FSMContext):
   from main import bot
@@ -290,32 +290,47 @@ async def edit_photo_menu(callback: CallbackQuery):
   await del_last_message(callback.message)
   await callback.message.answer('Выберите действие:', reply_markup=kb.edit_photo)
 
+# 🟢⬇️ --------------- TESTING CHEATS ENABLE --------------- ⬇️🟢
+
 @router.callback_query(F.data == 'new_photo')
-async def edit_photo(callback: CallbackQuery, state: FSMContext):
+async def open_help(callback: CallbackQuery, state: FSMContext):
   await callback.answer('Загружаю...')
   await del_last_message(callback.message)
-  sent_message = await callback.message.answer('Отправьте в чат фото, которое хотите загрузить.', reply_markup=kb.back_to_photo)
+  await asyncio.sleep(.5)
+  sent_message = await callback.message.answer('Отправьте в чат фото или gif анимацию, которую хотите загрузить.', reply_markup=kb.back_to_photo)
   await state.update_data(message=sent_message)
-  await state.set_state(Registration.photo)
-
-@router.message(Registration.photo, F.photo)
-async def get_new_photo(message: Message, state: FSMContext):
-  photo_id = message.photo[-1].file_id
-  await state.update_data(photo=photo_id)
+  await state.set_state(Registration.avatar)
+  
+@router.message(Registration.avatar) 
+async def handle_avatar_upload(message: Message, state: FSMContext):
+  tg_id = message.from_user.id
   data = await state.get_data() # данные предыдущего callback`a
   sent_message = data.get('message') # данные последнего сообщения из предыдущего callback`a
-  await sent_message.delete() # удаление последнего сообщения из предыдущего callback`a
-  async with async_session() as session: # внесение изменений в бд
-    tg_id = message.from_user.id
-    result = await session.execute(select(User).where(User.tg_id == tg_id))
-    user = result.scalar()
-    user.photo_id = photo_id
-    await session.commit()
-  await state.clear()
-  await asyncio.sleep(.3)
-  await loader(message, 'Фото загружается')
-  await asyncio.sleep(.3)
-  await message.answer('Фото профиля успешно обновлено!', reply_markup=kb.back)
+  await del_last_message(sent_message) # удаление последнего сообщения из предыдущего callback`a
+  await message.answer(f'{message.video.mime_type}')
+  if message.photo: 
+    photo_id = message.photo[-1].file_id
+    await state.update_data(photo=photo_id)
+    await update_user_photo(tg_id, photo_id)
+    await asyncio.sleep(.3)
+    await loader(message, 'Загружаю')
+    await asyncio.sleep(.3)
+    await message.answer('Фото профиля успешно обновлено!', reply_markup=kb.back)
+    await state.clear()
+  elif message.video:
+    if message.video.mime_type == 'image/gif':
+      photo_id = message.video.file_id
+      await state.update_data(photo=photo_id)
+      await update_user_photo(tg_id, photo_id)
+      await asyncio.sleep(.3)
+      await loader(message, 'Загружаю')
+      await asyncio.sleep(.3)
+      await message.answer('Фото профиля успешно обновлено!', reply_markup=kb.back)
+      await state.clear()
+  else: 
+    await message.reply("Не могу распознать ваше сообщение. Пожалуйста, загружайте только фотографии или GIF-анимации.")
+
+# 🔴⬆️ --------------- TESTING CHEATS DISABLE --------------- ⬆️🔴
 
 @router.callback_query(F.data == 'del_photo')
 async def delete_photo(callback: CallbackQuery, state: FSMContext):
@@ -381,15 +396,25 @@ async def search_users(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == 'all_users')
 async def users_list(callback: CallbackQuery, state: FSMContext):
+  from main import bot
   data = await get_data()
+  await callback.message.answer(f'{data}')
   gender = await check_gender(data[0][4])
   hobbies = await hobbies_list(data[0][6])
   sleep(.5)
   await del_last_message(callback.message)
-  await callback.message.answer_photo(photo=f'{data[0][2]}', 
-                                      caption=f'<b>Имя:</b> {data[0][1]}\n<b>Возраст:</b> {data[0][5]}\n<b>Пол:</b> {gender}\n<b>Интересы:</b> {hobbies}',
-                                      parse_mode='HTML',
-                                      reply_markup=kb.paginator(list_type='all_users'))
+  file_info = await bot.get_file(data[0][2])
+  if file_info.file_path.endswith(('.jpg', '.jpeg', '.png', '.gif')):
+    await callback.message.answer_photo(photo=f'{data[0][2]}',
+                              caption=f'\n<b>Имя:</b> {data[0][1]}\n<b>Возраст:</b> {data[0][5]}\n<b>Пол:</b> {gender}\n<b>Интересы:</b> {hobbies}', 
+                              parse_mode='HTML', 
+                              reply_markup=kb.paginator(list_type='all_users'))
+  elif file_info.file_path.endswith(('.mp4', '.mov', '.gif')):
+    await callback.message.answer_video(video=f'{data[0][2]}',
+                              caption=f'\n<b>Имя:</b> {data[0][1]}\n<b>Возраст:</b> {data[0][5]}\n<b>Пол:</b> {gender}\n<b>Интересы:</b> {hobbies}', 
+                              parse_mode='HTML', 
+                              reply_markup=kb.paginator(list_type='all_users'))
+  
   await state.update_data(users_data=data)
   
 # Пагинация списка пользователей
@@ -417,10 +442,17 @@ async def pagination_handler(callback: CallbackQuery, callback_data: kb.Paginati
       with suppress(TelegramBadRequest):
         gender = await check_gender(data[page][4])
         hobbies = await hobbies_list(data[page][6])
-        await callback.message.edit_media(media=InputMediaPhoto(media=f'{data[page][2]}', 
-                                                                caption=f'<b>Имя:</b> {data[page][1]}\n<b>Возраст:</b> {data[page][5]}\n<b>Пол:</b> {gender}\n<b>Интересы:</b> {hobbies}',
-                                                                parse_mode= 'HTML'),
-                                          reply_markup=kb.paginator(page, list_type))
+        file_info = await bot.get_file(data[page][2])
+        if file_info.file_path.endswith(('.jpg', '.jpeg', '.png', '.gif')):
+          await callback.message.edit_media(media=InputMediaPhoto(media=f'{data[page][2]}',
+                                    caption=f'\n<b>Имя:</b> {data[page][1]}\n<b>Возраст:</b> {data[page][5]}\n<b>Пол:</b> {gender}\n<b>Интересы:</b> {hobbies}', 
+                                    parse_mode='HTML'), 
+                                    reply_markup=kb.paginator(page, list_type))
+        elif file_info.file_path.endswith(('.mp4', '.mov', '.gif')):
+          await callback.message.edit_media(media=InputMediaVideo(media=f'{data[page][2]}',
+                                    caption=f'\n<b>Имя:</b> {data[page][1]}\n<b>Возраст:</b> {data[page][5]}\n<b>Пол:</b> {gender}\n<b>Интересы:</b> {hobbies}', 
+                                    parse_mode='HTML'), 
+                                    reply_markup=kb.paginator(page, list_type))
 
     await callback.answer()
 
