@@ -1,12 +1,16 @@
 from src.database.models import async_session, User, Hobbies, UserHobbies
 from sqlalchemy import select
 
+#
+
 async def set_user(tg_id, name, photo_id):
   async with async_session() as session:
     user_id = await session.scalar(select(User).where(User.tg_id == tg_id))
     if not user_id:
       session.add(User(tg_id=tg_id, name=name, photo_id=photo_id))
       await session.commit()
+
+#
 
 async def get_data():
   async with async_session() as session:
@@ -22,6 +26,8 @@ async def get_data():
             data[i] = (*data[i], hobbies_list)
     return data
 
+#
+
 async def get_user_data(user_id):
   async with async_session() as session:
     user_data = await session.execute(select(User.name, User.photo_id, User.user_name, User.gender, User.age).where(User.tg_id == user_id))
@@ -30,6 +36,17 @@ async def get_user_data(user_id):
     hobbies = [row[0] for row in user_hobbies]
     data.append(hobbies)
     return data
+
+# загрузка нового фото профиля
+
+async def update_user_photo(user_id, photo_id):
+  async with async_session() as session: # внесение изменений в бд
+    result = await session.execute(select(User).where(User.tg_id == user_id))
+    user = result.scalar()
+    user.photo_id = photo_id
+    await session.commit()
+
+# выборка пользователей по хобби из UserHobbies
 
 async def get_users_by_hobby(hobby):
   user_tg_ids = await check_users_by_hobby(hobby)
@@ -77,6 +94,8 @@ async def check_hobbie(user_tg_id, hobbie):
       await add_hobbie_to_user(user_tg_id, new_hobbie_id, hobbie) # Добавляю новую запись в UserHobbies
       return True
 
+# интересы
+
 async def add_new_hobbie(hobbie):
   hobbie = hobbie.lower()
   async with async_session() as session:
@@ -85,12 +104,16 @@ async def add_new_hobbie(hobbie):
     hobbie_id = await session.execute(select(Hobbies).where(Hobbies.hobbie_name == hobbie))
     new_added_hobbie = hobbie_id.scalar_one_or_none()
     return new_added_hobbie.id
-      
+
+#
+
 async def add_hobbie_to_user(user_tg_id, new_hobbie_id, hobbie):
   async with async_session() as session:
     session.add(UserHobbies(user_tg_id=user_tg_id, hobbie_id=new_hobbie_id, hobbie_name=hobbie))
     await session.commit()
-    
+
+#
+
 async def delete_hobby(tg_id, hobby):
   async with async_session() as session:
     state = select(UserHobbies).filter_by(user_tg_id=tg_id, hobbie_name=hobby)
