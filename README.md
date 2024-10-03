@@ -2,8 +2,7 @@
 
 frameworks:
   </br>aiogram 3
-  </br>sqlAlchemy 2.0.35
-  </br>asyncpg 0.29.0
+  </br>psycopg2
 
 Регистрация
 </br>Пагинация
