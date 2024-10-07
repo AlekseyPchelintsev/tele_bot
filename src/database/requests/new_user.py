@@ -16,7 +16,7 @@ async def check_nickname(nickname):
 # Добавление возраста
 
 
-def add_new_user(user_tg_id, name, photo_id, nickname, gener, age, birth_date):
+def add_new_user(user_tg_id, name, photo_id, nickname, gener, age, birth_date, city):
 
     connection = get_db_connection()
 
@@ -27,13 +27,17 @@ def add_new_user(user_tg_id, name, photo_id, nickname, gener, age, birth_date):
                     """
                     INSERT INTO users (
                         user_tg_id, 
-                        name, photo_id, 
-                        nickname, gender, 
+                        name, 
+                        photo_id, 
+                        nickname,
+                        gender, 
                         age, 
-                        birth_date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        birth_date,
+                        city)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     """,
-                    (user_tg_id, name, photo_id, nickname, gener, age, birth_date)
+                    (user_tg_id, name, photo_id, nickname,
+                     gener, age, birth_date, city)
                 )
     finally:
         connection.close()

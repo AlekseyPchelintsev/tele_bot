@@ -1,18 +1,18 @@
 from config import no_photo_id
+from aiogram.methods.get_user_profile_photos import GetUserProfilePhotos
 from src.database.models import get_db_connection
 
 # Проверка наличия фото при регистрации
 
 
-async def check_user_photo(user_photo):
+async def get_user_photo_id(bot, user_tg_id):
 
-    if not user_photo:
-        photo_id = no_photo_id
+    get_user_photo = await bot(GetUserProfilePhotos(user_id=user_tg_id))
 
+    if get_user_photo.photos:
+        return get_user_photo.photos[0][-1].file_id
     else:
-        photo_id = user_photo
-    print(f'{photo_id}')
-    return photo_id
+        return no_photo_id
 
 
 # ----- ИЗМЕНЕНИЕ ФОТО -----

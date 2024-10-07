@@ -19,9 +19,9 @@ def check_hobby(user_tg_id, hobby):
                     """
                     SELECT 
                         id,
-                        hobbie_name
+                        hobby_name
                     FROM hobbies
-                    WHERE hobbie_name = %s
+                    WHERE hobby_name = %s
                     """,
                     (hobby,)
                 )
@@ -36,11 +36,11 @@ def check_hobby(user_tg_id, hobby):
                         """
                         SELECT 
                             user_tg_id,
-                            hobbie_id
+                            hobby_id
                         FROM userhobbies
                         WHERE 
                             user_tg_id = %s AND
-                            hobbie_id = %s
+                            hobby_id = %s
                         """,
                         (user_tg_id, hobby_id)
                     )
@@ -55,8 +55,8 @@ def check_hobby(user_tg_id, hobby):
                         return True
                 else:
 
-                    new_hobbie_id = add_new_hobby(hobby)
-                    add_hobbie_to_user(user_tg_id, new_hobbie_id, hobby)
+                    new_hobby_id = add_new_hobby(hobby)
+                    add_hobbie_to_user(user_tg_id, new_hobby_id, hobby)
                     return True
 
     finally:
@@ -76,7 +76,7 @@ def add_new_hobby(hobby):
 
                 cursor.execute(
                     """
-                    INSERT INTO hobbies (hobbie_name)
+                    INSERT INTO hobbies (hobby_name)
                     VALUES (%s)
                     """,
                     (hobby,)
@@ -86,7 +86,7 @@ def add_new_hobby(hobby):
                     """
                     SELECT id
                     FROM hobbies
-                    WHERE hobbie_name = %s
+                    WHERE hobby_name = %s
                     """,
                     (hobby,)
                 )
@@ -99,7 +99,7 @@ def add_new_hobby(hobby):
 # Добавление хобби для конкретного пользователя в db UserHobbies
 
 
-def add_hobbie_to_user(user_tg_id, new_hobbie_id, hobbie):
+def add_hobbie_to_user(user_tg_id, new_hobby_id, hobbie):
 
     connection = get_db_connection()
 
@@ -110,11 +110,11 @@ def add_hobbie_to_user(user_tg_id, new_hobbie_id, hobbie):
                 cursor.execute(
                     """
                     INSERT INTO userhobbies (user_tg_id, 
-                                            hobbie_id, 
-                                            hobbie_name)
+                                            hobby_id, 
+                                            hobby_name)
                     VALUES (%s, %s, %s)
                     """,
-                    (user_tg_id, new_hobbie_id, hobbie)
+                    (user_tg_id, new_hobby_id, hobbie)
                 )
     finally:
         connection.close()
@@ -133,11 +133,11 @@ def delete_hobby(user_tg_id, hobby):
                     """
                     SELECT
                         user_tg_id,
-                        hobbie_name
+                        hobby_name
                     FROM userhobbies
                     WHERE
                         user_tg_id = %s AND
-                        hobbie_name = %s
+                        hobby_name = %s
                     """,
                     (user_tg_id, hobby)
                 )
@@ -150,7 +150,7 @@ def delete_hobby(user_tg_id, hobby):
                         DELETE FROM userhobbies
                         WHERE
                             user_tg_id = %s AND
-                            hobbie_name = %s
+                            hobby_name = %s
                         """,
                         (user_tg_id, hobby)
                     )

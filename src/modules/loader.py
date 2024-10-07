@@ -11,16 +11,26 @@ async def loader(message, text):
         await response_message.edit_text(f'{text} {symbols}', parse_mode='HTML')
         await asyncio.sleep(.1)
     await asyncio.sleep(.3)
-    try:
+    '''try:
         await message.delete()
     except:
-        pass
+        pass'''
     await response_message.delete()
 
 
 async def notification(message, text):
-    temporary_message = await message.answer((f'{text}'))
-    await asyncio.sleep(1.5)
+    temporary_message = await message.answer(f'{text}', parse_mode='HTML')
+    await asyncio.sleep(2)
+    try:
+        await message.delete()
+    except:
+        pass
+    await temporary_message.delete()
+
+
+async def attention_message(message, text):
+    temporary_message = await message.answer(f'{text}', parse_mode='HTML')
+    await asyncio.sleep(3)
     try:
         await message.delete()
     except:

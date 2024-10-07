@@ -59,7 +59,8 @@ def get_user_data(user_tg_id):
                         photo_id, 
                         nickname, 
                         gender, 
-                        age 
+                        age,
+                        city
                     FROM users
                     WHERE user_tg_id = %s
                     """,
@@ -69,7 +70,7 @@ def get_user_data(user_tg_id):
 
                 cursor.execute(
                     """
-                    SELECT hobbie_name 
+                    SELECT hobby_name 
                     FROM userhobbies 
                     WHERE user_tg_id = %s
                     """,
@@ -81,10 +82,11 @@ def get_user_data(user_tg_id):
                          row['photo_id'],
                          row['nickname'],
                          row['gender'],
-                         row['age'])
+                         row['age'],
+                         row['city'])
                         for row in user_data]
 
-                hobbies = [row['hobbie_name'] for row in user_hobbies]
+                hobbies = [row['hobby_name'] for row in user_hobbies]
 
                 data.append(hobbies)
 
@@ -95,33 +97,55 @@ def get_user_data(user_tg_id):
 # Получение данных всех пользователей
 
 
-def get_data():
+def get_data(self_tg_id, gender_data):
     connection = get_db_connection()
+
     try:
         with connection:
             # cursor_factory=RealDictCursor возвращает кортеж вместо списка
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 # Выполняем запрос для получения данных пользователей
-                cursor.execute(
-                    """
-                    SELECT 
-                        user_tg_id, 
-                        name, 
-                        photo_id, 
-                        nickname, 
-                        gender, 
-                        age 
-                    FROM users
-                    """
-                )
-                user_data = cursor.fetchall()
+                if gender_data == 'all':
+                    cursor.execute(
+                        """
+                        SELECT 
+                            user_tg_id, 
+                            name, 
+                            photo_id, 
+                            nickname, 
+                            gender, 
+                            age,
+                            city
+                        FROM users
+                        WHERE user_tg_id != %s
+                        """, (self_tg_id,)
+                    )
+                    user_data = cursor.fetchall()
+
+                else:
+                    cursor.execute(
+                        """
+                        SELECT 
+                            user_tg_id, 
+                            name, 
+                            photo_id, 
+                            nickname, 
+                            gender, 
+                            age,
+                            city
+                        FROM users
+                        WHERE gender = %s AND user_tg_id != %s
+                        """, (gender_data, self_tg_id)
+                    )
+
+                    user_data = cursor.fetchall()
 
                 # Выполняем запрос для получения данных о хобби
                 cursor.execute(
                     """
                     SELECT 
                         user_tg_id, 
-                        hobbie_name 
+                        hobby_name 
                     FROM userhobbies
                     """
                 )
@@ -133,7 +157,8 @@ def get_data():
                          row['photo_id'],
                          row['nickname'],
                          row['gender'],
-                         row['age'])
+                         row['age'],
+                         row['city'])
                         for row in user_data]
 
                 # Формируем словарь хобби
@@ -141,8 +166,8 @@ def get_data():
 
                 for row in hobbies_data:
                     user_tg_id = row['user_tg_id']
-                    hobbie_name = row['hobbie_name']
-                    hobbies.setdefault(user_tg_id, []).append(hobbie_name)
+                    hobby_name = row['hobby_name']
+                    hobbies.setdefault(user_tg_id, []).append(hobby_name)
 
                 # Добавляем список хобби к данным пользователей
                 for i in range(len(data)):

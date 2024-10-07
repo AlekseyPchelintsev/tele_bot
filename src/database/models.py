@@ -1,57 +1,59 @@
 
 from psycopg2 import OperationalError
 import psycopg2
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy.ext.asyncio import AsyncAttrs, async_sessionmaker, create_async_engine
-from sqlalchemy import BigInteger, String, Integer
-
-engine = create_async_engine(
-    'postgresql+asyncpg://postgres:123@localhost:5432/test_bot_tg')
-async_session = async_sessionmaker(engine)
+from config import user, password, database, host
 
 
-class Base(AsyncAttrs, DeclarativeBase):
-    pass
+def create_tables():
+    connection = get_db_connection()
 
+    try:
+        with connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS users (
+                        user_tg_id bigint PRIMARY KEY,
+                        name varchar(30),
+                        photo_id text,
+                        nickname text,
+                        gender varchar(10),
+                        age int,
+                        birth_date varchar(10),
+                        city varchar(30)
+                    )
+                    """
+                )
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS hobbies (
+                        id SERIAL PRIMARY KEY,
+                        hobby_name varchar(50) 
+                    )
+                    """
+                )
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS userhobbies (
+                        hobby_id int,
+                        hobby_name varchar(50),
+                        user_tg_id bigint,
+                        FOREIGN KEY (user_tg_id) REFERENCES users(user_tg_id) ON DELETE CASCADE
+                    )
+                    """
+                )
 
-class User(Base):
-    __tablename__ = 'users'
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_tg_id = mapped_column(BigInteger)
-    name = mapped_column(String(30))
-    photo_id = mapped_column(String())
-    user_name = mapped_column(String())
-    gender = mapped_column(String())
-    age = mapped_column(Integer)
-    birth_date = mapped_column(String())
-
-
-class Hobbies(Base):
-    __tablename__ = 'hobbies'
-    id: Mapped[int] = mapped_column(primary_key=True)
-    hobbie_name = mapped_column(String())
-
-
-class UserHobbies(Base):
-    __tablename__ = 'userhobbies'
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_tg_id = mapped_column(BigInteger)
-    hobbie_id = mapped_column(Integer)
-    hobbie_name = mapped_column(String())
-
-
-async def asy_main():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    finally:
+        connection.close()
 
 
 def get_db_connection():
     try:
         conn = psycopg2.connect(
-            user='postgres',
-            password='123',
-            database='test_bot_tg',
-            host='localhost'
+            user=user,
+            password=password,
+            database=database,
+            host=host
         )
         return conn
     except OperationalError as e:
