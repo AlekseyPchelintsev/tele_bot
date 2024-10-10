@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
 from src.database.requests.user_data import get_user_data
-from src.modules.loader import loader
+from src.modules.notifications import loader
 from src.database.requests.delete_profile import delete_profile
 from config import delete_profile_id
 

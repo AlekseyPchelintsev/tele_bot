@@ -11,7 +11,7 @@ from src.database.requests.user_data import get_user_data
 from src.modules.delete_messages import del_last_message
 from src.database.requests.age_change import change_user_age
 from src.handlers.edit_name import check_emodji
-from src.modules.loader import loader
+from src.modules.notifications import loader
 import src.modules.keyboard as kb
 
 router = Router()

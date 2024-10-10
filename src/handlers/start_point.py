@@ -52,20 +52,20 @@ async def start(message: Message, state: FSMContext):
     # devtools
 
     # Вытягивает id фото
-    '''
-@router.message(F.photo)
+
+
+'''@router.message(F.photo)
 async def photo_nahui(message: Message):
-  photo_data = message.photo[-1]
-  await message.answer(f'id Этого изображения:\n{photo_data.file_id}')
+    photo_data = message.photo[-1]
+    await message.answer(f'id Этого изображения:\n{photo_data.file_id}')
 '''
+# Тест функций
 
-    # Тест функций
-
-    '''
+'''
 @router.message(F.text == '/test')
 async def test(message: Message):
     user_tg_id = message.from_user.id
     hobby = 'цц'
     test = await asyncio.to_thread(check_hobby, hobby)
     await message.answer(f'{test}')
-    '''
+'''

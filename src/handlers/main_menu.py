@@ -19,7 +19,7 @@ async def open_main_menu(callback: CallbackQuery, state: FSMContext):
     data = await asyncio.to_thread(get_user_data, user_id)
     gender = await check_gender(data[0][3])
     hobbies = await hobbies_list(data[1])
-    await asyncio.sleep(.5)
+
     try:
         await callback.message.edit_media(
             media=InputMediaPhoto(

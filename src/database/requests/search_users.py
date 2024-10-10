@@ -31,16 +31,24 @@ def check_users_by_hobby(hobby_name, user_tg_id):
 # Выборка пользователей по хобби из таблицы userhobbies
 
 
-def get_users_by_hobby(hobby, user_tg_id, gender_data):
+def get_users_by_hobby(hobby, user_tg_id, gender_data, exclude_ids=None):
     connection = get_db_connection()
 
     user_tg_ids_hobby = check_users_by_hobby(hobby, user_tg_id)
     user_tg_ids_gender = check_users_by_gender(user_tg_id, gender_data)
 
     try:
-        user_tg_ids = set(user_tg_ids_hobby) & set(user_tg_ids_gender)
+        # Извлекаю ID пользователей из кортежей
+        user_tg_ids_hobby = {uid for (uid,) in user_tg_ids_hobby}
+        user_tg_ids_gender = {uid for (uid,) in user_tg_ids_gender}
+        # Нахожу пересечение
+        user_tg_ids = user_tg_ids_hobby & user_tg_ids_gender
     except:
         return
+
+    # Исключаю указанные ID, если они есть
+    if exclude_ids is not None:
+        user_tg_ids -= set(exclude_ids)
 
     try:
         with connection:
@@ -143,19 +151,27 @@ def check_users_in_city(user_tg_id):
 # Выборка пользователей по городу пользователя
 
 
-def get_users_in_city(user_tg_id, gender_data):
+def get_users_in_city(user_tg_id, gender_data, exclude_ids):
     connection = get_db_connection()
 
+    # Получаем список user_tg_ids в городе
     user_tg_ids_city = check_users_in_city(user_tg_id)
 
     # Получаем список user_tg_ids по полу
     user_tg_ids_gender = check_users_by_gender(user_tg_id, gender_data)
 
-    # Пересекаем списки user_tg_ids
     try:
-        user_tg_ids = set(user_tg_ids_city) & set(user_tg_ids_gender)
+        # Извлекаю ID пользователей из кортежей
+        user_tg_ids_city = {uid for (uid,) in user_tg_ids_city}
+        user_tg_ids_gender = {uid for (uid,) in user_tg_ids_gender}
+        # Нахожу пересечение
+        user_tg_ids = user_tg_ids_city & user_tg_ids_gender
     except:
         return
+
+    # Исключаю указанные ID, если они есть
+    if exclude_ids is not None:
+        user_tg_ids -= set(exclude_ids)
 
     # Если пересеченный список пуст, возвращаем None
 

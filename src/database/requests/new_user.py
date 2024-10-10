@@ -2,7 +2,7 @@ from src.database.models import get_db_connection
 
 # Проверка наличия ника
 
-
+'''
 async def check_nickname(nickname):
 
     if not nickname:
@@ -12,11 +12,11 @@ async def check_nickname(nickname):
         user_nickname = f'@{nickname}'
 
     return user_nickname
-
+'''
 # Добавление возраста
 
 
-def add_new_user(user_tg_id, name, photo_id, nickname, gener, age, birth_date, city):
+def add_new_user(date_time, user_tg_id, name, photo_id, nickname, gener, age, birth_date, city):
 
     connection = get_db_connection()
 
@@ -26,6 +26,7 @@ def add_new_user(user_tg_id, name, photo_id, nickname, gener, age, birth_date, c
                 cursor.execute(
                     """
                     INSERT INTO users (
+                        date_time,
                         user_tg_id, 
                         name, 
                         photo_id, 
@@ -34,9 +35,9 @@ def add_new_user(user_tg_id, name, photo_id, nickname, gener, age, birth_date, c
                         age, 
                         birth_date,
                         city)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
-                    (user_tg_id, name, photo_id, nickname,
+                    (date_time, user_tg_id, name, photo_id, nickname,
                      gener, age, birth_date, city)
                 )
     finally:

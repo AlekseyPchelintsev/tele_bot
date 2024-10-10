@@ -4,7 +4,7 @@ from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from src.modules.loader import loader
+from src.modules.notifications import loader
 from src.modules.delete_messages import del_last_message
 from src.modules.hobbies_list import hobbies_list
 from src.database.requests.user_data import get_user_data

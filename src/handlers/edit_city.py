@@ -8,7 +8,7 @@ from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
 from src.database.requests.user_data import get_user_data
 from src.modules.delete_messages import del_last_message
-from src.modules.loader import loader
+from src.modules.notifications import loader
 from src.database.requests.city_data import change_city
 from src.handlers.edit_name import check_emodji
 import src.modules.keyboard as kb

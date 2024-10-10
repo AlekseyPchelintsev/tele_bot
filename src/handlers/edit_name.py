@@ -11,7 +11,7 @@ from src.modules.hobbies_list import hobbies_list
 from src.database.requests.user_data import get_user_data
 from src.database.requests.name_change import change_user_name
 from src.modules.delete_messages import del_last_message
-from src.modules.loader import loader
+from src.modules.notifications import loader
 import src.modules.keyboard as kb
 
 router = Router()

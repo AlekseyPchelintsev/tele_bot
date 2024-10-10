@@ -97,48 +97,39 @@ def get_user_data(user_tg_id):
 # Получение данных всех пользователей
 
 
-def get_data(self_tg_id, gender_data):
+def get_data(self_tg_id, gender_data, exclude_ids=None):
     connection = get_db_connection()
 
     try:
         with connection:
-            # cursor_factory=RealDictCursor возвращает кортеж вместо списка
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
-                # Выполняем запрос для получения данных пользователей
-                if gender_data == 'all':
-                    cursor.execute(
-                        """
-                        SELECT 
-                            user_tg_id, 
-                            name, 
-                            photo_id, 
-                            nickname, 
-                            gender, 
-                            age,
-                            city
-                        FROM users
-                        WHERE user_tg_id != %s
-                        """, (self_tg_id,)
-                    )
-                    user_data = cursor.fetchall()
+                # Начинаем формировать запрос
+                base_query = """
+                    SELECT 
+                        user_tg_id, 
+                        name, 
+                        photo_id, 
+                        nickname, 
+                        gender, 
+                        age,
+                        city
+                    FROM users
+                    WHERE user_tg_id != %s
+                """
+                params = [self_tg_id]
 
-                else:
-                    cursor.execute(
-                        """
-                        SELECT 
-                            user_tg_id, 
-                            name, 
-                            photo_id, 
-                            nickname, 
-                            gender, 
-                            age,
-                            city
-                        FROM users
-                        WHERE gender = %s AND user_tg_id != %s
-                        """, (gender_data, self_tg_id)
-                    )
+                # Если передан список для исключения, добавляем условие
+                if exclude_ids:
+                    base_query += " AND user_tg_id NOT IN %s"
+                    params.append(tuple(exclude_ids))
 
-                    user_data = cursor.fetchall()
+                # Если gender_data не 'all', добавляем условие по полу
+                if gender_data != 'all':
+                    base_query += " AND gender = %s"
+                    params.append(gender_data)
+
+                cursor.execute(base_query, params)
+                user_data = cursor.fetchall()
 
                 # Выполняем запрос для получения данных о хобби
                 cursor.execute(
@@ -163,7 +154,6 @@ def get_data(self_tg_id, gender_data):
 
                 # Формируем словарь хобби
                 hobbies = {}
-
                 for row in hobbies_data:
                     user_tg_id = row['user_tg_id']
                     hobby_name = row['hobby_name']

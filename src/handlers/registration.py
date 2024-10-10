@@ -6,10 +6,11 @@ from aiogram.types import Message, CallbackQuery
 from aiogram import F, Router
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from src.modules.loader import loader, notification
+from src.modules.notifications import notification
+from config import sucessful_registration
 from src.modules.delete_messages import del_messages, del_last_message
 from src.database.requests.photo_data import get_user_photo_id
-from src.database.requests.new_user import add_new_user, check_nickname
+from src.database.requests.new_user import add_new_user
 import src.modules.keyboard as kb
 
 router = Router()
@@ -50,9 +51,9 @@ async def reg_name(message: Message, state: FSMContext, bot: Bot):
     user_tg_id = message.from_user.id
     name = message.text
     name = name.title()
-    get_user_nickname = message.from_user.username
+    user_nickname = message.from_user.username
     photo_id = await get_user_photo_id(bot, user_tg_id)
-    user_nickname = await check_nickname(get_user_nickname)
+    # user_nickname = await check_nickname(get_user_nickname)
 
     await state.update_data(name=name, nickname=user_nickname, photo=photo_id)
     # Пол
@@ -123,6 +124,7 @@ async def age_checked(message: Message, state: FSMContext):
         return
 
     # Извлекаем данные из состояния
+    current_datetime = datetime.now()
     data = await state.get_data()
     user_tg_id = data.get('user_id')
     name = data.get('name')
@@ -133,15 +135,17 @@ async def age_checked(message: Message, state: FSMContext):
 
     # Функция добавления пользоваателя
     await asyncio.to_thread(
-        add_new_user, user_tg_id, name, photo_id,
+        add_new_user, current_datetime, user_tg_id, name, photo_id,
         nickname, gender, user_age, user_birth_date, city
     )
 
     await state.clear()
     await del_messages(chat_id, delete_messages)
-    await notification(message, 'Вы успешно зарегистрированы!')
-    await message.answer(
-        text='Вы также можете рассказать о своих увлечениях людям, '
+    await message.answer_photo(
+        photo=f'{sucessful_registration}',
+        caption='<b>Вы успешно зарегистрированы</b> ✅\n\n'
+        'Вы также можете рассказать о своих увлечениях людям, '
         'чтобы им было проще вас найти.',
+        parse_mode='HTML',
         reply_markup=kb.start_edit
     )

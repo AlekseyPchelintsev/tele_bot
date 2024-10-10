@@ -2,7 +2,7 @@ import asyncio
 import logging
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router
-from src.modules.loader import loader, attention_message
+from src.modules.notifications import loader, attention_message
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
 from src.database.requests.user_data import get_user_data

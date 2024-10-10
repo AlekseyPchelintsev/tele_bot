@@ -6,16 +6,27 @@ from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from contextlib import suppress
+from config import delete_profile_id
 from aiogram.exceptions import TelegramBadRequest
-from src.modules.loader import loader
+from src.modules.pagination_logic import no_data_after_reboot_bot, back_callback, load_pagination, load_pagination_bot
+from src.modules.notifications import (loader,
+                                       bot_notification_about_like,
+                                       bot_notification_about_dislike,
+                                       bot_send_message_about_like,
+                                       bot_send_message_matchs_likes)
+
 from src.modules.delete_messages import del_last_message
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
 from src.handlers.edit_name import check_emodji
+from src.database.requests.search_users import get_users_in_city, get_users_by_hobby
 from src.handlers.edit_hobbies import wrong_search_hobby_name
 from src.database.requests.user_data import get_data, get_user_data
-from src.database.requests.search_users import (get_users_by_hobby,
-                                                get_users_in_city)
+from src.database.requests.likes_users import (insert_reaction,
+                                               delete_and_insert_reactions,
+                                               get_liked_users_ids,
+                                               check_matches_two_users,
+                                               get_ignore_users_ids)
 import src.modules.keyboard as kb
 
 router = Router()
@@ -89,7 +100,7 @@ async def choise_search_params(callback: CallbackQuery, state: FSMContext):
                 f'<b>Пол:</b> {self_gender}\n'
                 f'<b>Город:</b> {self_data[0][5]}\n'
                 f'<b>Увлечения:</b> {self_hobbies}\n\n'
-                'Кого ищем?'
+                '<b>Кого ищем?</b>'
             ),
             parse_mode='HTML'
         ),
@@ -126,37 +137,24 @@ async def choise_gender_for_search(callback: CallbackQuery, state: FSMContext):
 # Поиск пользователей в городе
 
 
-async def search_users_in_city(callback, state, gender_type):
+async def search_users_in_city(callback, state, gender_data):
 
     user_tg_id = callback.from_user.id
 
-    data = await asyncio.to_thread(get_users_in_city, user_tg_id, gender_type)
-    try:
-        random.shuffle(data)  # рандомайзер пользователей для вывода
-    except:
-        pass
+    ignore_users_ids = await asyncio.to_thread(get_ignore_users_ids, user_tg_id)
+    liked_users_ids = await asyncio.to_thread(get_liked_users_ids, user_tg_id)
+
+    # объединяю оба множества
+    ignore_list = ignore_users_ids | liked_users_ids
+
+    # получаю готовый список пользователей
+    data = await asyncio.to_thread(get_users_in_city, user_tg_id, gender_data, ignore_list)
 
     self_data = await asyncio.to_thread(get_user_data, user_tg_id)
     self_gender = await check_gender(self_data[0][3])
     self_hobbies = await hobbies_list(self_data[1])
 
     if not data:
-        await callback.message.edit_media(
-            media=InputMediaPhoto(
-                media=f'{self_data[0][1]}',
-                caption=(
-                    f'\n<b>Имя:</b> {self_data[0][0]}\n'
-                    f'<b>Возраст:</b> {self_data[0][4]}\n'
-                    f'<b>Пол:</b> {self_gender}\n'
-                    f'<b>Город:</b> {self_data[0][5]}\n'
-                    f'<b>Увлечения:</b> {self_hobbies}\n\n'
-                ),
-                parse_mode='HTML'
-            ),
-            reply_markup=kb.gender_search
-        )
-
-        await asyncio.sleep(.2)
 
         await callback.message.edit_media(
             media=InputMediaPhoto(
@@ -191,7 +189,8 @@ async def search_users_in_city(callback, state, gender_type):
                 ),
                 parse_mode='HTML'
             ),
-            reply_markup=kb.paginator(list_type='hobbies_users')
+            reply_markup=kb.paginator(
+                list_type='hobbies_users')
         )
 
         await state.update_data(users_data=data)
@@ -249,11 +248,14 @@ async def search_users(message: Message, state: FSMContext, bot: Bot):
             await wrong_search_hobby_name(user_tg_id, message_id, bot)
             return
 
-        data = await asyncio.to_thread(get_users_by_hobby, request, user_tg_id, gender_data)
-        try:
-            random.shuffle(data)  # рандомайзер пользователей для вывода
-        except:
-            pass
+        ignore_users_ids = await asyncio.to_thread(get_ignore_users_ids, user_tg_id)
+        liked_users_ids = await asyncio.to_thread(get_liked_users_ids, user_tg_id)
+
+        # объединяю оба множества
+        ignore_list = ignore_users_ids | liked_users_ids
+
+        # получаю готовый список пользователей
+        data = await asyncio.to_thread(get_users_by_hobby, request, user_tg_id, gender_data, ignore_list)
 
         if not data:
             await del_last_message(message)
@@ -295,27 +297,16 @@ async def search_users(message: Message, state: FSMContext, bot: Bot):
 
         else:
             await state.clear()
-            await loader(message, 'Загружаю')
-            gender = await check_gender(data[0][4])
-            hobbies = await hobbies_list(data[0][7])
-            await bot.edit_message_media(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                media=InputMediaPhoto(
-                    media=f'{data[0][2]}',
-                    caption=(
-                        f'<b>Имя:</b> {data[0][1]}\n'
-                        f'<b>Возраст:</b> {data[0][5]}\n'
-                        f'<b>Пол:</b> {gender}\n'
-                        f'<b>Город:</b> {data[0][6]}\n'
-                        f'<b>Увлечения:</b> {hobbies}'
-                    ),
-                    parse_mode='HTML',
-                ),
-                reply_markup=kb.paginator(list_type='hobbies_users')
-            )
+
+            await load_pagination_bot(bot,
+                                      user_tg_id,
+                                      message_id,
+                                      data,
+                                      'paginator',
+                                      'hobbies_users')
 
             await state.update_data(users_data=data)
+
     else:
         await wrong_search_hobby_name(user_tg_id, message_id, bot)
 
@@ -324,60 +315,27 @@ async def search_users(message: Message, state: FSMContext, bot: Bot):
 
 async def search_all_users(callback, state, gender_data):
 
+    # мои данные
     user_tg_id = callback.from_user.id
+    self_data = await asyncio.to_thread(get_user_data, user_tg_id)
+    self_gender = await check_gender(self_data[0][3])
+    self_hobbies = await hobbies_list(self_data[1])
 
-    data = await asyncio.to_thread(get_data, user_tg_id, gender_data)
     try:
-        random.shuffle(data)  # рандомайзер пользователей для вывода
-    except:
-        pass
-    gender = await check_gender(data[0][4])
-    hobbies = await hobbies_list(data[0][7])
+        # получаю списки пользователей для исключения
+        ignore_users_ids = await asyncio.to_thread(get_ignore_users_ids, user_tg_id)
+        liked_users_ids = await asyncio.to_thread(get_liked_users_ids, user_tg_id)
 
-    await asyncio.sleep(.5)
-    await callback.message.edit_media(
-        media=InputMediaPhoto(
-            media=f'{data[0][2]}',
-            caption=(
-                f'<b>Имя:</b> {data[0][1]}\n'
-                f'<b>Возраст:</b> {data[0][5]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][6]}\n'
-                f'<b>Увлечения:</b> {hobbies}'
-            ),
-            parse_mode='HTML',
-        ),
-        reply_markup=kb.paginator(list_type='all_users')
-    )
-    await state.update_data(users_data=data)
+        # объединяю оба множества
+        ignore_list = ignore_users_ids | liked_users_ids
 
+        # получаю готовый список пользователей
+        data = await asyncio.to_thread(get_data, user_tg_id, gender_data, ignore_list)
+    except Exception as e:
+        print(f'SHOW ALL USERS ERROR: {e}')
 
-# Пагинация списка пользователей
+    if not data:
 
-@router.callback_query(
-    kb.Pagination.filter(F.action.in_(
-        ['prev', 'next', 'menu', 'user_profile']))
-)
-async def pagination_handler(
-    callback: CallbackQuery,
-    callback_data: kb.Pagination,
-    state: FSMContext,
-):
-    list_type = callback_data.list_type
-    data = (await state.get_data()).get('users_data')
-    page_num = int(callback_data.page)
-    user_tg_id = callback.message.chat.id
-    if callback_data.action == 'prev':
-        page = max(page_num - 1, 0)
-    elif callback_data.action == 'next':
-        page = min(page_num + 1, len(data) - 1)
-    else:
-        page = page_num
-
-    if callback_data.action == 'menu':
-        self_data = await asyncio.to_thread(get_user_data, user_tg_id)
-        self_gender = await check_gender(self_data[0][3])
-        self_hobbies = await hobbies_list(self_data[1])
         await callback.message.edit_media(
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',
@@ -386,43 +344,136 @@ async def pagination_handler(
                     f'<b>Возраст:</b> {self_data[0][4]}\n'
                     f'<b>Пол:</b> {self_gender}\n'
                     f'<b>Город:</b> {self_data[0][5]}\n'
-                    f'<b>Увлечения:</b> {self_hobbies}'
+                    f'<b>Увлечения:</b> {self_hobbies}\n\n'
+                    '❌ <b>Пользователи не найдены</b>\n'
+                    '🔎 Попробуйте изменить параметры поиска.'
                 ),
                 parse_mode='HTML'
             ),
-            reply_markup=kb.users_menu
+            reply_markup=kb.gender_search
         )
 
-    elif callback_data.action == 'user_profile':
-        # TODO await open_profile(callback)
-        pass
     else:
-        with suppress(TelegramBadRequest):
-            gender = await check_gender(data[page][4])
-            hobbies = await hobbies_list(data[page][7])
-            await callback.message.edit_media(  # Редактирование пагинации
-                media=InputMediaPhoto(
-                    media=f'{data[page][2]}',
-                    caption=(
-                        f'<b>Имя:</b> {data[page][1]}\n'
-                        f'<b>Возраст:</b> {data[page][5]}\n'
-                        f'<b>Пол:</b> {gender}\n'
-                        f'<b>Город:</b> {data[page][6]}\n'
-                        f'<b>Увлечения:</b> {hobbies}'
-                    ),
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.paginator(page, list_type)
-            )
+        await load_pagination(callback.message,
+                              data,
+                              'paginator',
+                              'all_users')
+
+        await state.update_data(users_data=data)
+
+
+# Пагинация списка пользователей
+
+@router.callback_query(
+    kb.Pagination.filter(F.action.in_(
+        ['prev',
+         'next',
+         'menu',
+         'like']
+    ))
+)
+async def pagination_handler(
+    callback: CallbackQuery,
+    callback_data: kb.Pagination,
+    state: FSMContext,
+    bot: Bot
+):
+    user_tg_id = callback.message.chat.id
+    list_type = callback_data.list_type
+
+    data = (await state.get_data()).get('users_data')
+
+    # если бот ушел в ребут с открытой пагинацией у пользователя
+    if not data:
+        await no_data_after_reboot_bot(callback)
+
+    # Загрузка пагинации если data не None
+    else:
+        page_num = int(callback_data.page)
+
+        if callback_data.action == 'prev':
+            page = max(page_num - 1, 0)
+        elif callback_data.action == 'next':
+            page = min(page_num + 1, len(data) - 1)
+        else:
+            page = page_num
+
+        # нажатие на кнопку "Назад"
+        if callback_data.action == 'menu':
+
+            # Выход из пагинации (четвертый параметр - текст под инфой пользователя (не обязательный))
+            await back_callback(callback.message, user_tg_id, 'users_menu')
+
+        # лайк карточки пользователя
+        elif callback_data.action == 'like':
+
+            current_user_id = data[page][0]
+
+            # добавление записи в бд
+            await asyncio.to_thread(insert_reaction, user_tg_id, current_user_id)
+
+            # уведомление
+            await bot_notification_about_like(callback.message, f'{data[page][1]}')
+            await bot_send_message_about_like(user_tg_id, current_user_id, bot)
+
+            # удаляем лайкнутого пользователя из data
+            data.pop(page)
+
+            # если False (data пустая)
+            if not data:
+
+                # выводим сообщение об отсутствии пользователей
+                text_info = '<b>Список пользователей пуст</b> 🤷‍♂️'
+                await back_callback(callback.message,
+                                    user_tg_id,
+                                    'search_users',
+                                    text_info)
+
+            # если True (data не пустая)
+            else:
+
+                # Обновляем номер страницы
+                if page >= len(data):
+
+                    # Переход на последнюю страницу, если текущая выходит за пределы
+                    page = len(data) - 1
+
+                    # отрисовываю клавиатуру с учетом изменений
+                await load_pagination(callback.message,
+                                      data,
+                                      'paginator',
+                                      list_type,
+                                      page)
+
+            # поверка наличи ответных записей в userreactions
+            check = await asyncio.to_thread(check_matches_two_users, user_tg_id, current_user_id)
+
+            # если запись есть
+            if check:
+
+                # удаляем записи из userreactions и переносим в matchreactions
+                await asyncio.to_thread(delete_and_insert_reactions, user_tg_id, current_user_id)
+
+                # функция отправки сообщения обоим пользователям
+                await bot_send_message_matchs_likes(user_tg_id, current_user_id, bot, callback)
+
+                # загружаю клавиатуру с учетом изменений
+                await load_pagination(callback.message,
+                                      data,
+                                      'paginator',
+                                      list_type,
+                                      page)
+
+        else:
+
+            # убирает ошибку если пользователи в пагинации закончились
+            with suppress(TelegramBadRequest):
+
+                # отрисовывает клавиатуру даже если пользователи кончились
+                await load_pagination(callback.message,
+                                      data,
+                                      'paginator',
+                                      list_type,
+                                      page)
 
     await callback.answer()
-
-
-# TODO Просмотр карточки пользователя
-
-
-'''@router.callback_query(F.data == 'user_profile')
-async def open_profile(callback: CallbackQuery):
-    await del_last_message(callback.message)
-    await notification(callback.message, '🚧 Ведутся работы')
-    await search_all_users(callback)'''
