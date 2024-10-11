@@ -29,11 +29,11 @@ users = InlineKeyboardMarkup(inline_keyboard=[
 # Реакции
 
 reactions = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='⬅️ Мои запросы',
+    [InlineKeyboardButton(text='⤴️ Исходящие запросы',
                           callback_data='my_reactions')],
-    [InlineKeyboardButton(text='➡️ Входящие запросы',
+    [InlineKeyboardButton(text='⤵️ Входящие запросы',
                           callback_data='incoming_reactions_list')],
-    [InlineKeyboardButton(text='↔️ Мои контакты',
+    [InlineKeyboardButton(text='🗂 Мои контакты',
                           callback_data='match_reactions_list')],
     [InlineKeyboardButton(text='🚫 Заблокированные пользователи',
                           callback_data='ignore_list')],
@@ -49,7 +49,7 @@ def incoming_request_reaction(current_user_id):
     request_reaction = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text='Ответить 👋',
                               callback_data=f'accept_request:{current_user_id}'),
-         InlineKeyboardButton(text='Решу позже 💤',
+         InlineKeyboardButton(text='Отложить 💤',
                               callback_data='accept_late')]
     ])
     return request_reaction
@@ -95,7 +95,7 @@ about_me = InlineKeyboardMarkup(inline_keyboard=[
                           callback_data='edit_age')],
     [InlineKeyboardButton(text='⚧️ Пол',
                           callback_data='edit_gender'),
-     InlineKeyboardButton(text='🌆 Город',
+     InlineKeyboardButton(text='🏘 Город',
                           callback_data='edit_city')],
     [InlineKeyboardButton(text='🗑 Удалить профиль',
                           callback_data='delete_profile')],
@@ -135,7 +135,7 @@ def delete_hobbies_keyboard(hobbies):
             hobby = hobby[:20]
 
         button = InlineKeyboardButton(
-            text=f'❌ {hobby}', callback_data=f'remove_hobby:{hobby}')
+            text=f'🚫 {hobby}', callback_data=f'remove_hobby:{hobby}')
         builder.row(button)  # Добавляем каждую кнопку в отдельной строке
 
     # Добавляем кнопку "Назад" в отдельной строке

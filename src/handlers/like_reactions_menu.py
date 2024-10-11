@@ -285,47 +285,65 @@ async def pagination_handler_likes(
         # прием запроса в "Входящие реакции"
         elif callback_data.action == 'in_reactions_like':
 
-            # добавление реакции в бд
-            await asyncio.to_thread(insert_reaction, user_tg_id, current_user_id)
+            check = await asyncio.to_thread(get_reaction, current_user_id, user_tg_id)
 
-            # отправка сообщения каждому с данными для приватной беседы
-            await bot_send_message_matchs_likes(user_tg_id, current_user_id, bot, callback)
+            if check:
 
-            # удаление взаимных записей из таблицы userreactions и
-            # внесение одной записи в таблицу matchreactions
-            # благодаря чему пользователь будет отображаться в "Мои контакты"
-            await asyncio.to_thread(delete_and_insert_reactions,
-                                    user_tg_id,
-                                    current_user_id)
+                # добавление реакции в бд
+                await asyncio.to_thread(insert_reaction, user_tg_id, current_user_id)
+                # отправка сообщения каждому с данными для приватной беседы
+                await bot_send_message_matchs_likes(user_tg_id, current_user_id, bot, callback)
 
-            # удаляем лайкнутого в ответ пользователя из data
-            data.pop(page)
+                # удаление взаимных записей из таблицы userreactions и
+                # внесение одной записи в таблицу matchreactions
+                # благодаря чему пользователь будет отображаться в "Мои контакты"
+                await asyncio.to_thread(delete_and_insert_reactions,
+                                        user_tg_id,
+                                        current_user_id)
 
-            # если False (data пустая)
-            if not data:
+                # удаляем лайкнутого в ответ пользователя из data
+                data.pop(page)
 
-                # выводим сообщение об отсутствии реакций
-                text_info = '<b>Список реакций пуст</b> 🤷‍♂️'
-                await back_callback(callback.message,
-                                    user_tg_id,
-                                    'back_reactions',
-                                    text_info)
+                # если False (data пустая)
+                if not data:
 
-            # если True (data не пустая)
+                    # выводим сообщение об отсутствии реакций
+                    text_info = '<b>Список реакций пуст</b> 🤷‍♂️'
+                    await back_callback(callback.message,
+                                        user_tg_id,
+                                        'back_reactions',
+                                        text_info)
+
+                # если True (data не пустая)
+                else:
+
+                    # Обновляем номер страницы
+                    if page >= len(data):
+
+                        # Переход на последнюю страницу, если текущая выходит за пределы
+                        page = len(data) - 1
+
+                    # обновляем клавиатуру
+                    await load_pagination(callback.message,
+                                          data,
+                                          keyboard,
+                                          list_type,
+                                          page)
             else:
 
-                # Обновляем номер страницы
-                if page >= len(data):
-
-                    # Переход на последнюю страницу, если текущая выходит за пределы
-                    page = len(data) - 1
-
-                # обновляем клавиатуру
-                await load_pagination(callback.message,
-                                      data,
-                                      keyboard,
-                                      list_type,
-                                      page)
+                await asyncio.to_thread(insert_reaction, user_tg_id, current_user_id)
+                await bot_send_message_about_like(user_tg_id, current_user_id, bot)
+                await callback.message.edit_media(media=InputMediaPhoto(
+                    media=delete_profile_id,
+                    caption=(
+                        '<b>Что-то пошло не так</b> 🫤\n\n'
+                        '<b>Возможно пользователь передумал и удалил свою реакцию</b> 😔\n\n'
+                        '<i>Но мы все равно отправили ему вашу 😉</i>'
+                    ),
+                    parse_mode='HTML'
+                ),
+                    reply_markup=kb.error_add_to_contacts
+                )
 
         # отказ от входящего запроса из "Входящие реакции"
         elif callback_data.action == 'delete_incoming':

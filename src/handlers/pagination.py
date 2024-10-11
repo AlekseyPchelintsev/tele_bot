@@ -412,9 +412,11 @@ async def pagination_handler(
             # добавление записи в бд
             await asyncio.to_thread(insert_reaction, user_tg_id, current_user_id)
 
-            # уведомление
-            await bot_notification_about_like(callback.message, f'{data[page][1]}')
+            # уведомление пользователю
             await bot_send_message_about_like(user_tg_id, current_user_id, bot)
+
+            # всплывающее уведомление
+            await bot_notification_about_like(callback.message, f'{data[page][1]}')
 
             # удаляем лайкнутого пользователя из data
             data.pop(page)
