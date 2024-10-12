@@ -50,7 +50,7 @@ def incoming_request_reaction(current_user_id):
         [InlineKeyboardButton(text='Ответить 👋',
                               callback_data=f'accept_request:{current_user_id}'),
          InlineKeyboardButton(text='Отложить 💤',
-                              callback_data='accept_late')]
+                              callback_data=f'accept_late:{current_user_id}')]
     ])
     return request_reaction
 

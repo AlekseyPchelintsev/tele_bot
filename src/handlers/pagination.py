@@ -16,12 +16,13 @@ from src.modules.notifications import (loader,
                                        bot_send_message_matchs_likes)
 
 from src.modules.delete_messages import del_last_message
+from src.database.requests.user_data import get_data, get_user_data
+from src.modules.get_self_data import get_user_info
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
 from src.handlers.edit_name import check_emodji
 from src.database.requests.search_users import get_users_in_city, get_users_by_hobby
 from src.handlers.edit_hobbies import wrong_search_hobby_name
-from src.database.requests.user_data import get_data, get_user_data
 from src.database.requests.likes_users import (insert_reaction,
                                                delete_and_insert_reactions,
                                                get_liked_users_ids,
@@ -45,12 +46,14 @@ delete_last_message = []
 
 @router.callback_query(F.data == 'users')
 async def check_users_menu(callback: CallbackQuery, state: FSMContext):
+
     await state.clear()
+
     user_tg_id = callback.from_user.id
     data = await asyncio.to_thread(get_user_data, user_tg_id)
     gender = await check_gender(data[0][3])
     hobbies = await hobbies_list(data[1])
-    await asyncio.sleep(.5)
+
     try:
         await callback.message.edit_media(
             media=InputMediaPhoto(
@@ -83,13 +86,20 @@ async def check_users_menu(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.in_(['search_users_in_city', 'search_users_by_hobby', 'all_users']))
 async def choise_search_params(callback: CallbackQuery, state: FSMContext):
-    data = callback.data
-    await state.update_data(type_of_search=data)
+
     user_tg_id = callback.from_user.id
-    self_data = await asyncio.to_thread(get_user_data, user_tg_id)
-    self_gender = await check_gender(self_data[0][3])
-    self_hobbies = await hobbies_list(self_data[1])
-    await asyncio.sleep(.5)
+    data = callback.data
+
+    # добавляю в состояниие инфу о выбраном меню чтобы обработать вывод клавиатуры далее
+    await state.update_data(type_of_search=data)
+
+    # плучаю свои данные
+    user_info = await get_user_info(user_tg_id)
+
+    # Извлекаю данные
+    self_data = user_info['data']
+    self_gender = user_info['gender']
+    self_hobbies = user_info['hobbies']
 
     await callback.message.edit_media(
         media=InputMediaPhoto(
@@ -150,9 +160,13 @@ async def search_users_in_city(callback, state, gender_data):
     # получаю готовый список пользователей
     data = await asyncio.to_thread(get_users_in_city, user_tg_id, gender_data, ignore_list)
 
-    self_data = await asyncio.to_thread(get_user_data, user_tg_id)
-    self_gender = await check_gender(self_data[0][3])
-    self_hobbies = await hobbies_list(self_data[1])
+    # плучаю свои данные
+    user_info = await get_user_info(user_tg_id)
+
+    # Извлекаю свои данные
+    self_data = user_info['data']
+    self_gender = user_info['gender']
+    self_hobbies = user_info['hobbies']
 
     if not data:
 
@@ -200,10 +214,17 @@ async def search_users_in_city(callback, state, gender_data):
 
 
 async def search_users_by_hobby(callback, state):
+
     user_tg_id = callback.from_user.id
-    self_data = await asyncio.to_thread(get_user_data, user_tg_id)
-    self_gender = await check_gender(self_data[0][3])
-    self_hobbies = await hobbies_list(self_data[1])
+
+    # плучаю свои данные
+    user_info = await get_user_info(user_tg_id)
+
+    # Извлекаю данные
+    self_data = user_info['data']
+    self_gender = user_info['gender']
+    self_hobbies = user_info['hobbies']
+
     edit_message = await callback.message.edit_media(
         media=InputMediaPhoto(
             media=f'{self_data[0][1]}',
@@ -234,9 +255,13 @@ async def search_users(message: Message, state: FSMContext, bot: Bot):
     gender_type = await state.get_data()
     gender_data = gender_type.get('type_of_gender')
 
-    self_data = await asyncio.to_thread(get_user_data, user_tg_id)
-    self_gender = await check_gender(self_data[0][3])
-    self_hobbies = await hobbies_list(self_data[1])
+    # плучаю свои данные
+    user_info = await get_user_info(user_tg_id)
+
+    # Извлекаю данные
+    self_data = user_info['data']
+    self_gender = user_info['gender']
+    self_hobbies = user_info['hobbies']
 
     edit_message = await state.get_data()
     message_id = edit_message.get('message_id')
@@ -315,11 +340,15 @@ async def search_users(message: Message, state: FSMContext, bot: Bot):
 
 async def search_all_users(callback, state, gender_data):
 
-    # мои данные
     user_tg_id = callback.from_user.id
-    self_data = await asyncio.to_thread(get_user_data, user_tg_id)
-    self_gender = await check_gender(self_data[0][3])
-    self_hobbies = await hobbies_list(self_data[1])
+
+    # плучаю свои данные
+    user_info = await get_user_info(user_tg_id)
+
+    # Извлекаю данные
+    self_data = user_info['data']
+    self_gender = user_info['gender']
+    self_hobbies = user_info['hobbies']
 
     try:
         # получаю списки пользователей для исключения

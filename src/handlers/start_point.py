@@ -6,9 +6,7 @@ from aiogram import F, Router
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.database.requests.user_data import check_user
-from src.modules.check_gender import check_gender
-from src.modules.hobbies_list import hobbies_list
-from src.database.requests.user_data import get_user_data
+from src.modules.get_self_data import get_user_info
 import src.modules.keyboard as kb
 
 router = Router()
@@ -29,9 +27,14 @@ async def start(message: Message, state: FSMContext):
     user_tg_id = message.from_user.id
     data = await asyncio.to_thread(check_user, user_tg_id)
     if data:
-        self_data = await asyncio.to_thread(get_user_data, user_tg_id)
-        self_gender = await check_gender(self_data[0][3])
-        self_hobbies = await hobbies_list(self_data[1])
+        # плучаю свои данные
+        user_info = await get_user_info(user_tg_id)
+
+        # Извлекаю свои данные
+        self_data = user_info['data']
+        self_gender = user_info['gender']
+        self_hobbies = user_info['hobbies']
+
         await message.answer_photo(
             photo=f'{self_data[0][1]}',
             caption=(
@@ -53,11 +56,12 @@ async def start(message: Message, state: FSMContext):
 
     # Вытягивает id фото
 
-
-'''@router.message(F.photo)
+'''
+@router.message(F.photo | F.video | F.animation)
 async def photo_nahui(message: Message):
-    photo_data = message.photo[-1]
-    await message.answer(f'id Этого изображения:\n{photo_data.file_id}')
+    data = message.photo[-1]
+    # video = message.video
+    await message.answer(f'id Этого изображения:\n{data.file_id}')
 '''
 # Тест функций
 
