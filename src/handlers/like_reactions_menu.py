@@ -115,7 +115,7 @@ async def all_reactions_menu(callback: CallbackQuery):
                     f'<b>Возраст:</b> {self_data[0][4]}\n'
                     f'<b>Пол:</b> {self_gender}\n'
                     f'<b>Город:</b> {self_data[0][5]}\n'
-                    f'<b>Увлечения:</b> {self_hobbies}'
+                    f'<b>Теги для поиска:</b> {self_hobbies}'
                 ),
                 parse_mode='HTML'
             ),
@@ -129,7 +129,7 @@ async def all_reactions_menu(callback: CallbackQuery):
                 f'<b>Возраст:</b> {self_data[0][4]}\n'
                 f'<b>Пол:</b> {self_gender}\n'
                 f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}'
+                f'<b>Теги для поиска:</b> {self_hobbies}'
             ),
             parse_mode='HTML',
             reply_markup=kb.reactions

@@ -53,7 +53,7 @@ async def edit_photo(callback: CallbackQuery, state: FSMContext):
                 f'<b>Возраст:</b> {data[0][4]}\n'
                 f'<b>Пол:</b> {gender}\n'
                 f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n\n'
+                f'<b>Теги для поиска:</b> {hobbies}\n\n\n'
                 'Отправьте ваше фото в чат:'
             ),
             parse_mode='HTML'
@@ -104,7 +104,7 @@ async def edit_photo_menu(callback):
                         f'<b>Возраст:</b> {data[0][4]}\n'
                         f'<b>Пол:</b> {gender}\n'
                         f'<b>Город:</b> {data[0][5]}\n'
-                        f'<b>Увлечения:</b> {hobbies}'
+                        f'<b>Теги для поиска:</b> {hobbies}'
                     ),
                     parse_mode='HTML'
                 ),
@@ -122,7 +122,7 @@ async def edit_photo_menu(callback):
                     f'<b>Возраст:</b> {data[0][4]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}'
+                    f'<b>Теги для поиска:</b> {hobbies}'
                 ),
                 parse_mode='HTML',
                 reply_markup=kb.edit_no_photo
@@ -137,7 +137,7 @@ async def edit_photo_menu(callback):
                         f'<b>Возраст:</b> {data[0][4]}\n'
                         f'<b>Пол:</b> {gender}\n'
                         f'<b>Город:</b> {data[0][5]}\n'
-                        f'<b>Увлечения:</b> {hobbies}'
+                        f'<b>Теги для поиска:</b> {hobbies}'
                     ),
                     parse_mode='HTML'
                 ),
@@ -155,7 +155,7 @@ async def edit_photo_menu(callback):
                     f'<b>Возраст:</b> {data[0][4]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}'
+                    f'<b>Теги для поиска:</b> {hobbies}'
                 ),
                 parse_mode='HTML',
                 reply_markup=kb.edit_photo
@@ -184,7 +184,7 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
                     f'<b>Возраст:</b> {data[0][4]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'<b>Теги для поиска:</b> {hobbies}\n\n'
                 ),
                 parse_mode='HTML'
             )
@@ -201,7 +201,7 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
                     f'<b>Возраст:</b> {data[0][4]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'<b>Теги для поиска:</b> {hobbies}\n\n'
                     'Фото профиля успешно обновлено ✅'
                 ),
                 parse_mode='HTML'
@@ -223,7 +223,7 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
                     f'<b>Возраст:</b> {data[0][4]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'<b>Теги для поиска:</b> {hobbies}\n\n'
                     '<b>Редактировать:</b>'
                 ),
                 parse_mode='HTML'
@@ -246,7 +246,7 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
                     f'<b>Возраст:</b> {data[0][4]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'<b>Теги для поиска:</b> {hobbies}\n\n'
                     '⚠️ Неизвестный формат файла ⚠️'
                 ),
                 parse_mode='HTML'
@@ -264,7 +264,7 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
                     f'<b>Возраст:</b> {data[0][4]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'<b>Теги для поиска:</b> {hobbies}\n\n'
                     'Отправьте фото в формате <b>.jpg .jpeg</b> или <b>.png</b>'
                 ),
                 parse_mode='HTML'
@@ -289,7 +289,7 @@ async def delete_photo(user_tg_id, callback):
                     f'<b>Возраст:</b> {data[0][4]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'<b>Теги для поиска:</b> {hobbies}\n\n'
                 ),
                 parse_mode='HTML'
             )
@@ -304,7 +304,7 @@ async def delete_photo(user_tg_id, callback):
                     f'<b>Возраст:</b> {data[0][4]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'<b>Теги для поиска:</b> {hobbies}\n\n'
                     'Фото успешно удалено 🚫'
                 ),
                 parse_mode='HTML'
@@ -325,7 +325,7 @@ async def delete_photo(user_tg_id, callback):
                     f'<b>Возраст:</b> {data[0][4]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'<b>Теги для поиска:</b> {hobbies}\n\n'
                     '<b>Редактировать:</b>'
                 ),
                 parse_mode='HTML'

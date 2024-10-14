@@ -1,4 +1,5 @@
 import asyncio
+import re
 import logging
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router, Bot
@@ -55,26 +56,35 @@ async def add_hobby(message: Message, state: FSMContext, bot: Bot):
     message_data = await state.get_data()
     message_id = message_data.get('message_id')
 
+    # проверка сообщения на текст и длинну
     if message.content_type == 'text' and len(message.text) <= 20:
         hobby = message.text.lower()
-        emodji_checked = await check_emodji(hobby)
 
+        # регулярное выражение на отсутствие занков препинания и пробелов
+        if not re.match(r'^[a-zA-Zа-яА-ЯёЁ0-9]+$', hobby):
+            await wrong_hobby_name(user_tg_id, message_id, bot)
+            return
+
+        # проверка на наличие эмодзи в сообщении
+        emodji_checked = await check_emodji(hobby)
         if not emodji_checked:
             await wrong_hobby_name(user_tg_id, message_id, bot)
             return
 
+        # проверка наличия такого тега в бд
         checked = await asyncio.to_thread(check_hobby, user_tg_id, hobby)
-
         if not checked:
             await hobby_already_exist(user_tg_id, message_id, bot)
             return
 
         else:
+            # добавление нового тега
             await hobby_succesful_added(user_tg_id, message_id, bot)
 
     else:
         await wrong_hobby_name(user_tg_id, message_id, bot)
         return
+
 
 # Меню удаления хобби
 
@@ -223,9 +233,9 @@ async def new_hobby_menu(callback, state):
                     '⛔️ Плохой пример: бухгалтерские услуги\n'
                     '✅ Хороший пример: бухгалтерия\n\n'
                     'Придерживайтесь принципа:'
-                    '   <b>Одно увлечение - одно сообщение</b>\n\n'
-                    f'<b>Список ваших увлечений:</b>\n{hobbies}\n\n\n'
-                    '⤵️ Отправьте увлечение сообщением в чат, '
+                    '<b>Один тег - одно сообщение</b>\n\n'
+                    f'<b>Список ваших тегов:</b>\n{hobbies}\n\n\n'
+                    '⤵️ Отправьте тег сообщением в чат, '
                     'чтобы я мог его добавить.'
                 ),
                 parse_mode='HTML'
@@ -275,8 +285,8 @@ async def wrong_hobby_name(user_tg_id, message_id, bot):
                 '⛔️ Плохой пример: бухгалтерские услуги\n'
                 '✅ Хороший пример: бухгалтерия\n\n'
                 'Придерживайтесь принципа:'
-                '   <b>Одно увлечение - одно сообщение</b>\n\n'
-                f'<b>Список ваших увлечений:</b>\n{hobbies}\n\n\n'
+                '   <b>Один тег - одно сообщение</b>\n\n'
+                f'<b>Список ваших тегов:</b>\n{hobbies}\n\n\n'
                 '⚠️ Неверный формат данных ⚠️'
             ),
             parse_mode='HTML'
@@ -300,9 +310,9 @@ async def wrong_hobby_name(user_tg_id, message_id, bot):
                 'Придерживайтесь принципа:'
                 '   <b>Одно увлечение - одно сообщение</b>\n\n'
                 f'<b>Список ваших увлечений:</b>\n{hobbies}\n\n\n'
-                '❌ Название увлечения должно содержать только текст, не должно содержать эмодзи '
-                'и изображения, а так же не должно превышать длинну в <b>20 символов</b>.\n\n'
-                '⤵️ Отправьте увлечение сообщением в чат, '
+                '❌ Название тега должно содержать только текст, не должно содержать эмодзи,  '
+                'изображения, пробелы и знаки препинания, а так же не должно превышать длинну в <b>20 символов</b>.\n\n'
+                '⤵️ Отправьте название тега сообщением в чат, '
                 'чтобы я мог его добавить.'
             ),
             parse_mode='HTML'
@@ -331,7 +341,7 @@ async def hobby_already_exist(user_tg_id, message_id, bot):
                 'Придерживайтесь принципа:'
                 '   <b>Одно увлечение - одно сообщение</b>\n\n'
                 f'<b>Список ваших увлечений:</b>\n{hobbies}\n\n\n'
-                '❌ Такое увлечение уже находится в вашем списке'
+                '❌ Такой тег уже находится в вашем списке'
             ),
             parse_mode='HTML'
         )
@@ -354,7 +364,7 @@ async def hobby_already_exist(user_tg_id, message_id, bot):
                 'Придерживайтесь принципа:'
                 '   <b>Одно увлечение - одно сообщение</b>\n\n'
                 f'<b>Список ваших увлечений:</b>\n{hobbies}\n\n\n'
-                '⤵️ Отправьте <b>новое</b> увлечение сообщением в чат, '
+                '⤵️ Отправьте <b>новый</b> тег сообщением в чат, '
                 'чтобы я мог его добавить.'
             ),
             parse_mode='HTML'
@@ -385,7 +395,7 @@ async def hobby_succesful_added(user_tg_id, message_id, bot):
                 'Придерживайтесь принципа:'
                 '   <b>Одно увлечение - одно сообщение</b>\n\n'
                 f'<b>Список ваших увлечений:</b>\n{hobbies}\n\n\n'
-                '✅ Список ваших увлечений успешно обновлен!'
+                '✅ Список ваших тегов успешно обновлен!'
             ),
             parse_mode='HTML'
         )
@@ -408,7 +418,7 @@ async def hobby_succesful_added(user_tg_id, message_id, bot):
                 'Придерживайтесь принципа:'
                 '   <b>Одно увлечение - одно сообщение</b>\n\n'
                 f'<b>Список ваших увлечений:</b>\n{hobbies}\n\n\n'
-                '⤵️ Отправьте увлечение сообщением в чат, '
+                '⤵️ Отправьте тег сообщением в чат, '
                 'чтобы я мог его добавить.'
             ),
             parse_mode='HTML'
@@ -435,7 +445,7 @@ async def wrong_search_hobby_name(user_tg_id, message_id, bot):
                 f'<b>Возраст:</b> {self_data[0][4]}\n'
                 f'<b>Пол:</b> {self_gender}\n'
                 f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}\n\n'
+                f'<b>Теги для поиска:</b> {self_hobbies}\n\n'
                 '⚠️ Неверный формат данных ⚠️'
             ),
             parse_mode='HTML'
@@ -454,10 +464,10 @@ async def wrong_search_hobby_name(user_tg_id, message_id, bot):
                 f'<b>Возраст:</b> {self_data[0][4]}\n'
                 f'<b>Пол:</b> {self_gender}\n'
                 f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}\n\n'
-                '❌ Название увлечения должно содержать только текст, не должно содержать эмодзи '
+                f'<b>Теги для поиска:</b> {self_hobbies}\n\n'
+                '❌ Тег должен содержать только текст без пробелов и знаков препинания, а также не должен содержать эмодзи '
                 'или изображения.\n\n'
-                '<b>Пришлите в чат увлечение, по которому вы хотите найти пользователей:</b>'
+                '<b>Пришлите в чат тег, по которому вы хотите найти пользователей:</b>'
             ),
             parse_mode='HTML'
         ),

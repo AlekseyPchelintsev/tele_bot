@@ -54,7 +54,7 @@ async def back_callback(callback_data, user_tg_id, keyboard_name, text_info=''):
                     f'<b>Возраст:</b> {self_data[0][4]}\n'
                     f'<b>Пол:</b> {self_gender}\n'
                     f'<b>Город:</b> {self_data[0][5]}\n'
-                    f'<b>Увлечения:</b> {self_hobbies}\n\n'
+                    f'<b>Теги для поиска:</b> {self_hobbies}\n\n'
                     f'{text_info}'
                 ),
                 parse_mode='HTML'
@@ -69,7 +69,7 @@ async def back_callback(callback_data, user_tg_id, keyboard_name, text_info=''):
                 f'<b>Возраст:</b> {self_data[0][4]}\n'
                 f'<b>Пол:</b> {self_gender}\n'
                 f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}\n\n'
+                f'<b>Теги для поиска:</b> {self_hobbies}\n\n'
                 f'{text_info}'
             ),
             parse_mode='HTML',
@@ -100,7 +100,7 @@ async def load_pagination(callback_data, data, keyboard_name, list_type, page=0,
                         f'<b>Возраст:</b> {data[page][5]}\n'
                         f'<b>Пол:</b> {gender}\n'
                         f'<b>Город:</b> {data[page][6]}\n'
-                        f'<b>Увлечения:</b> {hobbies}\n\n'
+                        f'<b>Теги для поиска:</b> {hobbies}\n\n'
                         f'{text_info}'
                     ),
                     parse_mode='HTML',
@@ -122,7 +122,7 @@ async def load_pagination(callback_data, data, keyboard_name, list_type, page=0,
                         f'<b>Возраст:</b> {data[page][5]}\n'
                         f'<b>Пол:</b> {gender}\n'
                         f'<b>Город:</b> {data[page][6]}\n'
-                        f'<b>Увлечения:</b> {hobbies}\n\n'
+                        f'<b>Теги для поиска:</b> {hobbies}\n\n'
                         f'{text_info}'
                     ),
                     parse_mode='HTML',
@@ -155,7 +155,7 @@ async def load_pagination_bot(bot, user_tg_id, message_id, data, keyboard_name, 
                     f'<b>Возраст:</b> {data[page][5]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[page][6]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'<b>Теги для поиска:</b> {hobbies}\n\n'
                     f'{text_info}'
                 ),
                 parse_mode='HTML',

@@ -36,7 +36,7 @@ async def edit_name_menu(callback: CallbackQuery, state: FSMContext):
                 f'<b>Возраст:</b> {data[0][4]}\n'
                 f'<b>Пол:</b> {gender}\n'
                 f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
+                f'<b>Теги для поиска:</b> {hobbies}\n\n'
                 '<b>Пришлите в чат ваше имя:</b>'
             ),
             parse_mode='HTML'
@@ -86,7 +86,7 @@ async def wrong_name(user_tg_id, message_id, bot):
                 f'<b>Возраст:</b> {data[0][4]}\n'
                 f'<b>Пол:</b> {gender}\n'
                 f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
+                f'<b>Теги для поиска:</b> {hobbies}\n\n'
                 '⚠️ Неверный формат данных ⚠️'
             ),
             parse_mode='HTML'
@@ -106,7 +106,7 @@ async def wrong_name(user_tg_id, message_id, bot):
                 f'<b>Возраст:</b> {data[0][4]}\n'
                 f'<b>Пол:</b> {gender}\n'
                 f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
+                f'<b>Теги для поиска:</b> {hobbies}\n\n'
                 '❌ Имя должно содержать <b>только текст</b>, не должно '
                 'содержать эмодзи и изображения, '
                 'а так же не должно превышать длинну в <b>20 символов</b>.'
@@ -132,7 +132,7 @@ async def change_name(user_tg_id, message, user_name, message_id, state, bot):
                 f'<b>Возраст:</b> {data[0][4]}\n'
                 f'<b>Пол:</b> {gender}\n'
                 f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
+                f'<b>Теги для поиска:</b> {hobbies}\n\n'
             ),
             parse_mode='HTML'
         )
@@ -155,7 +155,7 @@ async def change_name(user_tg_id, message, user_name, message_id, state, bot):
                 f'<b>Возраст:</b> {data[0][4]}\n'
                 f'<b>Пол:</b> {gender}\n'
                 f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
+                f'<b>Теги для поиска:</b> {hobbies}\n\n'
                 'Имя успешно изменено ✅'
             ),
             parse_mode='HTML'
@@ -172,7 +172,7 @@ async def change_name(user_tg_id, message, user_name, message_id, state, bot):
                 f'<b>Возраст:</b> {data[0][4]}\n'
                 f'<b>Пол:</b> {gender}\n'
                 f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
+                f'<b>Теги для поиска:</b> {hobbies}\n\n'
                 '<b>Редактировать:</b>'
             ),
             parse_mode='HTML'

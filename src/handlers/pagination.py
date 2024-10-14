@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import random
+import re
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
@@ -63,7 +64,7 @@ async def check_users_menu(callback: CallbackQuery, state: FSMContext):
                     f'<b>Возраст:</b> {data[0][4]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}'
+                    f'<b>Теги для поиска:</b> {hobbies}'
                 ),
                 parse_mode='HTML'
             ),
@@ -77,7 +78,7 @@ async def check_users_menu(callback: CallbackQuery, state: FSMContext):
                 f'<b>Возраст:</b> {data[0][4]}\n'
                 f'<b>Пол:</b> {gender}\n'
                 f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}'
+                f'<b>Теги для поиска:</b> {hobbies}'
             ),
             parse_mode='HTML',
             reply_markup=kb.users_menu
@@ -109,7 +110,7 @@ async def choise_search_params(callback: CallbackQuery, state: FSMContext):
                 f'<b>Возраст:</b> {self_data[0][4]}\n'
                 f'<b>Пол:</b> {self_gender}\n'
                 f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}\n\n'
+                f'<b>Теги для поиска:</b> {self_hobbies}\n\n'
                 '<b>Кого ищем?</b>'
             ),
             parse_mode='HTML'
@@ -178,7 +179,7 @@ async def search_users_in_city(callback, state, gender_data):
                     f'<b>Возраст:</b> {self_data[0][4]}\n'
                     f'<b>Пол:</b> {self_gender}\n'
                     f'<b>Город:</b> {self_data[0][5]}\n'
-                    f'<b>Увлечения:</b> {self_hobbies}\n\n'
+                    f'<b>Теги для поиска:</b> {self_hobbies}\n\n'
                     '❌ <b>Пользователи в вашем городе не найдены</b>\n'
                     '🔎 Попробуйте изменить параметры поиска.'
                 ),
@@ -199,7 +200,7 @@ async def search_users_in_city(callback, state, gender_data):
                     f'<b>Возраст:</b> {data[0][5]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][6]}\n'
-                    f'<b>Увлечения:</b> {hobbies}'
+                    f'<b>Теги для поиска:</b> {hobbies}'
                 ),
                 parse_mode='HTML'
             ),
@@ -233,7 +234,7 @@ async def search_users_by_hobby(callback, state):
                 f'<b>Возраст:</b> {self_data[0][4]}\n'
                 f'<b>Пол:</b> {self_gender}\n'
                 f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}\n\n'
+                f'<b>Теги для поиска:</b> {self_hobbies}\n\n'
                 '<b>Пришлите в чат увлечение, по которому вы хотите найти пользователей:</b>'
             ),
             parse_mode='HTML'
@@ -268,8 +269,13 @@ async def search_users(message: Message, state: FSMContext, bot: Bot):
 
     if message.content_type == 'text':
         request = message.text.lower()
+
         emodji_checked = await check_emodji(request)
         if not emodji_checked:
+            await wrong_search_hobby_name(user_tg_id, message_id, bot)
+            return
+
+        if not re.match(r'^[a-zA-Zа-яА-ЯёЁ0-9]+$', request):
             await wrong_search_hobby_name(user_tg_id, message_id, bot)
             return
 
@@ -294,7 +300,7 @@ async def search_users(message: Message, state: FSMContext, bot: Bot):
                         f'<b>Возраст:</b> {self_data[0][4]}\n'
                         f'<b>Пол:</b> {self_gender}\n'
                         f'<b>Город:</b> {self_data[0][5]}\n'
-                        f'<b>Увлечения:</b> {self_hobbies}\n\n'
+                        f'<b>Теги для поиска:</b> {self_hobbies}\n\n'
                         '❌ Пользователи с таким увлечением отсутствуют'
                     ),
                     parse_mode='HTML'
@@ -312,7 +318,7 @@ async def search_users(message: Message, state: FSMContext, bot: Bot):
                         f'<b>Возраст:</b> {self_data[0][4]}\n'
                         f'<b>Пол:</b> {self_gender}\n'
                         f'<b>Город:</b> {self_data[0][5]}\n'
-                        f'<b>Увлечения:</b> {self_hobbies}\n\n'
+                        f'<b>Теги для поиска:</b> {self_hobbies}\n\n'
                         '<b>Пришлите в чат увлечение, по которому вы хотите найти пользователей:</b>'
                     ),
                     parse_mode='HTML'
@@ -373,7 +379,7 @@ async def search_all_users(callback, state, gender_data):
                     f'<b>Возраст:</b> {self_data[0][4]}\n'
                     f'<b>Пол:</b> {self_gender}\n'
                     f'<b>Город:</b> {self_data[0][5]}\n'
-                    f'<b>Увлечения:</b> {self_hobbies}\n\n'
+                    f'<b>Теги для поиска:</b> {self_hobbies}\n\n'
                     '❌ <b>Пользователи не найдены</b>\n'
                     '🔎 Попробуйте изменить параметры поиска.'
                 ),

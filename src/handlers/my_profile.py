@@ -37,7 +37,7 @@ async def about_me(callback: CallbackQuery, state: FSMContext):
                     f'<b>Возраст:</b> {data[0][4]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'<b>Теги для поиска:</b> {hobbies}\n\n'
                     '<b>Редактировать:</b>'
                 ),
                 parse_mode='HTML'
@@ -56,7 +56,7 @@ async def about_me(callback: CallbackQuery, state: FSMContext):
                 f'<b>Возраст:</b> {data[0][4]}\n'
                 f'<b>Пол:</b> {gender}\n'
                 f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
+                f'<b>Теги для поиска:</b> {hobbies}\n\n'
                 '<b>Редактировать:</b>'
             ),
             parse_mode='HTML',

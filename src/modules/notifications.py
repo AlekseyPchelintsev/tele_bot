@@ -63,7 +63,7 @@ async def notification_to_late_incoming_reaction(message, user_tg_id):
                 f'<b>Возраст:</b> {self_data[0][4]}\n'
                 f'<b>Пол:</b> {self_gender}\n'
                 f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}'
+                f'<b>Теги для поиска:</b> {self_hobbies}'
             ),
             parse_mode='HTML'
         ),
@@ -78,7 +78,7 @@ async def notification_to_late_incoming_reaction(message, user_tg_id):
                 f'<b>Возраст:</b> {self_data[0][4]}\n'
                 f'<b>Пол:</b> {self_gender}\n'
                 f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}'
+                f'<b>Теги для поиска:</b> {self_hobbies}'
             ),
             parse_mode='HTML',
             reply_markup=kb.users
@@ -122,7 +122,7 @@ async def bot_send_message_about_like(user_tg_id, current_user_id, bot):
                              f'<b>Возраст:</b> {self_data[0][4]}\n'
                              f'<b>Пол:</b> {self_gender}\n'
                              f'<b>Город:</b> {self_data[0][5]}\n'
-                             f'<b>Увлечения:</b> {self_hobbies}'
+                             f'<b>Теги для поиска:</b> {self_hobbies}'
                          ),
                          parse_mode='HTML',
                          reply_markup=kb.incoming_request_reaction(user_tg_id))

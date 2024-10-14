@@ -42,7 +42,7 @@ async def start(message: Message, state: FSMContext):
                 f'<b>Возраст:</b> {self_data[0][4]}\n'
                 f'<b>Пол:</b> {self_gender}\n'
                 f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}'
+                f'<b>Теги для поиска:</b> {self_hobbies}'
             ),
             parse_mode='HTML',
             reply_markup=kb.users

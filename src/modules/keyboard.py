@@ -177,7 +177,7 @@ edit_gender = InlineKeyboardMarkup(inline_keyboard=[
 
 
 start_edit = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='🎸 Редактировать "Увлечения"',
+    [InlineKeyboardButton(text='#️⃣ Добавить "Теги"',
                           callback_data='new_hobby')],
     [InlineKeyboardButton(text='↩️ Заполнить позже', callback_data='main_menu')]])
 
@@ -188,7 +188,7 @@ users_menu = InlineKeyboardMarkup(inline_keyboard=[
                           callback_data='all_users')],
     [InlineKeyboardButton(text='🌆 Поиск людей в вашем городе',
                           callback_data='search_users_in_city')],
-    [InlineKeyboardButton(text='🎸 Поиск людей по увлеченям',
+    [InlineKeyboardButton(text='#️⃣ Поиск по тегам',
                           callback_data='search_users_by_hobby')],
     [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='main_menu')]])
 

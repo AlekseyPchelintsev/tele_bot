@@ -29,7 +29,7 @@ async def open_main_menu(callback: CallbackQuery, state: FSMContext):
                     f'<b>Возраст:</b> {data[0][4]}\n'
                     f'<b>Пол:</b> {gender}\n'
                     f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}'
+                    f'<b>Теги для поиска:</b> {hobbies}'
                 ),
                 parse_mode='HTML'
             ),
@@ -47,7 +47,7 @@ async def open_main_menu(callback: CallbackQuery, state: FSMContext):
                 f'<b>Возраст:</b> {data[0][4]}\n'
                 f'<b>Пол:</b> {gender}\n'
                 f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}'
+                f'<b>Теги для поиска:</b> {hobbies}'
             ),
             parse_mode='HTML',
             reply_markup=kb.users
