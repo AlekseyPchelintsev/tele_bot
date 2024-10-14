@@ -7,7 +7,7 @@ from aiogram import F, Router
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.modules.notifications import notification
-from config import sucessful_registration
+from config import sucessful_registration, video_no_nickname, in_progress
 from src.modules.delete_messages import del_messages, del_last_message
 from src.database.requests.photo_data import get_user_photo_id
 from src.database.requests.new_user import add_new_user
@@ -17,7 +17,6 @@ router = Router()
 
 
 class Registration(StatesGroup):
-    user_id = State()
     name = State()
     nickname = State()
     photo = State()
@@ -33,11 +32,39 @@ delete_last_message = []
 @router.callback_query(F.data == 'reg')
 async def reg(callback: CallbackQuery, state: FSMContext):
     await callback.answer('Загружаю...')
+    # контрольно убирает состояния если пользователь
+    # попал в это меню после удаления анкеты
+    await state.clear()
+
+    user_tg_id = callback.from_user.id
+    # user_nickname = callback.from_user.username
+    user_nickname = 'kin0govno'
     await del_last_message(callback.message)
-    await state.set_state(Registration.name)
-    await asyncio.sleep(.3)
-    del_message = await callback.message.answer(text='Пожалуйста, ведите ваше имя:')
-    delete_last_message.append(del_message.message_id)
+
+    if user_tg_id:
+        if user_nickname:
+
+            del_message = await callback.message.answer(text='Пожалуйста, ведите ваше имя:')
+            delete_last_message.append(del_message.message_id)
+            await state.set_state(Registration.name)
+
+        else:
+            await callback.message.answer_video(
+                video=video_no_nickname,
+                caption=('\n\n⚠️ Чтобы продолжить, вам нужно указать \n<b>"Имя пользователя"</b> '
+                         'в настройках вашей учетной записи <b>Telegram</b>.\n\n'
+                         'Только после этого вы сможете:'),
+                parse_mode='HTML',
+                reply_markup=kb.regkey
+
+            )
+    else:
+        await callback.message.answer_photo(photo=in_progress,
+                                            caption=('Что-то пошло не так :( \n'
+                                                     'Попробуйте снова чуть позже.'),
+                                            parse_mode='HTML',
+                                            reply_markup=kb.regkey
+                                            )
 
 # Получение данных пользователя и добавление их в бд
 
@@ -53,7 +80,6 @@ async def reg_name(message: Message, state: FSMContext, bot: Bot):
     name = name.title()
     user_nickname = message.from_user.username
     photo_id = await get_user_photo_id(bot, user_tg_id)
-    # user_nickname = await check_nickname(get_user_nickname)
 
     await state.update_data(name=name, nickname=user_nickname, photo=photo_id)
     # Пол
@@ -125,8 +151,8 @@ async def age_checked(message: Message, state: FSMContext):
 
     # Извлекаем данные из состояния
     current_datetime = datetime.now()
+    user_tg_id = message.from_user.id
     data = await state.get_data()
-    user_tg_id = data.get('user_id')
     name = data.get('name')
     photo_id = data.get('photo')
     nickname = data.get('nickname')

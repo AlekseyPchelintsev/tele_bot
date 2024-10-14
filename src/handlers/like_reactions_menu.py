@@ -13,9 +13,7 @@ from src.modules.notifications import (bot_notification_about_dislike,
                                        bot_send_message_matchs_likes,
                                        notification_to_late_incoming_reaction)
 
-from src.modules.check_gender import check_gender
-from src.modules.hobbies_list import hobbies_list
-from src.database.requests.user_data import get_user_data
+from src.modules.get_self_data import get_user_info
 from src.database.requests.likes_users import (insert_reaction,
                                                get_reaction,
                                                delete_reaction,
@@ -70,10 +68,26 @@ async def accept_incoming_request_alert(callback: CallbackQuery, bot: Bot):
         )
 
 
-@router.callback_query(F.data == 'accept_late')
+@router.callback_query(F.data.startswith('accept_late:'))
 async def accept_late_incoming_request_alert(callback: CallbackQuery):
     user_tg_id = callback.from_user.id
-    await notification_to_late_incoming_reaction(callback.message, user_tg_id)
+    current_user_id = callback.data.split(':')[1]
+    check = await asyncio.to_thread(get_reaction, current_user_id, user_tg_id)
+
+    if check:
+        await notification_to_late_incoming_reaction(callback.message, user_tg_id)
+    else:
+        await callback.message.edit_media(media=InputMediaPhoto(
+            media=delete_profile_id,
+            caption=(
+                '<b>Что-то пошло не так</b> 🫤\n\n'
+                '<b>Возможно пользователь случайно отправил вам реакцию\n'
+                'и уже удалил ее</b> 🤷‍♂️'
+            ),
+            parse_mode='HTML'
+        ),
+            reply_markup=kb.error_add_to_contacts
+        )
 
 
 # Меню реакций
@@ -83,9 +97,14 @@ async def accept_late_incoming_request_alert(callback: CallbackQuery):
 async def all_reactions_menu(callback: CallbackQuery):
 
     user_tg_id = callback.from_user.id
-    self_data = await asyncio.to_thread(get_user_data, user_tg_id)
-    self_gender = await check_gender(self_data[0][3])
-    self_hobbies = await hobbies_list(self_data[1])
+
+    # плучаю свои данные
+    user_info = await get_user_info(user_tg_id)
+
+    # Извлекаю свои данные
+    self_data = user_info['data']
+    self_gender = user_info['gender']
+    self_hobbies = user_info['hobbies']
 
     try:
         await callback.message.edit_media(
@@ -197,6 +216,8 @@ async def my_reactions(callback: CallbackQuery, state: FSMContext):
 
         await state.update_data(users_data=data)
 
+# меню "Заблокированные анкеты"
+
 
 @router.callback_query(F.data == 'ignore_list')
 async def ignore_users_list(callback: CallbackQuery, state: FSMContext):
@@ -252,6 +273,8 @@ async def pagination_handler_likes(
         keyboard = 'incoming_reactions'
     elif list_type == 'match_like_users':
         keyboard = 'match_reactions_pagination'
+    elif list_type == 'ignore_users_list':
+        keyboard = 'ignored_users_pagination'
 
     # data[0][3] - ник пользователя
     data = (await state.get_data()).get('users_data')
@@ -291,8 +314,6 @@ async def pagination_handler_likes(
 
                 # добавление реакции в бд
                 await asyncio.to_thread(insert_reaction, user_tg_id, current_user_id)
-                # отправка сообщения каждому с данными для приватной беседы
-                await bot_send_message_matchs_likes(user_tg_id, current_user_id, bot, callback)
 
                 # удаление взаимных записей из таблицы userreactions и
                 # внесение одной записи в таблицу matchreactions
@@ -329,6 +350,10 @@ async def pagination_handler_likes(
                                           keyboard,
                                           list_type,
                                           page)
+
+                # отправка сообщения каждому с данными для приватной беседы
+                await bot_send_message_matchs_likes(user_tg_id, current_user_id, bot, callback)
+
             else:
 
                 await asyncio.to_thread(insert_reaction, user_tg_id, current_user_id)
@@ -355,10 +380,6 @@ async def pagination_handler_likes(
             if delete:
                 # добавляем пользователя в ignorelist
                 await asyncio.to_thread(send_user_to_ignore_table, user_tg_id, current_user_id)
-                await bot_notification_about_dislike(callback.message,
-                                                     '❗️ <b>Реакция отклонена.</b>\n'
-                                                     'Пользователь добавлен в раздел:\n'
-                                                     '"🚫 <b>Заблокированные пользователи</b>"')
 
                 # удаляем дизлайкнутого пользователя из data
                 data.pop(page)
@@ -372,6 +393,11 @@ async def pagination_handler_likes(
                                         user_tg_id,
                                         'back_reactions',
                                         text_info)
+
+                    await bot_notification_about_dislike(callback.message,
+                                                         '❗️ <b>Реакция отклонена.</b>\n'
+                                                         'Пользователь добавлен в раздел:\n'
+                                                         '"🚫 <b>Заблокированные анкеты</b>"')
 
                 # если True (data не пустая)
                 else:
@@ -388,6 +414,12 @@ async def pagination_handler_likes(
                                           keyboard,
                                           list_type,
                                           page)
+
+                    await bot_notification_about_dislike(callback.message,
+                                                         '❗️ <b>Реакция отклонена.</b>\n'
+                                                         'Пользователь добавлен в раздел:\n'
+                                                         '"🚫 <b>Заблокированные анкеты</b>"')
+
             else:
                 await bot_notification_about_dislike(callback.message,
                                                      '🚧 <b>Что-то пошло не так. Попробуйте позже</b> 🚧')
@@ -395,10 +427,8 @@ async def pagination_handler_likes(
         # отмена моего запроса в "Мои реакции"
         elif callback_data.action == 'in_reactions_dislike':
 
-            # удаляем реакцию из бд и выводим уведомление пользователю
+            # удаляем реакцию из бд
             await asyncio.to_thread(delete_reaction, user_tg_id, current_user_id)
-            await bot_notification_about_dislike(callback.message,
-                                                 '🚫 <b>Реакция успешно удалена!</b>')
 
             # удаляем дизлайкнутого пользователя из data
             data.pop(page)
@@ -412,6 +442,9 @@ async def pagination_handler_likes(
                                     user_tg_id,
                                     'back_reactions',
                                     text_info)
+
+                await bot_notification_about_dislike(callback.message,
+                                                     '🚫 <b>Реакция успешно удалена!</b>')
 
             # если True (data не пустая)
             else:
@@ -429,6 +462,9 @@ async def pagination_handler_likes(
                                       list_type,
                                       page)
 
+                await bot_notification_about_dislike(callback.message,
+                                                     '🚫 <b>Реакция успешно удалена!</b>')
+
         # удаление пользователя из "Мои контакты"
         elif callback_data.action == 'delete_contact':
 
@@ -441,7 +477,7 @@ async def pagination_handler_likes(
                 await bot_notification_about_dislike(callback.message,
                                                      '❗️ <b>Пользователь удален из ваших контактов</b>\n'
                                                      'и добавлен в раздел:\n'
-                                                     '"🚫 <b>Заблокированные пользователи</b>"')
+                                                     '"🚫 <b>Заблокированные анкеты</b>"')
 
                 # удаляем дизлайкнутого пользователя из data
                 data.pop(page)
@@ -471,11 +507,17 @@ async def pagination_handler_likes(
                                           keyboard,
                                           list_type,
                                           page)
+
+                    await bot_notification_about_dislike(callback.message,
+                                                         '❗️ <b>Пользователь удален из ваших контактов</b>\n'
+                                                         'и добавлен в раздел:\n'
+                                                         '"🚫 <b>Заблокированные анкеты</b>"')
+
             else:
                 await bot_notification_about_dislike(callback.message,
                                                      '🚧 Что-то пошло не так. Попробуйте позже 🚧')
 
-        # удаление пользователя из "Заблокированные пользователи"
+        # удаление пользователя из "Заблокированные анкеты"
         elif callback_data.action == 'remove_from_ignore':
 
             # удаляем реакцию из бд (matchreactions) и выводим уведомление

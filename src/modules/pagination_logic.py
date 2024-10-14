@@ -1,11 +1,12 @@
-import asyncio
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
-from src.database.requests.user_data import get_user_data
+from src.modules.get_self_data import get_user_info
 from config import delete_profile_id
 from aiogram.types import InputMediaPhoto
 from src.modules.notifications import loader
 from src.modules import keyboard as kb
+
+# если бот ушел в ребут во время открытой пагинации у пользователя
 
 
 async def no_data_after_reboot_bot(callback):
@@ -29,14 +30,20 @@ async def no_data_after_reboot_bot(callback):
                                             parse_mode='HTML',
                                             reply_markup=kb.back_reactions)
 
+# выход из пагинации и уведомление если список пользователей пуст
+
 
 async def back_callback(callback_data, user_tg_id, keyboard_name, text_info=''):
 
     keyboard = getattr(kb, keyboard_name, None)
 
-    self_data = await asyncio.to_thread(get_user_data, user_tg_id)
-    self_gender = await check_gender(self_data[0][3])
-    self_hobbies = await hobbies_list(self_data[1])
+    # плучаю свои данные
+    user_info = await get_user_info(user_tg_id)
+
+    # Извлекаю данные
+    self_data = user_info['data']
+    self_gender = user_info['gender']
+    self_hobbies = user_info['hobbies']
 
     try:
         await callback_data.edit_media(
@@ -68,6 +75,8 @@ async def back_callback(callback_data, user_tg_id, keyboard_name, text_info=''):
             parse_mode='HTML',
             reply_markup=keyboard
         )
+
+# загрузка пагинации из оработчика callback
 
 
 async def load_pagination(callback_data, data, keyboard_name, list_type, page=0, text_info=''):
@@ -123,6 +132,8 @@ async def load_pagination(callback_data, data, keyboard_name, list_type, page=0,
             )
         except:
             pass
+
+# загрузка пагинации из обработчика message
 
 
 async def load_pagination_bot(bot, user_tg_id, message_id, data, keyboard_name, list_type, page=0, text_info=''):

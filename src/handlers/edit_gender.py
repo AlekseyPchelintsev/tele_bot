@@ -5,7 +5,7 @@ from aiogram import F, Router
 from src.modules.notifications import loader, attention_message
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
-from src.database.requests.user_data import get_user_data
+from src.database.requests.user_data import get_user_data, check_user
 from src.database.requests.gender_change import change_user_gender
 
 import src.modules.keyboard as kb
@@ -120,5 +120,13 @@ F.data – message with CallData (this was processed in the previous article).
                 F.contact | F.document | F.sticker)
 async def handle_random_message(message: Message):
     await message.delete()
-    await attention_message(message, '⚠️ Если вы хотите внести изменения, перейдите '
-                            'в раздел <b>"редактировать профиль"</b>')
+    user_tg_id = message.from_user.id
+    data = await asyncio.to_thread(check_user, user_tg_id)
+
+    # если пользователь зарегистрирован
+    if data:
+        await attention_message(message, '⚠️ Если вы хотите внести изменения, перейдите '
+                                'в раздел <b>"редактировать профиль"</b>', 3)
+    else:
+        await attention_message(message, '⚠️ Что бы взаимодействовать с сервисом, '
+                                'вам необходимо <b>зарегистрироваться</b>', 3)

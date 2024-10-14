@@ -187,3 +187,51 @@ async def change_city_name(user_tg_id, message, message_id, new_city_name, bot):
         ),
         reply_markup=kb.about_me
     )
+
+
+# неверный формат запроса при поиске по городам
+
+async def wrong_search_city_name(user_tg_id, message_id, bot):
+
+    self_data = await asyncio.to_thread(get_user_data, user_tg_id)
+    self_gender = await check_gender(self_data[0][3])
+    self_hobbies = await hobbies_list(self_data[1])
+
+    await bot.edit_message_media(
+        chat_id=user_tg_id,
+        message_id=message_id,
+        media=InputMediaPhoto(
+            media=f'{self_data[0][1]}',
+            caption=(
+                f'\n<b>Имя:</b> {self_data[0][0]}\n'
+                f'<b>Возраст:</b> {self_data[0][4]}\n'
+                f'<b>Пол:</b> {self_gender}\n'
+                f'<b>Город:</b> {self_data[0][5]}\n'
+                f'<b>Увлечения:</b> {self_hobbies}\n\n'
+                '⚠️ Неверный формат данных ⚠️'
+            ),
+            parse_mode='HTML'
+        )
+    )
+
+    await asyncio.sleep(1.5)
+
+    await bot.edit_message_media(
+        chat_id=user_tg_id,
+        message_id=message_id,
+        media=InputMediaPhoto(
+            media=f'{self_data[0][1]}',
+            caption=(
+                f'\n<b>Имя:</b> {self_data[0][0]}\n'
+                f'<b>Возраст:</b> {self_data[0][4]}\n'
+                f'<b>Пол:</b> {self_gender}\n'
+                f'<b>Город:</b> {self_data[0][5]}\n'
+                f'<b>Увлечения:</b> {self_hobbies}\n\n'
+                '❌ Название города должно содержать только текст, не должно содержать эмодзи '
+                'или изображения.\n\n'
+                '<b>Пришлите в чат название города, в котором вы хотите найти пользователей:</b>'
+            ),
+            parse_mode='HTML'
+        ),
+        reply_markup=kb.search_users
+    )

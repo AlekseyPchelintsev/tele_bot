@@ -3,6 +3,7 @@ from aiogram.types import InputMediaPhoto
 from src.database.requests.user_data import get_user_data
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
+from src.modules.get_self_data import get_user_info
 
 import src.modules.keyboard as kb
 
@@ -34,28 +35,26 @@ async def notification(message, text):
         pass
 
 
-async def attention_message(message, text):
+async def attention_message(message, text, timer):
+
     temporary_message = await message.answer(f'{text}', parse_mode='HTML')
-    await asyncio.sleep(3)
-    try:
-        await message.delete()
-    except:
-        pass
+    await asyncio.sleep(timer)
     await temporary_message.delete()
 
 # Всплывающее уведомление при выборе "Решу позже" на входящее уведомление о лайке
 
 
 async def notification_to_late_incoming_reaction(message, user_tg_id):
-    temporary_message = await message.answer('Пользователь добавлен в раздел\n"➡️ <b>Входящие запросы</b>"',
-                                             parse_mode='HTML')
-    await asyncio.sleep(3)
-    await temporary_message.delete()
 
     try:
-        self_data = await asyncio.to_thread(get_user_data, user_tg_id)
-        self_gender = await check_gender(self_data[0][3])
-        self_hobbies = await hobbies_list(self_data[1])
+
+        # плучаю свои данные
+        user_info = await get_user_info(user_tg_id)
+
+        # Извлекаю данные
+        self_data = user_info['data']
+        self_gender = user_info['gender']
+        self_hobbies = user_info['hobbies']
 
         await message.edit_media(media=InputMediaPhoto(
             media=f'{self_data[0][1]}',
@@ -84,6 +83,8 @@ async def notification_to_late_incoming_reaction(message, user_tg_id):
             parse_mode='HTML',
             reply_markup=kb.users
         )
+
+    await attention_message(message, 'Пользователь добавлен в раздел\n"➡️ <b>Входящие запросы</b>"', 3)
 
 
 # Всплывающее сообщение об отправке реакции

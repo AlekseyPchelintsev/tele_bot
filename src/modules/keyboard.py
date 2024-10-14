@@ -1,6 +1,8 @@
+import asyncio
 from aiogram.types import (InlineKeyboardMarkup, InlineKeyboardButton)
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
+from src.database.requests.hobbies_data import get_hobby_id_by_hobby_name
 
 '''main = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text='🗄 Главное меню', callback_data='main_menu')],
                                              [InlineKeyboardButton(text='🚑 Помощь', callback_data='help')]])'''
@@ -50,7 +52,7 @@ def incoming_request_reaction(current_user_id):
         [InlineKeyboardButton(text='Ответить 👋',
                               callback_data=f'accept_request:{current_user_id}'),
          InlineKeyboardButton(text='Отложить 💤',
-                              callback_data='accept_late')]
+                              callback_data=f'accept_late:{current_user_id}')]
     ])
     return request_reaction
 
@@ -126,21 +128,29 @@ back_hobbies = InlineKeyboardMarkup(inline_keyboard=[
 # Клавиатура удаления хобби
 
 
-def delete_hobbies_keyboard(hobbies):
+def delete_hobbies_keyboard(user_tg_id, hobbies):
     builder = InlineKeyboardBuilder()
 
     for hobby in hobbies:
 
-        if len(hobby) > 20:
-            hobby = hobby[:20]
+        # сохраняю полное имя хобби для получения его id
+        full_name_hobby = hobby
 
+        # сокращаю имя хобби для эстетичного вывода в тексте кнопки
+        if len(hobby) > 30:
+            hobby = hobby[:40]+'...'
+
+        # получаю id хобби
+        hobby_id = get_hobby_id_by_hobby_name(user_tg_id, full_name_hobby)
+
+        # отрисовка кнопок со всеми хобби в списке
         button = InlineKeyboardButton(
-            text=f'🚫 {hobby}', callback_data=f'remove_hobby:{hobby}')
+            text=f'🚫 {hobby}', callback_data=f'remove_hobby:{hobby_id}')
         builder.row(button)  # Добавляем каждую кнопку в отдельной строке
 
     # Добавляем кнопку "Назад" в отдельной строке
     back_button = InlineKeyboardButton(
-        text="Вернуться назад", callback_data="edit_hobbies")
+        text="↩️ Вернуться назад", callback_data="edit_hobbies")
     builder.row(back_button)
 
     return builder.as_markup()
@@ -184,18 +194,11 @@ start_edit = InlineKeyboardMarkup(inline_keyboard=[
 # Поиск пользователей
 
 users_menu = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='👨‍👩‍👧‍👦 Все пользователи',
+    [InlineKeyboardButton(text='🎭 Все пользователи',
                           callback_data='all_users')],
-    [InlineKeyboardButton(text='🌆 Поиск людей в вашем городе',
-                          callback_data='search_users_in_city')],
-    [InlineKeyboardButton(text='🎸 Поиск людей по увлеченям',
-                          callback_data='search_users_by_hobby')],
+    [InlineKeyboardButton(text='🎛 Расширенный поиск',
+                          callback_data='advanced_search')],
     [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='main_menu')]])
-
-# Возврат из поиска
-
-search_users = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='users')]])
 
 # Выбор пола для поиска
 
@@ -204,6 +207,28 @@ gender_search = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='👩‍🦰', callback_data='female-search')],
     [InlineKeyboardButton(text='Не важно', callback_data='all-search')],
     [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='users')]])
+
+# выбор города для поиска
+
+city_search = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='🏘 В моем городе',
+                          callback_data='home_city')],
+    [InlineKeyboardButton(text='Не важно', callback_data='all_cities')],
+    [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='users')]])
+
+# выбор хобби для поиска
+
+hobbies_search = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='🎸 По моим увлечениям',
+                          callback_data='my_hobbies')],
+    [InlineKeyboardButton(text='Не важно', callback_data='all_hobbies')],
+    [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='users')]])
+
+# назад к поиску
+
+search_users = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='users')]
+])
 
 # Удаление профиля
 
