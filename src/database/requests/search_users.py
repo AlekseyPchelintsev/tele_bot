@@ -2,341 +2,124 @@ import nltk
 from nltk.stem import SnowballStemmer
 from nltk.corpus import stopwords
 from psycopg2.extras import RealDictCursor
+from src.database.requests.exclude_users import get_exclude_users_ids
+from src.database.requests.render_users import render_users
 from src.database.models import get_db_connection
 
-# изменение пути nltk_data для подключения списка "стоп" слов
-nltk.data.path.append('/Users/dude/dev/python/tele_bot/nltk_data')
 
-# Инициализация стеммера и списка стоп-слов
-language = 'russian'
-
-# Инициализация стеммера для русского языка
-stemmer = SnowballStemmer(language)
-
-# инициализация списка "стоп" слов
-stop_words = set(stopwords.words(language))
-
-# ----- ПОИСК ПО ХОББИ -----
-
-# список моих хобби готовых для поиска
-
-
-def get_stemmed_self_hobbies(user_tg_id):
+# ПРОВЕРЯЕТ НАЛИЧИЕ ХОТЯ БЫ ОДНОГО ПОЛЬЗОВАТЕЛЯ
+# В МОЕМ ГОРОДЕ ИЛИ В ГОРОДЕ ПО ЗАПРОСУ
+# (возвращает True или False)
+def check_users_in_city(user_tg_id, city_data, gender_data):
 
     connection = get_db_connection()
 
     try:
         with connection:
             with connection.cursor() as cursor:
-
-                cursor.execute(
-                    """
-                    SELECT hobby_name
-                    FROM userhobbies
-                    WHERE user_tg_id = %s
-                    """, (user_tg_id,)
-                )
-
-                hobbies = cursor.fetchall()
-
-                # Применяем стемминг к каждому хобби и фильтруем стоп-слова
-                stemmed_hobbies = [
-                    stemmer.stem(hobby[0].lower())
-                    for hobby in hobbies
-                    if hobby[0].lower() not in stop_words
-                ]
-
-                return stemmed_hobbies
-
-    finally:
-        connection.close()
-
-# проверка наличия хотя бы одного пользователя по моим хобби в таблице userhobbies
-
-
-def check_users_by_self_hobby(user_tg_id):
-    connection = get_db_connection()
-
-    try:
-        with connection:
-            with connection.cursor() as cursor:
-                # Получаем хобби пользователя
-                cursor.execute(
-                    """
-                    SELECT hobby_name
-                    FROM userhobbies
-                    WHERE user_tg_id = %s
-                    """, (user_tg_id,)
-                )
-
-                hobbies = cursor.fetchall()
-
-                # Если у пользователя нет хобби, возвращаем False
-                if not hobbies:
-                    return False
-
-                # стемминг и фильтрация стоп-слов
-                processed_hobbies = [
-                    stemmer.stem(hobby[0].lower())
-                    for hobby in hobbies
-                    if hobby[0].lower() not in stop_words
-                ]
-
-                # запрос с использованием LIKE
-                like_conditions = " OR ".join(
-                    ["hobby_name LIKE %s" for _ in processed_hobbies])
-                like_values = [f"%{hobby}%" for hobby in processed_hobbies]
-
-                cursor.execute(
-                    f"""
-                    SELECT user_tg_id
-                    FROM userhobbies
-                    WHERE ({like_conditions}) AND user_tg_id != %s
-                    LIMIT 1
-                    """, (*like_values, user_tg_id)
-                )
-
-                user_id = cursor.fetchone()
-
-                if user_id:
-                    return True
-                else:
-                    return False
-
-    finally:
-        connection.close()
-
-# функция выводит всех пользователей хотя бы
-# по 1 совпадению с хобби (в том числе и многословным)
-
-
-def check_users_by_hobby(hobby_name, user_tg_id):
-
-    connection = get_db_connection()
-
-    # print(f'ФАЙЛ SEARCH_USERS: {hobby_name}')
-
-    try:
-        with connection:
-            with connection.cursor() as cursor:
-
-                # формирование запроса
-                like_conditions = " OR ".join(
-                    [f"hobby_name LIKE %s" for _ in hobby_name])
-
-                # передает каждое слово из запроса (%word% не строгое соответствие)
-                params = [f'%{word}%' for word in hobby_name]
-
-                # тело SQL-запроса
-                sql_query = f"""
-                SELECT DISTINCT user_tg_id
-                FROM userhobbies
-                WHERE ({like_conditions}) AND user_tg_id != %s
-                """
-
-                # запрос к бд
-                cursor.execute(sql_query, params + [user_tg_id])
-
-                # плучаю список id
-                user_tg_ids = cursor.fetchall()
-
-                if not user_tg_ids:
-                    return
-                return user_tg_ids
-    finally:
-        connection.close()
-
-# функция выводит всех пользователей хотя бы
-# по 1 совпадению с списком хобби (в том числе и многословных)
-
-
-def get_users_by_self_hobby(hobby_name, user_tg_id):
-    connection = get_db_connection()
-
-    try:
-        with connection:
-            with connection.cursor() as cursor:
-                # Формирование условий LIKE для каждого слова в каждом хобби
-                like_conditions = []
-                params = []
-
-                for hobby in hobby_name:
-                    # Разбиваем хобби на слова
-                    words = hobby.split()
-                    # Формируем условия LIKE для каждого слова
-                    conditions = " AND ".join(
-                        [f"hobby_name LIKE %s" for _ in words])
-                    like_conditions.append(f"({conditions})")
-                    # Добавляем параметры для каждого слова
-                    params.extend([f'%{word}%' for word in words])
-
-                    # Выводим текущее состояние like_conditions
-                    print(f"Текущие условия для хобби '{hobby}': {conditions}")
-                    print(f"Текущие like_conditions: {like_conditions}")
-
-                # Объединяем все условия
-                final_like_conditions = " OR ".join(like_conditions)
-
-                # Выводим финальные условия
-                print(f"Финальные условия: {final_like_conditions}")
-
-                # Тело SQL-запроса
-                sql_query = f"""
-                SELECT DISTINCT user_tg_id
-                FROM userhobbies
-                WHERE ({final_like_conditions}) AND user_tg_id != %s
-                """
-
-                # Запрос к БД
-                cursor.execute(sql_query, params + [user_tg_id])
-
-                # Получаем список id
-                user_tg_ids = cursor.fetchall()
-
-                if not user_tg_ids:
-                    return
-                return user_tg_ids
-    finally:
-        connection.close()
-
-
-# Выборка пользователей по хобби из таблицы userhobbies
-
-
-def get_users_by_hobby(hobby, user_tg_id, gender_data, exclude_ids=None):
-    connection = get_db_connection()
-
-    user_tg_ids_hobby = check_users_by_hobby(hobby, user_tg_id)
-    user_tg_ids_gender = check_users_by_gender(user_tg_id, gender_data)
-
-    try:
-        # Извлекаю ID пользователей из кортежей
-        user_tg_ids_hobby = {uid for (uid,) in user_tg_ids_hobby}
-        user_tg_ids_gender = {uid for (uid,) in user_tg_ids_gender}
-        # Нахожу пересечение
-        user_tg_ids = user_tg_ids_hobby & user_tg_ids_gender
-    except:
-        return
-
-    # Исключаю указанные ID, если они есть
-    if exclude_ids is not None:
-        user_tg_ids -= set(exclude_ids)
-
-    try:
-        with connection:
-            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
-                if not user_tg_ids:
-                    return
-                else:
-                    cursor.execute(
-                        """
-                        SELECT 
-                            user_tg_id, 
-                            name, 
-                            photo_id, 
-                            nickname, 
-                            gender, 
-                            age,
-                            city
-                        FROM users 
-                        WHERE user_tg_id = ANY(%s)
-                        """, (list(user_tg_ids),)
-                    )
-                    user_data = cursor.fetchall()
-
-                    cursor.execute(
-                        """
-                        SELECT 
-                            user_tg_id,
-                            hobby_name
-                        FROM userhobbies
-                        WHERE user_tg_id = ANY(%s)   
-                        """, (list(user_tg_ids),)
-                    )
-                    hobbies_data = cursor.fetchall()
-
-                    data = [(row['user_tg_id'],
-                             row['name'],
-                             row['photo_id'],
-                             row['nickname'],
-                             row['gender'],
-                             row['age'],
-                             row['city'])
-                            for row in user_data]
-
-                hobbies = {}
-
-                for row in hobbies_data:
-                    user_tg_id = row['user_tg_id']
-                    hobby_name = row['hobby_name']
-                    hobbies.setdefault(user_tg_id, []).append(hobby_name)
-
-                # Добавляем список хобби к данным пользователей
-                for i in range(len(data)):
-                    user_tg_id = data[i][0]  # Извлекаем user_tg_id
-                    hobbies_list = hobbies.get(
-                        user_tg_id)  # Получаем список хобби
-                    data[i] = (*data[i], hobbies_list)
-
-                return data
-    finally:
-        connection.close()
-
-# ----- ПОИСК ПО ГОРОДУ -----
-
-# поиск в моем городе
-
-
-def check_users_self_city(user_tg_id, gender_data):
-    connection = get_db_connection()
-
-    try:
-        with connection:
-            with connection.cursor() as cursor:
-
-                cursor.execute(
-                    """
-                    SELECT city
-                    FROM users
-                    WHERE user_tg_id = %s
-                    """, (user_tg_id,)
-                )
-
-                user_city = cursor.fetchone()
-                user_city_row = user_city[0]
 
                 if gender_data == 'all':
 
+                    # получаю 1 пользователя любого пола
                     cursor.execute(
                         """
                         SELECT user_tg_id
                         FROM users
                         WHERE city = %s AND user_tg_id != %s
-                        """, (user_city_row, user_tg_id)
+                        LIMIT 1
+                        """, (city_data, user_tg_id)
                     )
-                    user_tg_ids = cursor.fetchone()
+                    check_user_id = cursor.fetchone()
 
                 else:
 
+                    # получаю 1 пользователя конкретного пола
                     cursor.execute(
                         """
                     SELECT user_tg_id
                     FROM users
                     WHERE city = %s AND gender = %s AND user_tg_id != %s
-                    """, (user_city_row, gender_data, user_tg_id)
+                    LIMIT 1
+                    """, (city_data, gender_data, user_tg_id)
                     )
-                    user_tg_ids = cursor.fetchone()
+                    check_user_id = cursor.fetchone()
 
-                if not user_tg_ids:
-                    return
-                return user_tg_ids
+                if check_user_id:
+                    return True
+                else:
+                    return False
     finally:
         connection.close()
 
-# поиск по названию города
+
+# ----- ПОИСК ПОЛЬЗОВАТЕЛЕЙ ПО ХОББИ -----
 
 
-def check_users_by_city(user_tg_id, city_name, gender_data):
+# ВОЗВРАЩАЕТ список моих хобби пропущеных через nltk (стемминг) для поиска
+def get_stemmed_hobbies_list(user_tg_id: int = None, hobby_name: str = None):
+
+    # НАСТРОЙКА СТЕММЕРА
+    # Настройка пути для nltk
+    nltk.data.path.append('/Users/dude/dev/python/tele_bot/nltk_data')
+
+    # Инициализация стеммера и списка стоп-слов
+    language = 'russian'
+    stemmer = SnowballStemmer(language)
+    stop_words = set(stopwords.words(language))
+
+    # Если передана строка hobby_name, выполняем стемминг для её слов и возвращаем результат
+    if hobby_name:
+        return [
+            ' '.join(
+                stemmer.stem(word.lower())  # Стемминг для каждого слова
+                for word in hobby_name.split()  # Разбиваем строку на слова
+                if word.lower() not in stop_words  # Убираем стоп-слова
+            )
+        ]
+
+    # Если передан user_tg_id, выполняем поиск "моих" хобби в бд
+    if user_tg_id is not None:
+        connection = get_db_connection()
+
+        try:
+            with connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        """
+                        SELECT hobby_name
+                        FROM userhobbies
+                        WHERE user_tg_id = %s
+                        """, (user_tg_id,)
+                    )
+
+                    hobbies = cursor.fetchall()
+
+                    if not hobbies:
+
+                        return False
+
+                    else:
+
+                        # Применяем стемминг к каждому слову в каждом хобби
+                        stemmed_hobbies = [
+                            ' '.join(
+                                stemmer.stem(word.lower())
+                                for word in hobby[0].split()
+                                if word.lower() not in stop_words
+                            )
+                            for hobby in hobbies
+                        ]
+
+                        # Удаляем пустые строки, если они есть (на всякий случай)
+                        return [hobby for hobby in stemmed_hobbies if hobby]
+
+        finally:
+            connection.close()
+
+
+# ПРОВЕРЯЕТ НАЛИЧИЕ ХОТЯ БЫ ОДНОГО ПОЛЬЗОВАТЕЛЯ (ВОЗВРАЩАЕТ True False)
+# с учетом запроса пола и города
+def check_users_by_hobbies(my_user_tg_id, gender, city, hobbies):
 
     connection = get_db_connection()
 
@@ -344,17 +127,59 @@ def check_users_by_city(user_tg_id, city_name, gender_data):
         with connection:
             with connection.cursor() as cursor:
 
-                cursor.execute(
-                    """
-                    SELECT user_tg_id
-                    FROM users
-                    WHERE city = %s AND gender = %s AND user_tg_id != %s
-                    """, (city_name, gender_data, user_tg_id)
-                )
+                # Базовый SQL-запрос с фильтрами и LIMIT 1
+                base_query = """
+                SELECT users.user_tg_id
+                FROM users
+                LEFT JOIN userhobbies ON users.user_tg_id = userhobbies.user_tg_id
+                WHERE users.user_tg_id != %s
+                """
+                params = [my_user_tg_id]
 
-                user_id = cursor.fetchone()
+                # Добавляем фильтр по полу, если значение не "all"
+                if gender != "all":
+                    base_query += " AND users.gender = %s"
+                    params.append(gender)
 
-                if user_id:
+                # Добавляем фильтр по городу, если значение не "all"
+                if city != "all":
+                    base_query += " AND users.city ILIKE %s"
+                    params.append(f"%{city}%")
+
+                # Первый запрос: подстрочный поиск по полным хобби
+                if hobbies != ["all"]:
+                    hobby_filters = " OR ".join(
+                        ["userhobbies.hobby_name ILIKE %s"] * len(hobbies)
+                    )
+                    query_full_match = base_query + \
+                        f" AND ({hobby_filters}) LIMIT 1"
+                    params_full_match = params + \
+                        [f"%{hobby}%" for hobby in hobbies]
+
+                    # Выполняем первый запрос
+                    cursor.execute(query_full_match, params_full_match)
+                    if cursor.fetchone():  # Если найдено первое совпадение
+                        return True
+
+                # Второй запрос: поиск по словам, если первый не дал результата
+                hobby_conditions = []
+                for hobby in hobbies:
+                    words = hobby.split()  # Разбиваем хобби на отдельные слова
+                    word_filters = " OR ".join(
+                        ["userhobbies.hobby_name ILIKE %s"] * len(words)
+                    )
+                    hobby_conditions.append(f"({word_filters})")
+                    params.extend([f"%{word}%" for word in words])
+
+                query_word_match = base_query + \
+                    f" AND ({' OR '.join(hobby_conditions)}) LIMIT 1"
+
+                # Выполняем второй запрос
+                cursor.execute(query_word_match, params)
+                result = cursor.fetchone()
+
+                # Возвращаем True, если есть хотя бы 1 совпадение
+                if result:
                     return True
                 else:
                     return False
@@ -363,104 +188,94 @@ def check_users_by_city(user_tg_id, city_name, gender_data):
         connection.close()
 
 
-# ----- ПОИСК ПО ПОЛУ -----
+# НАХОДИТ ID ВСЕХ ПОЛЬЗОВАТЕЛЕЙ, ОБРАБАТЫВАЕТ IDs И ВОЗВРАЩАЕТ ОБРАБОТАННЫЕ ДАННЫЕ
+def search_users(user_tg_id, gender, city, hobbies):
+    # Получаем список пользователей для исключения
+    exclude_users_ids = get_exclude_users_ids(user_tg_id)
 
-# Проверка наличия пользователей определенного пола
+    # Преобразуем хобби в список, если передано строкой
+    if isinstance(hobbies, str):
+        hobbies = [hobbies]
 
-
-def check_users_by_gender(user_tg_id, gender_data):
     connection = get_db_connection()
 
     try:
         with connection:
             with connection.cursor() as cursor:
+                # Базовый запрос с исключением пользователей
+                base_query = """
+                SELECT users.user_tg_id
+                FROM users
+                LEFT JOIN userhobbies ON users.user_tg_id = userhobbies.user_tg_id
+                WHERE users.user_tg_id != %s
+                """
+                params = [user_tg_id]
 
-                if gender_data == 'all':
-                    cursor.execute(
-                        """
-                        SELECT user_tg_id
-                        FROM users
-                        WHERE user_tg_id != %s
-                        """, (user_tg_id,)
-                    )
-                else:
-                    cursor.execute(
-                        """
-                        SELECT user_tg_id
-                        FROM users
-                        WHERE gender = %s AND user_tg_id != %s
-                        """, (gender_data, user_tg_id)
-                    )
+                # Добавляем фильтр на исключение пользователей
+                if exclude_users_ids:
+                    placeholders = ', '.join(['%s'] * len(exclude_users_ids))
+                    base_query += (f" AND users.user_tg_id NOT IN "
+                                   f"({placeholders})")
+                    params.extend(exclude_users_ids)
 
-                user_tg_ids = cursor.fetchall()
+                # Фильтр по полу
+                if gender != "all":
+                    base_query += " AND users.gender = %s"
+                    params.append(gender)
 
-                if not user_tg_ids:
-                    return
-                return user_tg_ids
-    finally:
-        connection.close()
+                # Фильтр по городу
+                if city != "all":
+                    base_query += " AND users.city = %s"
+                    params.append(city)
 
+                # Если hobbies = ["all"], возвращаем без фильтра по хобби
+                if hobbies == ["all"]:
+                    print("Запрос без хобби:", base_query)
+                    print("Параметры:", params)
 
-def get_users_by_gender(user_tg_id, gender_data):
-    connection = get_db_connection()
-    user_tg_ids = check_users_by_gender(user_tg_id, gender_data)
+                    cursor.execute(base_query, params)
+                    users = cursor.fetchall()
+                    return render_users([user[0] for user in users])
 
-    try:
-        with connection:
-            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
-                if not user_tg_ids:
-                    return
-                else:
-                    cursor.execute(
-                        """
-                        SELECT 
-                            user_tg_id, 
-                            name, 
-                            photo_id, 
-                            nickname, 
-                            gender, 
-                            age,
-                            city
-                        FROM users 
-                        WHERE user_tg_id = ANY(%s)
-                        """, (user_tg_ids,)
-                    )
-                    user_data = cursor.fetchall()
+                # Первый запрос: построчный поиск по полным хобби
+                hobby_filters = " OR ".join(
+                    ["userhobbies.hobby_name ILIKE %s"] * len(hobbies))
+                query_with_hobbies = f"{base_query} AND ({hobby_filters})"
+                params_with_hobbies = params + \
+                    [f"%{hobby}%" for hobby in hobbies]
 
-                    cursor.execute(
-                        """
-                        SELECT 
-                            user_tg_id,
-                            hobby_name
-                        FROM userhobbies
-                        WHERE user_tg_id = ANY(%s)   
-                        """, (user_tg_ids,)
-                    )
-                    hobbies_data = cursor.fetchall()
+                print("Первый запрос:", query_with_hobbies)
+                print("Параметры:", params_with_hobbies)
 
-                    data = [(row['user_tg_id'],
-                             row['name'],
-                             row['photo_id'],
-                             row['nickname'],
-                             row['gender'],
-                             row['age'],
-                             row['city'])
-                            for row in user_data]
+                cursor.execute(query_with_hobbies, params_with_hobbies)
+                users = cursor.fetchall()
 
-                hobbies = {}
+                # Если найдено 5 и более пользователей, возвращаем результат
+                if len(users) >= 5:
+                    return render_users([user[0] for user in users])
 
-                for row in hobbies_data:
-                    user_tg_id = row['user_tg_id']
-                    hobbie_name = row['hobby_name']
-                    hobbies.setdefault(user_tg_id, []).append(hobbie_name)
+                # Второй запрос: поиск по отдельным словам, если найдено менее 5 пользователей
+                hobby_conditions = []
+                params_word_match = params.copy()
 
-                # Добавляем список хобби к данным пользователей
-                for i in range(len(data)):
-                    user_tg_id = data[i][0]  # Извлекаем user_tg_id
-                    hobbies_list = hobbies.get(
-                        user_tg_id)  # Получаем список хобби
-                    data[i] = (*data[i], hobbies_list)
+                for hobby in hobbies:
+                    words = hobby.split()  # Разбиваем хобби на слова
+                    word_filters = " OR ".join(
+                        ["userhobbies.hobby_name ILIKE %s"] * len(words))
+                    hobby_conditions.append(f"({word_filters})")
+                    params_word_match.extend([f"%{word}%" for word in words])
 
-                return data
+                query_word_match = f"{
+                    base_query} AND ({' OR '.join(hobby_conditions)})"
+
+                print("Второй запрос:", query_word_match)
+                print("Параметры:", params_word_match)
+
+                cursor.execute(query_word_match, params_word_match)
+                users = cursor.fetchall()
+
+                # Возвращаем список пользователей
+                return render_users([user[0] for user in users])
+
     finally:
         connection.close()

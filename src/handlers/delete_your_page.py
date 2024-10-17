@@ -5,7 +5,7 @@ from aiogram import F, Router, Bot
 from aiogram.fsm.context import FSMContext
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
-from src.database.requests.user_data import get_user_data
+from src.database.requests.user_data import get_self_data
 from src.modules.notifications import loader
 from src.database.requests.delete_profile import delete_profile
 from config import delete_profile_id
@@ -19,7 +19,7 @@ router = Router()
 async def edit_city(callback: CallbackQuery, state: FSMContext):
 
     user_tg_id = callback.from_user.id
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
     gender = await check_gender(data[0][3])
     hobbies = await hobbies_list(data[1])
     edit_message = await callback.message.edit_media(

@@ -37,7 +37,7 @@ reactions = InlineKeyboardMarkup(inline_keyboard=[
                           callback_data='incoming_reactions_list')],
     [InlineKeyboardButton(text='🗂 Мои контакты',
                           callback_data='match_reactions_list')],
-    [InlineKeyboardButton(text='🚫 Заблокированные пользователи',
+    [InlineKeyboardButton(text='🚷 Скрытые пользователи',
                           callback_data='ignore_list')],
     [InlineKeyboardButton(text='↩️ Вернуться назад',
                           callback_data='main_menu')]
@@ -59,7 +59,12 @@ def incoming_request_reaction(current_user_id):
 
 error_add_to_contacts = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Понятно 👌',
-                          callback_data='main_menu')]
+                          callback_data='close_notification')]
+])
+
+error_add_to_contacts_from_reactions_menu = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='Понятно 👌',
+                          callback_data='all_reactions')]
 ])
 
 # Если нет реакций
@@ -78,8 +83,8 @@ def match_reactions(nickname):
     match_users_reactions = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text='✉️ Перейти в чат',
                               url=f'https://t.me/{nickname}')],
-        [InlineKeyboardButton(text='↩️ В главное меню',
-                              callback_data='main_menu')]
+        [InlineKeyboardButton(text='Закрыть уведомление',
+                              callback_data='close_notification')]
     ])
     return match_users_reactions
 
@@ -198,7 +203,7 @@ users_menu = InlineKeyboardMarkup(inline_keyboard=[
                           callback_data='all_users')],
     [InlineKeyboardButton(text='🎛 Расширенный поиск',
                           callback_data='advanced_search')],
-    [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='main_menu')]])
+    [InlineKeyboardButton(text='↩️ Главное меню', callback_data='main_menu')]])
 
 # Выбор пола для поиска
 
@@ -206,15 +211,19 @@ gender_search = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='👨‍🦰', callback_data='male-search')],
     [InlineKeyboardButton(text='👩‍🦰', callback_data='female-search')],
     [InlineKeyboardButton(text='Не важно', callback_data='all-search')],
-    [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='users')]])
+    [InlineKeyboardButton(text='↩️ Выйти в меню', callback_data='users')]])
 
 # выбор города для поиска
 
-city_search = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='🏘 В моем городе',
-                          callback_data='home_city')],
-    [InlineKeyboardButton(text='Не важно', callback_data='all_cities')],
-    [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='users')]])
+
+def search_in_city(home_city):
+    city_search = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=f'🏘 В моем городе ({home_city})',
+                              callback_data='home_city')],
+        [InlineKeyboardButton(text='Не важно', callback_data='all_cities')],
+        [InlineKeyboardButton(text='↩️ Выйти в меню', callback_data='users')]])
+    return city_search
+
 
 # выбор хобби для поиска
 
@@ -222,12 +231,25 @@ hobbies_search = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='🎸 По моим увлечениям',
                           callback_data='my_hobbies')],
     [InlineKeyboardButton(text='Не важно', callback_data='all_hobbies')],
-    [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='users')]])
+    [InlineKeyboardButton(text='↩️ Выйти в меню', callback_data='users')]
+])
 
+# изменить один из параметров поиска (?)
+'''
+change_search_params = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='⚧️ Пол',
+                          callback_data='change_gender_search')],
+    [InlineKeyboardButton(text='🏘 Город', callback_data='change_city_search')],
+    [InlineKeyboardButton(text='🎸 Увлечения',
+                          callback_data='change_hobby_search')],
+    [InlineKeyboardButton(text='↩️ Выйти в меню',
+                          callback_data='change_hobby_search')]
+])
+'''
 # назад к поиску
 
 search_users = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='users')]
+    [InlineKeyboardButton(text='↩️ В меню поиска', callback_data='users')]
 ])
 
 # Удаление профиля
@@ -248,96 +270,303 @@ class Pagination(CallbackData, prefix='pg'):
     list_type: str
 
 
-def paginator(page: int = 0, list_type: str = 'default', action: str = 'like'):
+# клавиатура пагинации
+def paginator(page: int = 0, list_type: str = 'default', action: str = 'like', total_pages: int = 1):
     builder = InlineKeyboardBuilder()
+
+    # Логика для текста кнопок "Назад" и "Вперед"
+    # Стрелка только если не на первой странице
+    prev_text = '◀️' if page > 0 else ' '
+    # Стрелка только если не на последней странице
+    next_text = '▶️' if page < total_pages - 1 else ' '
+
+    # Логика для callback_data: создаём её только если кнопка активна
+    prev_callback = Pagination(
+        action='prev', page=page, list_type=list_type).pack() if page > 0 else None
+    next_callback = Pagination(action='next', page=page,
+                               list_type=list_type).pack() if page < total_pages - 1 else None
+
+    # Первый ряд: кнопки "Назад", "Меню", "Вперед"
     builder.row(
-        InlineKeyboardButton(text='◀️', callback_data=Pagination(
-            action='prev', page=page, list_type=list_type).pack()),
-        InlineKeyboardButton(text='↩️ Назад', callback_data=Pagination(
+        InlineKeyboardButton(
+            text=prev_text, callback_data=prev_callback or 'ignore'),
+        InlineKeyboardButton(text='↩️ Меню', callback_data=Pagination(
             action='menu', page=page, list_type=list_type).pack()),
-        InlineKeyboardButton(text='▶️', callback_data=Pagination(
-            action='next', page=page, list_type=list_type).pack()),
-        InlineKeyboardButton(text='Отправить реакцию 👋', callback_data=Pagination(
-            action='like', page=page, list_type=list_type).pack()),
-        width=3
+        InlineKeyboardButton(
+            text=next_text, callback_data=next_callback or 'ignore')
     )
+
+    # Второй ряд: кнопка "Отправить реакцию"
+    builder.row(
+        InlineKeyboardButton(text='Отправить реакцию 👋', callback_data=Pagination(
+            action='like', page=page, list_type=list_type).pack())
+    )
+
+    # Третий ряд: кнопка "Скрыть"
+    builder.row(
+        InlineKeyboardButton(text='Скрыть пользователя 🚷', callback_data=Pagination(
+            action='hide', page=page, list_type=list_type).pack())
+    )
+
     return builder.as_markup()
 
 
 # Клавиатуры пагинации просмотра реакций
-
-
 class PaginationLikes(CallbackData, prefix='pg_likes'):
     action: str
     page: int
     list_type: str
 
 
+'''
 def paginator_likes(page: int = 0, list_type: str = 'default', action: str = 'in_reactions_dislike'):
     builder_likes = InlineKeyboardBuilder()
+
+    # Первый ряд: кнопки "Назад", "Вперед" и "Меню"
     builder_likes.row(
         InlineKeyboardButton(text='◀️', callback_data=PaginationLikes(
             action='prev_likes', page=page, list_type=list_type).pack()),
-        InlineKeyboardButton(text='↩️ Назад', callback_data=PaginationLikes(
+        InlineKeyboardButton(text='↩️ Меню', callback_data=PaginationLikes(
             action='menu_likes', page=page, list_type=list_type).pack()),
         InlineKeyboardButton(text='▶️', callback_data=PaginationLikes(
-            action='next_likes', page=page, list_type=list_type).pack()),
-        InlineKeyboardButton(text='Отменить реакцию 🚫', callback_data=PaginationLikes(
-            action='in_reactions_dislike', page=page, list_type=list_type).pack()),
-        width=3
+            action='next_likes', page=page, list_type=list_type).pack())
     )
+
+    # Второй ряд: кнопка "Отменить реакцию"
+    builder_likes.row(
+        InlineKeyboardButton(text='Отменить реакцию 🚫', callback_data=PaginationLikes(
+            action='in_reactions_dislike', page=page, list_type=list_type).pack())
+    )
+
     return builder_likes.as_markup()
+'''
 
 
+def paginator_likes(page: int = 0, list_type: str = 'default', action: str = 'in_reactions_dislike', total_pages: int = 1):
+    builder = InlineKeyboardBuilder()
+
+    # Логика для текста кнопок "Назад" и "Вперед"
+    # Стрелка только если не на первой странице
+    prev_text = '◀️' if page > 0 else ' '
+    # Стрелка только если не на последней странице
+    next_text = '▶️' if page < total_pages - 1 else ' '
+
+    # Логика для callback_data: создаём её только если кнопка активна
+    prev_callback = PaginationLikes(
+        action='prev_likes', page=page, list_type=list_type).pack() if page > 0 else None
+    next_callback = PaginationLikes(action='next_likes', page=page,
+                                    list_type=list_type).pack() if page < total_pages - 1 else None
+
+    # Первый ряд: кнопки "Назад", "Вперед" и "Меню"
+    builder.row(
+        InlineKeyboardButton(
+            text=prev_text, callback_data=prev_callback or 'ignore'),
+        InlineKeyboardButton(text='↩️ Меню', callback_data=PaginationLikes(
+            action='menu_likes', page=page, list_type=list_type).pack()),
+        InlineKeyboardButton(
+            text=next_text, callback_data=next_callback or 'ignore')
+    )
+
+    # Второй ряд: кнопка "Отменить реакцию"
+    builder.row(
+        InlineKeyboardButton(text='Отменить реакцию 🚫', callback_data=PaginationLikes(
+            action='in_reactions_dislike', page=page, list_type=list_type).pack())
+    )
+
+    return builder.as_markup()
+
+
+'''
 def incoming_reactions(page: int = 0, list_type: str = 'default', action: str = 'in_reactions_like'):
     builder_incoming_likes = InlineKeyboardBuilder()
+
+    # Первый ряд: кнопки "Назад", "Вперед" и "Меню"
     builder_incoming_likes.row(
         InlineKeyboardButton(text='◀️', callback_data=PaginationLikes(
             action='prev_likes', page=page, list_type=list_type).pack()),
-        InlineKeyboardButton(text='↩️ Назад', callback_data=PaginationLikes(
+        InlineKeyboardButton(text='↩️ Меню', callback_data=PaginationLikes(
             action='menu_likes', page=page, list_type=list_type).pack()),
         InlineKeyboardButton(text='▶️', callback_data=PaginationLikes(
-            action='next_likes', page=page, list_type=list_type).pack()),
-        InlineKeyboardButton(text='Ответить 👋', callback_data=PaginationLikes(
-            action='in_reactions_like', page=page, list_type=list_type).pack()),
-        InlineKeyboardButton(text='Не интересно 🚫', callback_data=PaginationLikes(
-            action='delete_incoming', page=page, list_type=list_type).pack()),
-        width=3
+            action='next_likes', page=page, list_type=list_type).pack())
     )
+
+    # Второй ряд: кнопки "Ответить"
+    builder_incoming_likes.row(
+        InlineKeyboardButton(text='Ответить 👋', callback_data=PaginationLikes(
+            action='in_reactions_like', page=page, list_type=list_type).pack())
+    )
+
+    # Третий ряд: кнопка "Не интересно"
+    builder_incoming_likes.row(
+        InlineKeyboardButton(text='Не интересно 🚫', callback_data=PaginationLikes(
+            action='delete_incoming', page=page, list_type=list_type).pack())
+    )
+
     return builder_incoming_likes.as_markup()
+'''
 
 
+def incoming_reactions(page: int = 0, list_type: str = 'default', action: str = 'in_reactions_like', total_pages: int = 1):
+    builder = InlineKeyboardBuilder()
+
+    # Логика для текста кнопок "Назад" и "Вперед"
+    # Стрелка только если не на первой странице
+    prev_text = '◀️' if page > 0 else ' '
+    # Стрелка только если не на последней странице
+    next_text = '▶️' if page < total_pages - 1 else ' '
+
+    # Логика для callback_data: создаём её только если кнопка активна
+    prev_callback = PaginationLikes(
+        action='prev_likes', page=page, list_type=list_type).pack() if page > 0 else None
+    next_callback = PaginationLikes(action='next_likes', page=page,
+                                    list_type=list_type).pack() if page < total_pages - 1 else None
+
+    # Первый ряд: кнопки "Назад", "Вперед" и "Меню"
+    builder.row(
+        InlineKeyboardButton(
+            text=prev_text, callback_data=prev_callback or 'ignore'),
+        InlineKeyboardButton(text='↩️ Меню', callback_data=PaginationLikes(
+            action='menu_likes', page=page, list_type=list_type).pack()),
+        InlineKeyboardButton(
+            text=next_text, callback_data=next_callback or 'ignore')
+    )
+
+    # Второй ряд: кнопки "Ответить"
+    builder.row(
+        InlineKeyboardButton(text='Ответить 👋', callback_data=PaginationLikes(
+            action='in_reactions_like', page=page, list_type=list_type).pack())
+    )
+
+    # Третий ряд: кнопка "Не интересно"
+    builder.row(
+        InlineKeyboardButton(text='Не интересно 🚫', callback_data=PaginationLikes(
+            action='delete_incoming', page=page, list_type=list_type).pack())
+    )
+
+    return builder.as_markup()
+
+
+'''
 def match_reactions_pagination(page: int = 0, list_type: str = '', nickname: str = '', action: str = 'start_chat'):
     builder_incoming_likes = InlineKeyboardBuilder()
+
+    # Первый ряд: кнопки "Назад", "Вперед" и "Меню"
     builder_incoming_likes.row(
         InlineKeyboardButton(text='◀️', callback_data=PaginationLikes(
             action='prev_likes', page=page, list_type=list_type).pack()),
         InlineKeyboardButton(text='↩️ Назад', callback_data=PaginationLikes(
             action='menu_likes', page=page, list_type=list_type).pack()),
         InlineKeyboardButton(text='▶️', callback_data=PaginationLikes(
-            action='next_likes', page=page, list_type=list_type).pack()),
-        InlineKeyboardButton(text='✉️ Чат',
-                             url=f'https://t.me/{nickname}'),
+            action='next_likes', page=page, list_type=list_type).pack())
+    )
+
+    # Второй ряд: кнопка "Чат"
+    builder_incoming_likes.row(
+        InlineKeyboardButton(text='✉️ Чат', url=f'https://t.me/{nickname}'),
+    )
+
+    # Третий ряд: кнопка "Удалить"
+    builder_incoming_likes.row(
         InlineKeyboardButton(text='🚫 Удалить', callback_data=PaginationLikes(
-            action='delete_contact', page=page, list_type=list_type).pack()),
-        width=3
+            action='delete_contact', page=page, list_type=list_type).pack())
     )
 
     return builder_incoming_likes.as_markup()
+'''
 
 
+def match_reactions_pagination(page: int = 0, list_type: str = '', nickname: str = '', action: str = 'start_chat', total_pages: int = 1):
+    builder = InlineKeyboardBuilder()
+
+    # Логика для текста кнопок "Назад" и "Вперед"
+    # Стрелка только если не на первой странице
+    prev_text = '◀️' if page > 0 else ' '
+    # Стрелка только если не на последней странице
+    next_text = '▶️' if page < total_pages - 1 else ' '
+
+    # Логика для callback_data: создаём её только если кнопка активна
+    prev_callback = PaginationLikes(
+        action='prev_likes', page=page, list_type=list_type).pack() if page > 0 else None
+    next_callback = PaginationLikes(action='next_likes', page=page,
+                                    list_type=list_type).pack() if page < total_pages - 1 else None
+
+    # Первый ряд: кнопки "Назад", "Вперед" и "Меню"
+    builder.row(
+        InlineKeyboardButton(
+            text=prev_text, callback_data=prev_callback or 'ignore'),
+        InlineKeyboardButton(text='↩️ Меню', callback_data=PaginationLikes(
+            action='menu_likes', page=page, list_type=list_type).pack()),
+        InlineKeyboardButton(
+            text=next_text, callback_data=next_callback or 'ignore')
+    )
+
+    # Второй ряд: кнопка "Чат"
+    builder.row(
+        InlineKeyboardButton(text='✉️ Чат', url=f'https://t.me/{nickname}'),
+    )
+
+    # Третий ряд: кнопка "Удалить"
+    builder.row(
+        InlineKeyboardButton(text='🚫 Удалить', callback_data=PaginationLikes(
+            action='delete_contact', page=page, list_type=list_type).pack())
+    )
+
+    return builder.as_markup()
+
+
+'''
 def ignored_users_pagination(page: int = 0, list_type: str = '', action: str = 'start_dialog'):
     builder_incoming_likes = InlineKeyboardBuilder()
+
+    # Первый ряд: кнопки "Назад", "Вперед" и "Меню"
     builder_incoming_likes.row(
         InlineKeyboardButton(text='◀️', callback_data=PaginationLikes(
             action='prev_likes', page=page, list_type=list_type).pack()),
         InlineKeyboardButton(text='↩️ Назад', callback_data=PaginationLikes(
             action='menu_likes', page=page, list_type=list_type).pack()),
         InlineKeyboardButton(text='▶️', callback_data=PaginationLikes(
-            action='next_likes', page=page, list_type=list_type).pack()),
+            action='next_likes', page=page, list_type=list_type).pack())
+    )
+
+    # Второй ряд: кнопка "Вернуть в поиск"
+    builder_incoming_likes.row(
         InlineKeyboardButton(text='♻️ Вернуть в поиск', callback_data=PaginationLikes(
-            action='remove_from_ignore', page=page, list_type=list_type).pack()),
-        width=3
+            action='remove_from_ignore', page=page, list_type=list_type).pack())
     )
 
     return builder_incoming_likes.as_markup()
+'''
+
+
+def ignored_users_pagination(page: int = 0, list_type: str = 'ignore_users_list', action: str = 'start_dialog', total_pages: int = 1):
+    builder = InlineKeyboardBuilder()
+
+    # Логика для текста кнопок "Назад" и "Вперед"
+    # Стрелка только если не на первой странице
+    prev_text = '◀️' if page > 0 else ' '
+    # Стрелка только если не на последней странице
+    next_text = '▶️' if page < total_pages - 1 else ' '
+
+    # Логика для callback_data: создаём её только если кнопка активна
+    prev_callback = PaginationLikes(
+        action='prev_likes', page=page, list_type=list_type).pack() if page > 0 else None
+    next_callback = PaginationLikes(action='next_likes', page=page,
+                                    list_type=list_type).pack() if page < total_pages - 1 else None
+
+    # Первый ряд: кнопки "Назад", "Вперед" и "Меню"
+    builder.row(
+        InlineKeyboardButton(
+            text=prev_text, callback_data=prev_callback or 'ignore'),
+        InlineKeyboardButton(text='↩️ Меню', callback_data=PaginationLikes(
+            action='menu_likes', page=page, list_type=list_type).pack()),
+        InlineKeyboardButton(
+            text=next_text, callback_data=next_callback or 'ignore')
+    )
+
+    # Второй ряд: кнопка "Вернуть в поиск"
+    builder.row(
+        InlineKeyboardButton(text='♻️ Вернуть в поиск', callback_data=PaginationLikes(
+            action='remove_from_ignore', page=page, list_type=list_type).pack())
+    )
+
+    return builder.as_markup()

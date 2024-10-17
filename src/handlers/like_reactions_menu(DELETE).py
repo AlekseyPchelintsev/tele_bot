@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from config import delete_profile_id
 from aiogram import Bot
 from aiogram.types import CallbackQuery, InputMediaPhoto
@@ -7,7 +6,11 @@ from aiogram import F, Router
 from contextlib import suppress
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
-from src.modules.pagination_logic import no_data_after_reboot_bot, back_callback, load_pagination
+from src.modules.pagination_logic import (no_data_after_reboot_bot_reactions,
+                                          back_callback,
+                                          load_pagination,
+                                          load_pagination_start_or_end_data)
+
 from src.modules.notifications import (bot_notification_about_dislike,
                                        bot_send_message_about_like,
                                        bot_send_message_matchs_likes,
@@ -31,9 +34,47 @@ import src.modules.keyboard as kb
 
 router = Router()
 
+
+# презагрузка пагинации после лайка/дизлайка/удаления из контактов/удадения из игнора
+async def reload_reaction_pagination_after_hide_or_like(callback,
+                                                        user_tg_id,
+                                                        data,
+                                                        keyboard,
+                                                        list_type,
+                                                        page):
+
+    # удаляем пользователя из data
+    data.pop(page)
+
+    # если False (data пустая)
+    if not data:
+
+        # выводим сообщение об отсутствии пользователей
+        text_info = '<b>Список пользователей пуст</b> 🤷‍♂️'
+        await back_callback(callback.message,
+                            user_tg_id,
+                            'back_reactions',
+                            text_info)
+
+    # если True (data не пустая)
+    else:
+        total_pages = len(data)
+        # Обновляем номер страницы
+        if page >= len(data):
+
+            # Переход на последнюю страницу, если текущая выходит за пределы
+            page = len(data) - 1
+
+            # отрисовываю клавиатуру с учетом изменений
+        await load_pagination_start_or_end_data(callback.message,
+                                                data,
+                                                keyboard,
+                                                list_type,
+                                                total_pages,
+                                                page)
+
+'''
 # Входящие уведомления о реакции
-
-
 @router.callback_query(F.data.startswith('accept_request:'))
 async def accept_incoming_request_alert(callback: CallbackQuery, bot: Bot):
 
@@ -52,6 +93,9 @@ async def accept_incoming_request_alert(callback: CallbackQuery, bot: Bot):
         await asyncio.to_thread(delete_and_insert_reactions,
                                 user_tg_id,
                                 current_user_id)
+
+        await callback.message.delete()
+
     else:
         await asyncio.to_thread(insert_reaction, user_tg_id, current_user_id)
         await bot_send_message_about_like(user_tg_id, current_user_id, bot)
@@ -75,7 +119,7 @@ async def accept_late_incoming_request_alert(callback: CallbackQuery):
     check = await asyncio.to_thread(get_reaction, current_user_id, user_tg_id)
 
     if check:
-        await notification_to_late_incoming_reaction(callback.message, user_tg_id)
+        await notification_to_late_incoming_reaction(callback.message)
     else:
         await callback.message.edit_media(media=InputMediaPhoto(
             media=delete_profile_id,
@@ -90,9 +134,13 @@ async def accept_late_incoming_request_alert(callback: CallbackQuery):
         )
 
 
+# закрытие окна уведомления
+@router.callback_query(F.data == 'close_notification')
+async def close_notice(callback: CallbackQuery):
+    await callback.message.delete()
+
+
 # Меню реакций
-
-
 @router.callback_query(F.data == 'all_reactions')
 async def all_reactions_menu(callback: CallbackQuery):
 
@@ -135,9 +183,9 @@ async def all_reactions_menu(callback: CallbackQuery):
             reply_markup=kb.reactions
         )
 
+
+
 # Мои реакции
-
-
 @router.callback_query(F.data == 'my_reactions')
 async def my_reactions(callback: CallbackQuery, state: FSMContext):
 
@@ -157,16 +205,19 @@ async def my_reactions(callback: CallbackQuery, state: FSMContext):
     # если True (есть данные)
     else:
 
-        await load_pagination(callback.message,
-                              data,
-                              'paginator_likes',
-                              'my_like_users')
+        total_pages = len(data)
+
+        await load_pagination_start_or_end_data(callback.message,
+                                                data,
+                                                'paginator_likes',
+                                                'my_like_users',
+                                                total_pages)
 
         await state.update_data(users_data=data)
 
+
+
 # Входящие реакции
-
-
 @router.callback_query(F.data == 'incoming_reactions_list')
 async def my_reactions(callback: CallbackQuery, state: FSMContext):
 
@@ -186,13 +237,19 @@ async def my_reactions(callback: CallbackQuery, state: FSMContext):
     # если True (есть данные)
     else:
 
-        await load_pagination(callback.message, data, 'incoming_reactions', 'incoming_like_users')
+        total_pages = len(data)
+
+        await load_pagination_start_or_end_data(callback.message,
+                                                data,
+                                                'paginator_likes',
+                                                'my_like_users',
+                                                total_pages)
 
         await state.update_data(users_data=data)
 
+
+
 # Взаимные реакции (мои контакты)
-
-
 @router.callback_query(F.data == 'match_reactions_list')
 async def my_reactions(callback: CallbackQuery, state: FSMContext):
 
@@ -212,13 +269,19 @@ async def my_reactions(callback: CallbackQuery, state: FSMContext):
     # если True (есть данные)
     else:
 
-        await load_pagination(callback.message, data, 'match_reactions_pagination', 'match_like_users')
+        total_pages = len(data)
+
+        await load_pagination_start_or_end_data(callback.message,
+                                                data,
+                                                'paginator_likes',
+                                                'my_like_users',
+                                                total_pages)
 
         await state.update_data(users_data=data)
 
-# меню "Заблокированные анкеты"
 
 
+# меню "скрытые анкеты"
 @router.callback_query(F.data == 'ignore_list')
 async def ignore_users_list(callback: CallbackQuery, state: FSMContext):
 
@@ -229,7 +292,7 @@ async def ignore_users_list(callback: CallbackQuery, state: FSMContext):
     if not data:
 
         # выводим сообщение об отсутствии реакций
-        text_info = '<b>У вас нет заблокированных пользователей.</b>'
+        text_info = '<b>У вас нет скрытых пользователей.</b>'
         await back_callback(callback.message,
                             user_tg_id,
                             'back_reactions',
@@ -237,14 +300,19 @@ async def ignore_users_list(callback: CallbackQuery, state: FSMContext):
 
     # если True (есть данные)
     else:
+        total_pages = len(data)
 
-        await load_pagination(callback.message, data, 'ignored_users_pagination', 'ignore_users_list')
+        await load_pagination_start_or_end_data(callback.message,
+                                                data,
+                                                'ignored_users_pagination',
+                                                'ignore_users_list',
+                                                total_pages)
 
         await state.update_data(users_data=data)
+'''
+
 
 # Пагинация пользователей в "Мои реакции"
-
-
 @router.callback_query(
     kb.PaginationLikes.filter(F.action.in_(
         ['prev_likes',
@@ -281,10 +349,14 @@ async def pagination_handler_likes(
 
     # если бот ушел в ребут с открытой пагинацией у пользователя
     if not data:
-        await no_data_after_reboot_bot(callback)
+        await no_data_after_reboot_bot_reactions(callback, 'back_reactions')
 
     # Загрузка пагинации если data не None
     else:
+
+        # длинна data для отрисовки кнопок переключения карточек
+        total_pages = len(data)
+
         page_num = int(callback_data.page)
 
         if callback_data.action == 'prev_likes':
@@ -322,53 +394,43 @@ async def pagination_handler_likes(
                                         user_tg_id,
                                         current_user_id)
 
-                # удаляем лайкнутого в ответ пользователя из data
-                data.pop(page)
-
-                # если False (data пустая)
-                if not data:
-
-                    # выводим сообщение об отсутствии реакций
-                    text_info = '<b>Список реакций пуст</b> 🤷‍♂️'
-                    await back_callback(callback.message,
-                                        user_tg_id,
-                                        'back_reactions',
-                                        text_info)
-
-                # если True (data не пустая)
-                else:
-
-                    # Обновляем номер страницы
-                    if page >= len(data):
-
-                        # Переход на последнюю страницу, если текущая выходит за пределы
-                        page = len(data) - 1
-
-                    # обновляем клавиатуру
-                    await load_pagination(callback.message,
-                                          data,
-                                          keyboard,
-                                          list_type,
-                                          page)
+                # удаление дизлайкнутого пользователя из data и отрисовка пагинации без него
+                await reload_reaction_pagination_after_hide_or_like(callback,
+                                                                    user_tg_id,
+                                                                    data,
+                                                                    keyboard,
+                                                                    list_type,
+                                                                    page)
 
                 # отправка сообщения каждому с данными для приватной беседы
                 await bot_send_message_matchs_likes(user_tg_id, current_user_id, bot, callback)
 
             else:
 
+                # добавление реакции в бд
                 await asyncio.to_thread(insert_reaction, user_tg_id, current_user_id)
+
+                # отправка реакции пользователю
                 await bot_send_message_about_like(user_tg_id, current_user_id, bot)
-                await callback.message.edit_media(media=InputMediaPhoto(
-                    media=delete_profile_id,
-                    caption=(
-                        '<b>Что-то пошло не так</b> 🫤\n\n'
-                        '<b>Возможно пользователь передумал и удалил свою реакцию</b> 😔\n\n'
-                        '<i>Но мы все равно отправили ему вашу 😉</i>'
-                    ),
-                    parse_mode='HTML'
-                ),
-                    reply_markup=kb.error_add_to_contacts
-                )
+
+                # удаление пользователя из data и отрисовка пагинации без него
+                await reload_reaction_pagination_after_hide_or_like(callback,
+                                                                    user_tg_id,
+                                                                    data,
+                                                                    keyboard,
+                                                                    list_type,
+                                                                    page)
+
+                # сообщение "мне"
+                await callback.message.answer_photo(photo=delete_profile_id,
+                                                    caption=(
+                                                        '<b>Что-то пошло не так</b> 🫤\n\n'
+                                                        '<b>Возможно пользователь передумал и удалил свою реакцию</b> 😔\n\n'
+                                                        '<i>Но мы все равно отправили ему вашу 😉</i>'
+                                                    ),
+                                                    parse_mode='HTML',
+                                                    reply_markup=kb.error_add_to_contacts
+                                                    )
 
         # отказ от входящего запроса из "Входящие реакции"
         elif callback_data.action == 'delete_incoming':
@@ -381,44 +443,18 @@ async def pagination_handler_likes(
                 # добавляем пользователя в ignorelist
                 await asyncio.to_thread(send_user_to_ignore_table, user_tg_id, current_user_id)
 
-                # удаляем дизлайкнутого пользователя из data
-                data.pop(page)
+                # удаление дизлайкнутого пользователя из data и отрисовка пагинации без него
+                await reload_reaction_pagination_after_hide_or_like(callback,
+                                                                    user_tg_id,
+                                                                    data,
+                                                                    keyboard,
+                                                                    list_type,
+                                                                    page)
 
-                # если False (data пустая)
-                if not data:
-
-                    # выводим сообщение об отсутствии реакций
-                    text_info = '<b>Список входящих реакций пуст</b> 🤷‍♂️'
-                    await back_callback(callback.message,
-                                        user_tg_id,
-                                        'back_reactions',
-                                        text_info)
-
-                    await bot_notification_about_dislike(callback.message,
-                                                         '❗️ <b>Реакция отклонена.</b>\n'
-                                                         'Пользователь добавлен в раздел:\n'
-                                                         '"🚫 <b>Заблокированные анкеты</b>"')
-
-                # если True (data не пустая)
-                else:
-
-                    # Обновляем номер страницы
-                    if page >= len(data):
-
-                        # Переход на последнюю страницу, если текущая выходит за пределы
-                        page = len(data) - 1
-
-                    # отрисовываем клавиатуру
-                    await load_pagination(callback.message,
-                                          data,
-                                          keyboard,
-                                          list_type,
-                                          page)
-
-                    await bot_notification_about_dislike(callback.message,
-                                                         '❗️ <b>Реакция отклонена.</b>\n'
-                                                         'Пользователь добавлен в раздел:\n'
-                                                         '"🚫 <b>Заблокированные анкеты</b>"')
+                await bot_notification_about_dislike(callback.message,
+                                                     '❗️ <b>Реакция отклонена.</b>\n'
+                                                     'Пользователь добавлен в раздел:\n'
+                                                     '"🚷 <b>Скрытые пользователи</b>"')
 
             else:
                 await bot_notification_about_dislike(callback.message,
@@ -430,40 +466,16 @@ async def pagination_handler_likes(
             # удаляем реакцию из бд
             await asyncio.to_thread(delete_reaction, user_tg_id, current_user_id)
 
-            # удаляем дизлайкнутого пользователя из data
-            data.pop(page)
+            # удаление дизлайкнутого пользователя из data и отрисовка пагинации без него
+            await reload_reaction_pagination_after_hide_or_like(callback,
+                                                                user_tg_id,
+                                                                data,
+                                                                keyboard,
+                                                                list_type,
+                                                                page)
 
-            # если False (data пустая)
-            if not data:
-
-                # выводим сообщение об отсутствии реакций
-                text_info = '<b>Список реакций пуст</b> 🤷‍♂️'
-                await back_callback(callback.message,
-                                    user_tg_id,
-                                    'back_reactions',
-                                    text_info)
-
-                await bot_notification_about_dislike(callback.message,
-                                                     '🚫 <b>Реакция успешно удалена!</b>')
-
-            # если True (data не пустая)
-            else:
-
-                # Обновляем номер страницы
-                if page >= len(data):
-
-                    # Переход на последнюю страницу, если текущая выходит за пределы
-                    page = len(data) - 1
-
-                # отрисовываем клавиатуру
-                await load_pagination(callback.message,
-                                      data,
-                                      keyboard,
-                                      list_type,
-                                      page)
-
-                await bot_notification_about_dislike(callback.message,
-                                                     '🚫 <b>Реакция успешно удалена!</b>')
+            await bot_notification_about_dislike(callback.message,
+                                                 '🚫 <b>Реакция успешно удалена!</b>')
 
         # удаление пользователя из "Мои контакты"
         elif callback_data.action == 'delete_contact':
@@ -474,50 +486,25 @@ async def pagination_handler_likes(
             if delete:
                 # добавляем пользователя в ignorelist
                 await asyncio.to_thread(send_user_to_ignore_table, user_tg_id, current_user_id)
+
+                # удаление дизлайкнутого пользователя из data и отрисовка пагинации без него
+                await reload_reaction_pagination_after_hide_or_like(callback,
+                                                                    user_tg_id,
+                                                                    data,
+                                                                    keyboard,
+                                                                    list_type,
+                                                                    page)
+
                 await bot_notification_about_dislike(callback.message,
                                                      '❗️ <b>Пользователь удален из ваших контактов</b>\n'
                                                      'и добавлен в раздел:\n'
-                                                     '"🚫 <b>Заблокированные анкеты</b>"')
-
-                # удаляем дизлайкнутого пользователя из data
-                data.pop(page)
-
-                # если False (data пустая)
-                if not data:
-
-                    # выводим сообщение об отсутствии реакций
-                    text_info = '<b>Список ваших контактов пуст</b> 🤷‍♂️'
-                    await back_callback(callback.message,
-                                        user_tg_id,
-                                        'back_reactions',
-                                        text_info)
-
-                # если True (data не пустая)
-                else:
-
-                    # Обновляем номер страницы
-                    if page >= len(data):
-
-                        # Переход на последнюю страницу, если текущая выходит за пределы
-                        page = len(data) - 1
-
-                    # отрисовываем клавиатуру
-                    await load_pagination(callback.message,
-                                          data,
-                                          keyboard,
-                                          list_type,
-                                          page)
-
-                    await bot_notification_about_dislike(callback.message,
-                                                         '❗️ <b>Пользователь удален из ваших контактов</b>\n'
-                                                         'и добавлен в раздел:\n'
-                                                         '"🚫 <b>Заблокированные анкеты</b>"')
+                                                     '"🚷 <b>Скрытые пользователи</b>"')
 
             else:
                 await bot_notification_about_dislike(callback.message,
                                                      '🚧 Что-то пошло не так. Попробуйте позже 🚧')
 
-        # удаление пользователя из "Заблокированные анкеты"
+        # удаление пользователя из "Скрытые пользователи"
         elif callback_data.action == 'remove_from_ignore':
 
             # удаляем реакцию из бд (matchreactions) и выводим уведомление
@@ -525,58 +512,29 @@ async def pagination_handler_likes(
 
             if delete:
 
+                # удаление пользователя из data и отрисовка пагинации без него
+                await reload_reaction_pagination_after_hide_or_like(callback,
+                                                                    user_tg_id,
+                                                                    data,
+                                                                    keyboard,
+                                                                    list_type,
+                                                                    page)
+
                 await bot_notification_about_dislike(callback.message,
                                                      '☺️ <b>Пользователь снова доступен в поиске!</b>')
 
-                # удаляем дизлайкнутого пользователя из data
-                data.pop(page)
-
-                # если False (data пустая)
-                if not data:
-
-                    # выводим сообщение об отсутствии реакций
-                    text_info = '<b>У вас больше нет заблокированных пользователей</b> 🙃'
-                    await back_callback(callback.message,
-                                        user_tg_id,
-                                        'back_reactions',
-                                        text_info)
-
-                # если True (data не пустая)
-                else:
-
-                    # Обновляем номер страницы
-                    if page >= len(data):
-
-                        # Переход на последнюю страницу, если текущая выходит за пределы
-                        page = len(data) - 1
-
-                    # отрисовываем клавиатуру
-                    await load_pagination(callback.message,
-                                          data,
-                                          keyboard,
-                                          list_type,
-                                          page)
             else:
                 await bot_notification_about_dislike(callback.message,
                                                      '🚧 <b>Что-то пошло не так. Попробуйте позже</b> 🚧')
 
         # отрисовка клавиатуры при переключении между карточками
         else:
-            try:
-                # убирает ошибку если пользователи в пагинации закончились
 
-                with suppress(TelegramBadRequest):
-
-                    # проверка list_type для отрисовки правильной клавиатуры
-                    # при переключении между карточками пользователей
-
-                    await load_pagination(callback.message,
-                                          data,
-                                          keyboard,
-                                          list_type,
-                                          page)
-
-            except:
-                pass
+            await load_pagination_start_or_end_data(callback.message,
+                                                    data,
+                                                    keyboard,
+                                                    list_type,
+                                                    total_pages,
+                                                    page)
 
     await callback.answer()

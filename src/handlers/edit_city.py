@@ -1,12 +1,12 @@
 import asyncio
-import logging
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
-from src.database.requests.user_data import get_user_data
+from src.modules.get_self_data import get_user_info
+from src.database.requests.user_data import get_self_data
 from src.modules.delete_messages import del_last_message
 from src.modules.notifications import loader
 from src.database.requests.city_data import change_city
@@ -31,19 +31,14 @@ delete_last_message = []
 async def edit_city(callback: CallbackQuery, state: FSMContext):
 
     user_tg_id = callback.from_user.id
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
-    gender = await check_gender(data[0][3])
-    hobbies = await hobbies_list(data[1])
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
+
     edit_message = await callback.message.edit_media(
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n\n'
-                'Отправьте название города в чат.'
+                f'\n<b>Ваш текущий город:</b> {data[0][5]}'
+                '\n\n💬 <b>Отправьте название нового города в чат.</b>'
             ),
             parse_mode='HTML'
         ),
@@ -79,9 +74,7 @@ async def new_city(message: Message, state: FSMContext, bot: Bot):
 
 async def wrong_city_name(user_tg_id, message_id, bot):
 
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
-    gender = await check_gender(data[0][3])
-    hobbies = await hobbies_list(data[1])
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
 
     await bot.edit_message_media(
         chat_id=user_tg_id,
@@ -89,12 +82,8 @@ async def wrong_city_name(user_tg_id, message_id, bot):
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
-                '⚠️ Неверный формат данных ⚠️'
+                f'\n<b>Ваш текущий город:</b> {data[0][5]}'
+                '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
             ),
             parse_mode='HTML'
         ),
@@ -109,12 +98,8 @@ async def wrong_city_name(user_tg_id, message_id, bot):
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
-                '❌ Название города должно содержать только текст, не должно содержать эмодзи '
+                f'\n<b>Ваш текущий город:</b> {data[0][5]}'
+                '\n\n❌ Название города должно содержать <b>только текст</b>, не должно содержать эмодзи '
                 'и изображения, а так же не должно превышать длинну в <b>25 символов</b>.'
             ),
             parse_mode='HTML'
@@ -125,7 +110,7 @@ async def wrong_city_name(user_tg_id, message_id, bot):
 
 async def change_city_name(user_tg_id, message, message_id, new_city_name, bot):
 
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
     gender = await check_gender(data[0][3])
     hobbies = await hobbies_list(data[1])
 
@@ -135,11 +120,7 @@ async def change_city_name(user_tg_id, message, message_id, new_city_name, bot):
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
+                f'\n<b>Ваш текущий город:</b> {data[0][5]}'
             ),
             parse_mode='HTML'
         )
@@ -147,7 +128,7 @@ async def change_city_name(user_tg_id, message, message_id, new_city_name, bot):
     await loader(message, 'Вношу изменения')
     await asyncio.to_thread(change_city, new_city_name, user_tg_id)
 
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
     gender = await check_gender(data[0][3])
     hobbies = await hobbies_list(data[1])
 
@@ -157,12 +138,8 @@ async def change_city_name(user_tg_id, message, message_id, new_city_name, bot):
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
-                'Город успешно изменен ✅'
+                f'\n<b>Город:</b> {data[0][5]}'
+                '\n\nНазвание города успешно изменено ✅'
             ),
             parse_mode='HTML'
         )
@@ -186,52 +163,4 @@ async def change_city_name(user_tg_id, message, message_id, new_city_name, bot):
             parse_mode='HTML'
         ),
         reply_markup=kb.about_me
-    )
-
-
-# неверный формат запроса при поиске по городам
-
-async def wrong_search_city_name(user_tg_id, message_id, bot):
-
-    self_data = await asyncio.to_thread(get_user_data, user_tg_id)
-    self_gender = await check_gender(self_data[0][3])
-    self_hobbies = await hobbies_list(self_data[1])
-
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Имя:</b> {self_data[0][0]}\n'
-                f'<b>Возраст:</b> {self_data[0][4]}\n'
-                f'<b>Пол:</b> {self_gender}\n'
-                f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}\n\n'
-                '⚠️ Неверный формат данных ⚠️'
-            ),
-            parse_mode='HTML'
-        )
-    )
-
-    await asyncio.sleep(1.5)
-
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Имя:</b> {self_data[0][0]}\n'
-                f'<b>Возраст:</b> {self_data[0][4]}\n'
-                f'<b>Пол:</b> {self_gender}\n'
-                f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}\n\n'
-                '❌ Название города должно содержать только текст, не должно содержать эмодзи '
-                'или изображения.\n\n'
-                '<b>Пришлите в чат название города, в котором вы хотите найти пользователей:</b>'
-            ),
-            parse_mode='HTML'
-        ),
-        reply_markup=kb.search_users
     )

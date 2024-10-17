@@ -9,9 +9,10 @@ from src.modules import keyboard as kb
 # если бот ушел в ребут во время открытой пагинации у пользователя
 
 
-async def no_data_after_reboot_bot(callback):
+async def no_data_after_reboot_bot_reactions(callback, keyboard_name):
 
-    await loader(callback.message, 'Загружаю')
+    keyboard = getattr(kb, keyboard_name, None)
+
     try:
         await callback.message.edit_media(
             media=InputMediaPhoto(
@@ -21,14 +22,15 @@ async def no_data_after_reboot_bot(callback):
                          ),
                 parse_mode='HTML'
             ),
-            reply_markup=kb.back_reactions
+            reply_markup=keyboard
         )
     except:
         await callback.message.answer_photo(photo=f'{delete_profile_id}',
                                             caption=('<b>Что-то пошло не так :(</b> \n\n'
                                                      '<b>Попробуйте пожалуйста позже.</b>'),
                                             parse_mode='HTML',
-                                            reply_markup=kb.back_reactions)
+                                            reply_markup=keyboard)
+
 
 # выход из пагинации и уведомление если список пользователей пуст
 
@@ -76,9 +78,88 @@ async def back_callback(callback_data, user_tg_id, keyboard_name, text_info=''):
             reply_markup=keyboard
         )
 
+
 # загрузка пагинации из оработчика callback
 
 
+# загрузка пагинации для конца/начала списка (разная клавиатура) и если 1 запись
+async def load_pagination_start_or_end_data(callback_data,
+                                            data,
+                                            keyboard_name,
+                                            list_type,
+                                            total_pages,
+                                            page=0,
+                                            text_info=''):
+
+    keyboard = getattr(kb, keyboard_name, None)
+
+    gender = await check_gender(data[page][4])
+    hobbies = await hobbies_list(data[page][7])
+
+    try:
+
+        await callback_data.edit_media(
+            media=InputMediaPhoto(
+                media=f'{data[page][2]}',
+                caption=(
+                    f'<b>Имя:</b> {data[page][1]}\n'
+                    f'<b>Возраст:</b> {data[page][5]}\n'
+                    f'<b>Пол:</b> {gender}\n'
+                    f'<b>Город:</b> {data[page][6]}\n'
+                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'{text_info}'
+                ),
+                parse_mode='HTML',
+            ),
+            reply_markup=keyboard(
+                page=page, list_type=list_type, total_pages=total_pages)
+        )
+    except Exception as e:
+        # print(f'{e}')
+        pass
+
+
+# загрузка пагинации (для message с передачей bot)
+async def load_bot_pagination_start_or_end_data(bot,
+                                                user_tg_id,
+                                                message_id,
+                                                data,
+                                                keyboard_name,
+                                                list_type,
+                                                total_pages,
+                                                page=0,
+                                                text_info=''):
+
+    keyboard = getattr(kb, keyboard_name, None)
+
+    gender = await check_gender(data[page][4])
+    hobbies = await hobbies_list(data[page][7])
+
+    try:
+
+        await bot.edit_message_media(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            media=InputMediaPhoto(
+                media=f'{data[page][2]}',
+                caption=(
+                    f'<b>Имя:</b> {data[page][1]}\n'
+                    f'<b>Возраст:</b> {data[page][5]}\n'
+                    f'<b>Пол:</b> {gender}\n'
+                    f'<b>Город:</b> {data[page][6]}\n'
+                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'{text_info}'
+                ),
+                parse_mode='HTML',
+            ),
+            reply_markup=keyboard(
+                page=page, list_type=list_type, total_pages=total_pages)
+        )
+    except Exception as e:
+        print(f'{e}')
+
+# УДАЛИТЬ
+'''
 async def load_pagination(callback_data, data, keyboard_name, list_type, page=0, text_info=''):
 
     keyboard = getattr(kb, keyboard_name, None)
@@ -108,7 +189,8 @@ async def load_pagination(callback_data, data, keyboard_name, list_type, page=0,
                 reply_markup=keyboard(
                     page=page, list_type=list_type, nickname=nickname)
             )
-        except:
+        except Exception as e:
+            # print(f'{e}')
             pass
 
     else:
@@ -130,12 +212,12 @@ async def load_pagination(callback_data, data, keyboard_name, list_type, page=0,
                 reply_markup=keyboard(
                     page=page, list_type=list_type)
             )
-        except:
+        except Exception as e:
+            # print(f'{e}')
             pass
 
+
 # загрузка пагинации из обработчика message
-
-
 async def load_pagination_bot(bot, user_tg_id, message_id, data, keyboard_name, list_type, page=0, text_info=''):
 
     keyboard = getattr(kb, keyboard_name, None)
@@ -163,5 +245,6 @@ async def load_pagination_bot(bot, user_tg_id, message_id, data, keyboard_name, 
             reply_markup=keyboard(
                 page=page, list_type=list_type)
         )
-    except:
-        pass
+    except Exception as e:
+        print(f'{e}')
+'''

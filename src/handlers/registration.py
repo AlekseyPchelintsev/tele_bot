@@ -37,8 +37,7 @@ async def reg(callback: CallbackQuery, state: FSMContext):
     await state.clear()
 
     user_tg_id = callback.from_user.id
-    # user_nickname = callback.from_user.username
-    user_nickname = 'kin0govno'
+    user_nickname = callback.from_user.username
     await del_last_message(callback.message)
 
     if user_tg_id:

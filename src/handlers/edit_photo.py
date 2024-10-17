@@ -9,7 +9,7 @@ from config import no_photo_id
 from src.modules.notifications import loader
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
-from src.database.requests.user_data import get_user_data
+from src.database.requests.user_data import get_self_data
 from src.modules.delete_messages import del_last_message
 from src.database.requests.photo_data import (update_user_photo,
                                               delete_user_photo)
@@ -42,19 +42,13 @@ async def edit_photo_menu(callback: CallbackQuery, state: FSMContext):
 async def edit_photo(callback: CallbackQuery, state: FSMContext):
 
     user_tg_id = callback.from_user.id
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
-    gender = await check_gender(data[0][3])
-    hobbies = await hobbies_list(data[1])
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
+
     edit_message = await callback.message.edit_media(
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n\n'
-                'Отправьте ваше фото в чат:'
+                '\n\n💬 <b>Отправьте новое фото в чат:</b>'
             ),
             parse_mode='HTML'
         ),
@@ -80,7 +74,7 @@ async def get_new_photo(message: Message, state: FSMContext, bot: Bot):
 
 
 @router.callback_query(F.data == 'del_photo')
-async def delete_photo(callback: CallbackQuery):
+async def delete_profile_photo(callback: CallbackQuery):
 
     user_tg_id = callback.from_user.id
     await delete_photo(user_tg_id, callback)
@@ -90,9 +84,8 @@ async def delete_photo(callback: CallbackQuery):
 
 async def edit_photo_menu(callback):
     user_tg_id = callback.from_user.id
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
-    gender = await check_gender(data[0][3])
-    hobbies = await hobbies_list(data[1])
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
+
     photo_id = data[0][1]
     if photo_id == no_photo_id:
         try:
@@ -100,11 +93,7 @@ async def edit_photo_menu(callback):
                 media=InputMediaPhoto(
                     media=f'{data[0][1]}',
                     caption=(
-                        f'\n<b>Имя:</b> {data[0][0]}\n'
-                        f'<b>Возраст:</b> {data[0][4]}\n'
-                        f'<b>Пол:</b> {gender}\n'
-                        f'<b>Город:</b> {data[0][5]}\n'
-                        f'<b>Увлечения:</b> {hobbies}'
+                        '<b>Выберите действие:</b>'
                     ),
                     parse_mode='HTML'
                 ),
@@ -118,11 +107,7 @@ async def edit_photo_menu(callback):
             await callback.message.answer_photo(
                 photo=f'{data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {data[0][0]}\n'
-                    f'<b>Возраст:</b> {data[0][4]}\n'
-                    f'<b>Пол:</b> {gender}\n'
-                    f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}'
+                    '<b>Выберите действие:</b>'
                 ),
                 parse_mode='HTML',
                 reply_markup=kb.edit_no_photo
@@ -133,11 +118,7 @@ async def edit_photo_menu(callback):
                 media=InputMediaPhoto(
                     media=f'{data[0][1]}',
                     caption=(
-                        f'\n<b>Имя:</b> {data[0][0]}\n'
-                        f'<b>Возраст:</b> {data[0][4]}\n'
-                        f'<b>Пол:</b> {gender}\n'
-                        f'<b>Город:</b> {data[0][5]}\n'
-                        f'<b>Увлечения:</b> {hobbies}'
+                        '<b>Выберите действие:</b>'
                     ),
                     parse_mode='HTML'
                 ),
@@ -151,11 +132,7 @@ async def edit_photo_menu(callback):
             await callback.message.answer_photo(
                 photo=f'{data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {data[0][0]}\n'
-                    f'<b>Возраст:</b> {data[0][4]}\n'
-                    f'<b>Пол:</b> {gender}\n'
-                    f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}'
+                    '<b>Выберите действие:</b>'
                 ),
                 parse_mode='HTML',
                 reply_markup=kb.edit_photo
@@ -167,7 +144,7 @@ async def edit_photo_menu(callback):
 async def add_new_photo(user_tg_id, message, message_id, state, bot):
     if message.photo:
 
-        data = await asyncio.to_thread(get_user_data, user_tg_id)
+        data = await asyncio.to_thread(get_self_data, user_tg_id)
         gender = await check_gender(data[0][3])
         hobbies = await hobbies_list(data[1])
 
@@ -180,37 +157,30 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
             media=InputMediaPhoto(
                 media=f'{data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {data[0][0]}\n'
-                    f'<b>Возраст:</b> {data[0][4]}\n'
-                    f'<b>Пол:</b> {gender}\n'
-                    f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    '📸'
                 ),
                 parse_mode='HTML'
             )
         )
 
         await loader(message, 'Загружаю')
+
+        data = await asyncio.to_thread(get_self_data, user_tg_id)
+        gender = await check_gender(data[0][3])
+        hobbies = await hobbies_list(data[1])
+
         await bot.edit_message_media(
             chat_id=user_tg_id,
             message_id=message_id,
             media=InputMediaPhoto(
                 media=f'{data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {data[0][0]}\n'
-                    f'<b>Возраст:</b> {data[0][4]}\n'
-                    f'<b>Пол:</b> {gender}\n'
-                    f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
                     'Фото профиля успешно обновлено ✅'
                 ),
                 parse_mode='HTML'
             )
         )
 
-        data = await asyncio.to_thread(get_user_data, user_tg_id)
-        gender = await check_gender(data[0][3])
-        hobbies = await hobbies_list(data[1])
         await asyncio.sleep(1.5)
 
         await bot.edit_message_media(
@@ -232,7 +202,7 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
         )
         await state.clear()
     else:
-        data = await asyncio.to_thread(get_user_data, user_tg_id)
+        data = await asyncio.to_thread(get_self_data, user_tg_id)
         gender = await check_gender(data[0][3])
         hobbies = await hobbies_list(data[1])
 
@@ -242,12 +212,7 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
             media=InputMediaPhoto(
                 media=f'{data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {data[0][0]}\n'
-                    f'<b>Возраст:</b> {data[0][4]}\n'
-                    f'<b>Пол:</b> {gender}\n'
-                    f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
-                    '⚠️ Неизвестный формат файла ⚠️'
+                    '⚠️ <b>Неизвестный формат файла</b> ⚠️'
                 ),
                 parse_mode='HTML'
             )
@@ -260,11 +225,6 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
             media=InputMediaPhoto(
                 media=f'{data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {data[0][0]}\n'
-                    f'<b>Возраст:</b> {data[0][4]}\n'
-                    f'<b>Пол:</b> {gender}\n'
-                    f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
                     'Отправьте фото в формате <b>.jpg .jpeg</b> или <b>.png</b>'
                 ),
                 parse_mode='HTML'
@@ -277,7 +237,7 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
 
 async def delete_photo(user_tg_id, callback):
     try:
-        data = await asyncio.to_thread(get_user_data, user_tg_id)
+        data = await asyncio.to_thread(get_self_data, user_tg_id)
         gender = await check_gender(data[0][3])
         hobbies = await hobbies_list(data[1])
 
@@ -285,36 +245,28 @@ async def delete_photo(user_tg_id, callback):
             media=InputMediaPhoto(
                 media=f'{data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {data[0][0]}\n'
-                    f'<b>Возраст:</b> {data[0][4]}\n'
-                    f'<b>Пол:</b> {gender}\n'
-                    f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    '🗑'
                 ),
                 parse_mode='HTML'
             )
         )
         await loader(callback.message, 'Удаляю')
 
+        await asyncio.to_thread(delete_user_photo, user_tg_id)
+        data = await asyncio.to_thread(get_self_data, user_tg_id)
+        gender = await check_gender(data[0][3])
+        hobbies = await hobbies_list(data[1])
+
         await callback.message.edit_media(
             media=InputMediaPhoto(
                 media=f'{data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {data[0][0]}\n'
-                    f'<b>Возраст:</b> {data[0][4]}\n'
-                    f'<b>Пол:</b> {gender}\n'
-                    f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
-                    'Фото успешно удалено 🚫'
+                    'Фото профиля успешно удалено 🚫'
                 ),
                 parse_mode='HTML'
             )
         )
 
-        await asyncio.to_thread(delete_user_photo, user_tg_id)
-        data = await asyncio.to_thread(get_user_data, user_tg_id)
-        gender = await check_gender(data[0][3])
-        hobbies = await hobbies_list(data[1])
         await asyncio.sleep(1.5)
 
         await callback.message.edit_media(

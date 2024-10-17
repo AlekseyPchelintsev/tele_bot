@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from datetime import datetime
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router, Bot
@@ -7,7 +6,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
-from src.database.requests.user_data import get_user_data
+from src.database.requests.user_data import get_self_data
 from src.modules.delete_messages import del_last_message
 from src.database.requests.age_change import change_user_age
 from src.handlers.edit_name import check_emodji
@@ -25,19 +24,13 @@ class Registration(StatesGroup):
 async def edit_age_menu(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     user_tg_id = callback.from_user.id
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
-    gender = await check_gender(data[0][3])
-    hobbies = await hobbies_list(data[1])
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
     edit_message = await callback.message.edit_media(
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
-                'Пришлите в чат дату вашего рождения в формате <b>"ДД.ММ.ГГГГ":</b>'
+                f'\n<b>Ваш текущий возраст:</b> {data[0][4]}'
+                '\n\n💬 <i>Пришлите в чат дату вашего рождения в формате</i> <b>"ДД.ММ.ГГГГ":</b>'
             ),
             parse_mode='HTML'
         ),
@@ -95,9 +88,7 @@ async def change_age(user_tg_id, age, message, message_id, state, bot):
 
 async def wrong_date_format(user_tg_id, message_id, bot):
 
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
-    gender = await check_gender(data[0][3])
-    hobbies = await hobbies_list(data[1])
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
 
     await bot.edit_message_media(
         chat_id=user_tg_id,
@@ -105,12 +96,8 @@ async def wrong_date_format(user_tg_id, message_id, bot):
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
-                '⚠️ Неверный формат данных ⚠️'
+                f'\n<b>Ваш текущий возраст:</b> {data[0][4]}'
+                '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
             ),
             parse_mode='HTML'
         )
@@ -123,13 +110,9 @@ async def wrong_date_format(user_tg_id, message_id, bot):
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
-                'Пришлите в чат дату вашего рождения в формате <b>"ДД.ММ.ГГГГ"</b> '
-                '(пример: <b>01.01.2000</b>)'
+                f'\n<b>Ваш текущий возраст:</b> {data[0][4]}'
+                '\n\n💬 <i>Пришлите в чат дату вашего рождения в формате</i> <b>"ДД.ММ.ГГГГ":</b>'
+                '\n(<code>Пример:</code> <b>01.01.2000</b>)'
             ),
             parse_mode='HTML'
         ),
@@ -139,7 +122,7 @@ async def wrong_date_format(user_tg_id, message_id, bot):
 
 async def date_changed(user_tg_id, message, user_age, user_birth_date, message_id, state, bot):
 
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
     gender = await check_gender(data[0][3])
     hobbies = await hobbies_list(data[1])
 
@@ -149,18 +132,14 @@ async def date_changed(user_tg_id, message, user_age, user_birth_date, message_i
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
+                f'\n<b>Ваш текущий возраст:</b> {data[0][4]}'
             ),
             parse_mode='HTML'
         )
     )
     await loader(message, 'Вношу изменения')
     await asyncio.to_thread(change_user_age, user_tg_id, user_age, user_birth_date)
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
     gender = await check_gender(data[0][3])
     hobbies = await hobbies_list(data[1])
 
@@ -170,12 +149,8 @@ async def date_changed(user_tg_id, message, user_age, user_birth_date, message_i
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
-                'Дата рождения успешно изменена ✅'
+                f'\n<b>Ваш возраст:</b> {data[0][4]}'
+                '\n\nДата рождения успешно изменена ✅'
             ),
             parse_mode='HTML'
         )
@@ -187,12 +162,12 @@ async def date_changed(user_tg_id, message, user_age, user_birth_date, message_i
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
-                '<b>Редактировать:</b>'
+                f'\n<b>Имя:</b> {data[0][0]}'
+                f'\n<b>Возраст:</b> {data[0][4]}'
+                f'\n<b>Пол:</b> {gender}'
+                f'\n<b>Город:</b> {data[0][5]}'
+                f'\n<b>Увлечения:</b> {hobbies}'
+                '\n\n<b>Редактировать:</b>'
             ),
             parse_mode='HTML'
         ),

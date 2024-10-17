@@ -1,9 +1,9 @@
 import asyncio
 from aiogram.types import InputMediaPhoto
-from src.database.requests.user_data import get_user_data
+from src.database.requests.user_data import get_self_data
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
-from src.modules.get_self_data import get_user_info
+
 
 import src.modules.keyboard as kb
 
@@ -44,57 +44,19 @@ async def attention_message(message, text, timer):
 # Всплывающее уведомление при выборе "Решу позже" на входящее уведомление о лайке
 
 
-async def notification_to_late_incoming_reaction(message, user_tg_id):
+async def notification_to_late_incoming_reaction(message):
 
-    try:
-
-        # плучаю свои данные
-        user_info = await get_user_info(user_tg_id)
-
-        # Извлекаю данные
-        self_data = user_info['data']
-        self_gender = user_info['gender']
-        self_hobbies = user_info['hobbies']
-
-        await message.edit_media(media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'<b>Имя:</b> {self_data[0][0]}\n'
-                f'<b>Возраст:</b> {self_data[0][4]}\n'
-                f'<b>Пол:</b> {self_gender}\n'
-                f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}'
-            ),
-            parse_mode='HTML'
-        ),
-            reply_markup=kb.users
-        )
-
-    except:
-        await message.answer_photo(
-            photo=f'{self_data[0][1]}',
-            caption=(
-                f'<b>Имя:</b> {self_data[0][0]}\n'
-                f'<b>Возраст:</b> {self_data[0][4]}\n'
-                f'<b>Пол:</b> {self_gender}\n'
-                f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}'
-            ),
-            parse_mode='HTML',
-            reply_markup=kb.users
-        )
-
+    await message.delete()
     await attention_message(message, 'Пользователь добавлен в раздел\n"➡️ <b>Входящие запросы</b>"', 3)
 
 
 # Всплывающее сообщение об отправке реакции
 
 
-async def bot_notification_about_like(message, name):
-    temporary_message = await message.answer('📬 Реакция отправлена пользователю '
-                                             f'<b>{name}</b>.',
+async def bot_notification_about_like(message):
+    temporary_message = await message.answer('📬 Реакция отправлена пользователю',
                                              parse_mode='HTML')
-    await asyncio.sleep(2)
+    await asyncio.sleep(1)
     await temporary_message.delete()
 
 # Всплывающее сообщение об отмене реакции
@@ -110,7 +72,7 @@ async def bot_notification_about_dislike(message, text):
 
 async def bot_send_message_about_like(user_tg_id, current_user_id, bot):
 
-    self_data = await asyncio.to_thread(get_user_data, user_tg_id)
+    self_data = await asyncio.to_thread(get_self_data, user_tg_id)
     self_gender = await check_gender(self_data[0][3])
     self_hobbies = await hobbies_list(self_data[1])
 
@@ -130,8 +92,8 @@ async def bot_send_message_about_like(user_tg_id, current_user_id, bot):
 
 async def bot_send_message_matchs_likes(user_tg_id, current_user_id, bot, callback):
 
-    self_data = await asyncio.to_thread(get_user_data, user_tg_id)
-    current_user_data = await asyncio.to_thread(get_user_data, current_user_id)
+    self_data = await asyncio.to_thread(get_self_data, user_tg_id)
+    current_user_data = await asyncio.to_thread(get_self_data, current_user_id)
 
     self_nickname = self_data[0][2]
     current_user_nickname = current_user_data[0][2]
@@ -140,72 +102,26 @@ async def bot_send_message_matchs_likes(user_tg_id, current_user_id, bot, callba
 
     # сообщение тому, КОМУ ОТВЕТИЛИ на реакцию
 
-    try:
-        await bot.edit_message_media(
-            chat_id=current_user_id,
-            media=InputMediaPhoto(
-                media=f'{self_data[0][1]}',
-                caption=(
-                    'Хорошие новости! 🎉\n'
-                    f'Пользователь {self_data[0][0]} ответил на вашу '
-                    'реакцию и был добавлен в раздел '
-                    '<b>"Мои контакты"</b>\n\n'
-                    '✉️ <i>Теперь вы можете начать личную беседу.</i>'
-                ),
-                parse_mode='HTML'
-            ),
-            reply_markup=kb.match_reactions(current_user_nickname)
-        )
-
-    except:
-
-        try:
-            await callback.message.delete()
-        except:
-            pass
-
-        await bot.send_photo(chat_id=current_user_id,
-                             photo=f'{self_data[0][1]}',
-                             caption=(
-                                 'Хорошие новости! 🎉\n'
-                                 f'Пользователь {self_data[0][0]} ответил '
-                                 'на вашу реакцию и был добавлен в раздел '
-                                 '<b>"Мои контакты"</b>\n\n'
-                                 '✉️ <i>Теперь вы можете начать личную беседу.</i>'
-                             ),
-                             parse_mode='HTML',
-                             reply_markup=kb.match_reactions(self_nickname))
+    await bot.send_photo(chat_id=current_user_id,
+                         photo=f'{self_data[0][1]}',
+                         caption=(
+                             'Хорошие новости! 🎉\n'
+                             f'Пользователь {self_data[0][0]} ответил '
+                             'на вашу реакцию и был добавлен в раздел '
+                             '<b>"Мои контакты"</b>\n\n'
+                             '✉️ <i>Теперь вы можете начать личную беседу.</i>'
+                         ),
+                         parse_mode='HTML',
+                         reply_markup=kb.match_reactions(self_nickname))
 
     # сообщение тому, кто лайкнул в ответ (мне)
-    try:
 
-        await bot.edit_message_media(
-            chat_id=user_tg_id,
-            media=InputMediaPhoto(
-                media=f'{current_user_data[0][1]}',
-                caption=(
-                    f'Пользователь {current_user_data[0][0]} '
-                    'добавлен в раздел <b>"Мои контакты"</b>\n\n'
-                    '✉️ <i>Теперь вы можете начать личную беседу.</i>'
-                ),
-                parse_mode='HTML'
-            ),
-            reply_markup=kb.match_reactions(current_user_nickname)
-        )
-
-    except:
-
-        try:
-            await callback.message.delete()
-        except:
-            pass
-
-        await bot.send_photo(chat_id=user_tg_id,
-                             photo=f'{current_user_data[0][1]}',
-                             caption=(
-                                 f'Пользователь {current_user_data[0][0]} '
-                                 'добавлен в раздел <b>"Мои контакты"</b>\n\n'
-                                 '✉️ <i>Теперь вы можете начать личную беседу.</i>'
-                             ),
-                             parse_mode='HTML',
-                             reply_markup=kb.match_reactions(current_user_nickname))
+    await bot.send_photo(chat_id=user_tg_id,
+                         photo=f'{current_user_data[0][1]}',
+                         caption=(
+                             f'Пользователь {current_user_data[0][0]} '
+                             'добавлен в раздел <b>"Мои контакты"</b>\n\n'
+                             '✉️ <i>Теперь вы можете начать личную беседу.</i>'
+                         ),
+                         parse_mode='HTML',
+                         reply_markup=kb.match_reactions(current_user_nickname))

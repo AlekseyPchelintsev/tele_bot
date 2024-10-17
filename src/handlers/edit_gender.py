@@ -5,7 +5,7 @@ from aiogram import F, Router
 from src.modules.notifications import loader, attention_message
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
-from src.database.requests.user_data import get_user_data, check_user
+from src.database.requests.user_data import get_self_data, check_user
 from src.database.requests.gender_change import change_user_gender
 
 import src.modules.keyboard as kb
@@ -17,7 +17,7 @@ router = Router()
 async def change_gender(callback: CallbackQuery):
 
     user_tg_id = callback.from_user.id
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
     gender = await check_gender(data[0][3])
     hobbies = await hobbies_list(data[1])
 
@@ -25,12 +25,8 @@ async def change_gender(callback: CallbackQuery):
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
-                '<b>Выберите пол:</b>'
+                f'\n<b>Ваш пол:</b> {gender}'
+                '\n\n<b>Выберите один из вариантов:</b>'
             ),
             parse_mode='HTML'
         ),
@@ -44,7 +40,7 @@ async def gender_checked(callback: CallbackQuery):
     user_tg_id = callback.from_user.id
     new_gender = callback.data
 
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
     gender = await check_gender(data[0][3])
     hobbies = await hobbies_list(data[1])
 
@@ -52,11 +48,7 @@ async def gender_checked(callback: CallbackQuery):
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
+                f'\n<b>Ваш пол:</b> {gender}'
             ),
             parse_mode='HTML'
         )
@@ -65,7 +57,7 @@ async def gender_checked(callback: CallbackQuery):
     await asyncio.to_thread(change_user_gender, user_tg_id, new_gender)
     await loader(callback.message, 'Вношу изменения')
 
-    data = await asyncio.to_thread(get_user_data, user_tg_id)
+    data = await asyncio.to_thread(get_self_data, user_tg_id)
     gender = await check_gender(data[0][3])
     hobbies = await hobbies_list(data[1])
 
@@ -73,12 +65,8 @@ async def gender_checked(callback: CallbackQuery):
         media=InputMediaPhoto(
             media=f'{data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
-                'Данные успешно изменены ✅'
+                f'\n<b>Ваш пол:</b> {gender}'
+                '\n\nДанные успешно изменены ✅'
             ),
             parse_mode='HTML'
         )
@@ -103,7 +91,7 @@ async def gender_checked(callback: CallbackQuery):
     )
 
 
-# Удаление лишних сообщений из чата
+# Удаление лишних сообщений из чата (этот файл самая нижняя точка в иерархии)
 
 '''
 F.text – regular text message (this has already been done)

@@ -1,4 +1,6 @@
 from psycopg2.extras import RealDictCursor
+from src.database.requests.likes_users import get_ignore_users_ids
+from src.database.requests.likes_users import get_liked_users_ids
 from src.database.models import get_db_connection
 
 
@@ -43,10 +45,10 @@ def check_user(user_tg_id):
     finally:
         connection.close()
 
-# Получение данных конкретного пользователя
+# Получение моих данных
 
 
-def get_user_data(user_tg_id):
+def get_self_data(user_tg_id):
     connection = get_db_connection()
     try:
         with connection:
@@ -94,11 +96,19 @@ def get_user_data(user_tg_id):
     finally:
         connection.close()
 
-# Получение данных всех пользователей
+# Получение данных всех пользователей дя поиска all_users
 
 
-def get_data(self_tg_id, gender_data, exclude_ids=None):
+def get_all_users_data(self_tg_id, gender_data):
+
     connection = get_db_connection()
+
+    # получаю списки пользователей для исключения
+    ignore_users_ids = get_ignore_users_ids(self_tg_id)
+    liked_users_ids = get_liked_users_ids(self_tg_id)
+
+    # объединяю оба множества
+    ignore_list = ignore_users_ids | liked_users_ids
 
     try:
         with connection:
@@ -119,9 +129,12 @@ def get_data(self_tg_id, gender_data, exclude_ids=None):
                 params = [self_tg_id]
 
                 # Если передан список для исключения, добавляем условие
-                if exclude_ids:
-                    base_query += " AND user_tg_id NOT IN %s"
-                    params.append(tuple(exclude_ids))
+                if ignore_list:
+
+                    # Создаю плейсхолдеры
+                    placeholders = ', '.join(['%s'] * len(ignore_list))
+                    base_query += f" AND user_tg_id NOT IN ({placeholders})"
+                    params.extend(ignore_list)
 
                 # Если gender_data не 'all', добавляем условие по полу
                 if gender_data != 'all':
@@ -170,31 +183,3 @@ def get_data(self_tg_id, gender_data, exclude_ids=None):
     finally:
         # Закрываем соединение
         connection.close()
-
-
-# TODO РАЗОБРАТЬСЯ И ВНЕДРИТЬ
-'''
-def set_user(user_tg_id, name, username, photo_id, gender, age):
-    connection = get_db_connection()
-    try:
-        with connection:
-            with connection.cursor() as cursor:
-
-                cursor.execute(
-                    "SELECT id FROM users WHERE user_tg_id = %s", (user_tg_id,))
-                user_id = cursor.fetchone()
-
-                if not user_id:
-
-                    cursor.execute(
-                        "INSERT INTO users (user_tg_id, name, user_name, photo_id, gender, age) VALUES (%s, %s, %s, %s, %s, %s)",
-                        (user_tg_id, name, username, photo_id, gender, age)
-                    )
-                    print("Пользователь добавлен в базу данных.")
-                else:
-                    print("Пользователь уже существует.")
-    except Exception as e:
-        print(f"Ошибка при выполнении SQL-запроса: {e}")
-    finally:
-        connection.close()
-'''
