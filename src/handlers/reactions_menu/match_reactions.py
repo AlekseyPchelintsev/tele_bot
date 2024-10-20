@@ -36,8 +36,8 @@ async def my_reactions(callback: CallbackQuery, state: FSMContext):
 
         await load_pagination_start_or_end_data(callback.message,
                                                 data,
-                                                'paginator_likes',
-                                                'my_like_users',
+                                                'match_reactions_pagination',
+                                                'match_like_users',
                                                 total_pages)
 
         if total_pages == 1:

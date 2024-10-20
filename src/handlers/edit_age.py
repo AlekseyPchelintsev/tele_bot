@@ -4,9 +4,7 @@ from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from src.modules.check_gender import check_gender
-from src.modules.hobbies_list import hobbies_list
-from src.database.requests.user_data import get_self_data
+from src.modules.get_self_data import get_user_info
 from src.modules.delete_messages import del_last_message
 from src.database.requests.age_change import change_user_age
 from src.handlers.edit_name import check_emodji
@@ -20,49 +18,90 @@ class Registration(StatesGroup):
     change_age = State()
 
 
+# СТРАНИЦА ИЗМЕНЕНИЯ ДАТЫ РОЖДЕНИЯ
+
 @router.callback_query(F.data == 'edit_age')
 async def edit_age_menu(callback: CallbackQuery, state: FSMContext):
-    await state.clear()
+
+    # получаю свой id
     user_tg_id = callback.from_user.id
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
+
+    # очищаю состояние (на всякий случай)
+    await state.clear()
+
+    # плучаю свои данные для отрисовки страницы
+    user_info = await get_user_info(user_tg_id)
+
+    # Извлекаю свои данные для отрисовки страницы
+    self_data = user_info['data']
+
+    # отрисовка страницы
     edit_message = await callback.message.edit_media(
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Ваш текущий возраст:</b> {data[0][4]}'
+                f'\n<b>Ваш текущий возраст:</b> {self_data[0][4]}'
                 '\n\n💬 <i>Пришлите в чат дату вашего рождения в формате</i> <b>"ДД.ММ.ГГГГ":</b>'
             ),
             parse_mode='HTML'
         ),
         reply_markup=kb.back
     )
+
+    # добавляю id сообщения для дальнейшего редактирования
     await state.update_data(message_id=edit_message.message_id)
+
+    # устанавливаю состояние ожидания сообщения с датой рождения
     await state.set_state(Registration.change_age)
 
+
+# ОЖИДАНИЕ СООБЩЕНИЯ С ДАТОЙ ОТ ПОЛЬЗОВАТЕЛЯ
 
 @router.message(Registration.change_age)
 async def edit_age(message: Message, state: FSMContext, bot: Bot):
 
-    age = message.text
+    # плучаю свой id
     user_tg_id = message.from_user.id
+
+    # плучаю данные отправленные пользователем (ДД.ММ.ГГГГ)
+    age = message.text
+
+    # получаю id сообщения для редактирования
     message_data = await state.get_data()
     message_id = message_data.get('message_id')
+
+    # удаляю сообщение пользователя с датой из чата
     await del_last_message(message)
+
+    # передаю данные сообщения (новой даты рождения) для обработки
     await change_age(user_tg_id, age, message, message_id, state, bot)
 
 
-# Логика изменения возраста
+# ЛОГИКА ИЗМЕНЕНИЯ ВОЗВРАСТА
 
 async def change_age(user_tg_id, age, message, message_id, state, bot):
 
+    # проверяю является ли сообщение текстом
     if message.content_type == 'text' and message.text:
+
+        # сообщение от пользователя если прошло проверку на текст
         age = message.text
+
+        # проверяю не содержит ли сообщение эмодзи
         emodji_checked = await check_emodji(age)
 
+        # если содержит эмодзи
         if not emodji_checked:
+
+            # вывожу ошибку
             await wrong_date_format(user_tg_id, message_id, bot)
+
+            # возвращаюсь в состояние ожидания нового сообщения
             return
 
+        # если не содержит эмодзи -
+        # проверяю соответствие формата присланных данных
+        # (ДД.ММ.ГГГГ) и реальность даты
         try:
             check_birth_date = datetime.strptime(age, '%d.%m.%Y')
             user_birth_date = check_birth_date.strftime('%d.%m.%Y')
@@ -72,45 +111,63 @@ async def change_age(user_tg_id, age, message, message_id, state, bot):
                 (check_birth_date.month, check_birth_date.day)
             )
 
+        # если формат не соответствует (ДД.ММ.ГГГГ)
         except ValueError:
-            # Ввели не верный формат
+
+            # если неверный формат вывожу уведомление
             await wrong_date_format(user_tg_id, message_id, bot)
+
+            # возвращаюсь в состояние ожидания сообщения с датой (ДД.ММ.ГГГГ)
             return
 
+        # если все проверки прошли - отправляю данные для дальнейшей обработки
         await date_changed(user_tg_id, message, user_age,
                            user_birth_date, message_id,
                            state, bot)
-        await state.clear()
+
+    # если входящее сообщение не является текстом (фото, анимации и т.д.)
     else:
+
+        # вывожу уведомление
         await wrong_date_format(user_tg_id, message_id, bot)
+
+        # возвращаюсь в состояние ожидания сообщения с датой (ДД.ММ.ГГГГ)
         return
 
 
+# ОШИБКА ФОРМАТА ДАННЫХ ДАТЫ РОЖДЕНИЯ
+
 async def wrong_date_format(user_tg_id, message_id, bot):
 
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
+    # плучаю свои данные для отрисовки страницы
+    user_info = await get_user_info(user_tg_id)
 
+    # Извлекаю свои данные для отрисовки страницы
+    self_data = user_info['data']
+
+    # отрисовка страницы
     await bot.edit_message_media(
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Ваш текущий возраст:</b> {data[0][4]}'
+                f'\n<b>Ваш текущий возраст:</b> {self_data[0][4]}'
                 '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
             ),
             parse_mode='HTML'
         )
     )
+
     await asyncio.sleep(1.5)
 
     await bot.edit_message_media(
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Ваш текущий возраст:</b> {data[0][4]}'
+                f'\n<b>Ваш текущий возраст:</b> {self_data[0][4]}'
                 '\n\n💬 <i>Пришлите в чат дату вашего рождения в формате</i> <b>"ДД.ММ.ГГГГ":</b>'
                 '\n(<code>Пример:</code> <b>01.01.2000</b>)'
             ),
@@ -120,57 +177,74 @@ async def wrong_date_format(user_tg_id, message_id, bot):
     )
 
 
+# ИЗМЕНЕНИЕ ДАТЫ РОЖДЕНИЯ (ВНЕСЕНИЕ ИЗМЕНЕНИЙ В БД) И ОТРИСОВКА СТРАНИЦЫ
+
 async def date_changed(user_tg_id, message, user_age, user_birth_date, message_id, state, bot):
 
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
-    gender = await check_gender(data[0][3])
-    hobbies = await hobbies_list(data[1])
+    # плучаю свои данные для отрисовки страницы
+    user_info = await get_user_info(user_tg_id)
 
+    # Извлекаю свои данные для отрисовки страницы
+    self_data = user_info['data']
+
+    # отрисовка страницы
     await bot.edit_message_media(
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Ваш текущий возраст:</b> {data[0][4]}'
+                f'\n<b>Ваш текущий возраст:</b> {self_data[0][4]}'
             ),
             parse_mode='HTML'
         )
     )
     await loader(message, 'Вношу изменения')
-    await asyncio.to_thread(change_user_age, user_tg_id, user_age, user_birth_date)
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
-    gender = await check_gender(data[0][3])
-    hobbies = await hobbies_list(data[1])
 
+    # внесение изменений в бд
+    await asyncio.to_thread(change_user_age, user_tg_id, user_age, user_birth_date)
+
+    # получаю свои данные для отрисовки страницы с учетом изменений
+    user_info = await get_user_info(user_tg_id)
+
+    # Извлекаю свои данные для отрисовки страницы с учетом изменений
+    self_data = user_info['data']
+    self_gender = user_info['gender']
+    self_hobbies = user_info['hobbies']
+
+    # отрисовка страницы с учетом внесенных изменений
     await bot.edit_message_media(
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Ваш возраст:</b> {data[0][4]}'
+                f'\n<b>Ваш возраст:</b> {self_data[0][4]}'
                 '\n\nДата рождения успешно изменена ✅'
             ),
             parse_mode='HTML'
         )
     )
+
     await asyncio.sleep(1.5)
+
     await bot.edit_message_media(
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}'
-                f'\n<b>Возраст:</b> {data[0][4]}'
-                f'\n<b>Пол:</b> {gender}'
-                f'\n<b>Город:</b> {data[0][5]}'
-                f'\n<b>Увлечения:</b> {hobbies}'
+                f'\n<b>Имя:</b> {self_data[0][0]}'
+                f'\n<b>Возраст:</b> {self_data[0][4]}'
+                f'\n<b>Пол:</b> {self_gender}'
+                f'\n<b>Город:</b> {self_data[0][5]}'
+                f'\n<b>Увлечения:</b> {self_hobbies}'
                 '\n\n<b>Редактировать:</b>'
             ),
             parse_mode='HTML'
         ),
         reply_markup=kb.about_me
     )
+
+    # удаляю состояние и данные из состояния
     await state.clear()

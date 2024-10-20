@@ -1,11 +1,8 @@
 import asyncio
-import logging
-from aiogram.types import Message, CallbackQuery, InputMediaPhoto
+from aiogram.types import CallbackQuery, InputMediaPhoto
 from aiogram import F, Router
-from src.modules.notifications import loader, attention_message
-from src.modules.check_gender import check_gender
-from src.modules.hobbies_list import hobbies_list
-from src.database.requests.user_data import get_self_data, check_user
+from src.modules.notifications import loader
+from src.modules.get_self_data import get_user_info
 from src.database.requests.gender_change import change_user_gender
 
 import src.modules.keyboard as kb
@@ -16,16 +13,22 @@ router = Router()
 @router.callback_query(F.data == 'edit_gender')
 async def change_gender(callback: CallbackQuery):
 
+    # получаю свой id
     user_tg_id = callback.from_user.id
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
-    gender = await check_gender(data[0][3])
-    hobbies = await hobbies_list(data[1])
 
+    # плучаю свои данные
+    user_info = await get_user_info(user_tg_id)
+
+    # Извлекаю свои данные
+    self_data = user_info['data']
+    self_gender = user_info['gender']
+
+    # отрисовка страницы
     await callback.message.edit_media(
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Ваш пол:</b> {gender}'
+                f'\n<b>Ваш пол:</b> {self_gender}'
                 '\n\n<b>Выберите один из вариантов:</b>'
             ),
             parse_mode='HTML'
@@ -37,35 +40,48 @@ async def change_gender(callback: CallbackQuery):
 @router.callback_query(F.data.in_(['male', 'female', 'other']))
 async def gender_checked(callback: CallbackQuery):
 
+    # получаю свой id
     user_tg_id = callback.from_user.id
+
+    # получаю данные пола из колбэка
     new_gender = callback.data
 
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
-    gender = await check_gender(data[0][3])
-    hobbies = await hobbies_list(data[1])
+    # плучаю свои данные
+    user_info = await get_user_info(user_tg_id)
 
+    # Извлекаю свои данные
+    self_data = user_info['data']
+    self_gender = user_info['gender']
+
+    # отрисовка страницы
     await callback.message.edit_media(
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Ваш пол:</b> {gender}'
+                f'\n<b>Ваш пол:</b> {self_gender}'
             ),
             parse_mode='HTML'
         )
     )
 
+    # изменение данных в бд
     await asyncio.to_thread(change_user_gender, user_tg_id, new_gender)
     await loader(callback.message, 'Вношу изменения')
 
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
-    gender = await check_gender(data[0][3])
-    hobbies = await hobbies_list(data[1])
+    # плучаю свои данные для отрисовки страницы с учетом изменений
+    user_info = await get_user_info(user_tg_id)
 
+    # Извлекаю свои данные для отрисовки страницы с учетом изменений
+    self_data = user_info['data']
+    self_gender = user_info['gender']
+    self_hobbies = user_info['hobbies']
+
+    # отрисовка страницы с учетом внесенных изменений
     await callback.message.edit_media(
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Ваш пол:</b> {gender}'
+                f'\n<b>Ваш пол:</b> {self_gender}'
                 '\n\nДанные успешно изменены ✅'
             ),
             parse_mode='HTML'
@@ -76,45 +92,16 @@ async def gender_checked(callback: CallbackQuery):
 
     await callback.message.edit_media(
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {data[0][0]}\n'
-                f'<b>Возраст:</b> {data[0][4]}\n'
-                f'<b>Пол:</b> {gender}\n'
-                f'<b>Город:</b> {data[0][5]}\n'
-                f'<b>Увлечения:</b> {hobbies}\n\n'
+                f'\n<b>Имя:</b> {self_data[0][0]}\n'
+                f'<b>Возраст:</b> {self_data[0][4]}\n'
+                f'<b>Пол:</b> {self_gender}\n'
+                f'<b>Город:</b> {self_data[0][5]}\n'
+                f'<b>Увлечения:</b> {self_hobbies}\n\n'
                 '<b>Редактировать:</b>'
             ),
             parse_mode='HTML'
         ),
         reply_markup=kb.about_me
     )
-
-
-# Удаление лишних сообщений из чата (этот файл самая нижняя точка в иерархии)
-
-'''
-F.text – regular text message (this has already been done)
-F.photo – message with photo
-F.video – message with video
-F.animation – message with animation (gifs)
-F.contact – message sending contact details (very useful for FSM)
-F.document – a message with a file (there may also be a photo if it is sent as a document)
-F.data – message with CallData (this was processed in the previous article).
-'''
-
-
-@router.message(F.text | F.photo | F.video | F.animation |
-                F.contact | F.document | F.sticker)
-async def handle_random_message(message: Message):
-    await message.delete()
-    user_tg_id = message.from_user.id
-    data = await asyncio.to_thread(check_user, user_tg_id)
-
-    # если пользователь зарегистрирован
-    if data:
-        await attention_message(message, '⚠️ Если вы хотите внести изменения, перейдите '
-                                'в раздел <b>"редактировать профиль"</b>', 3)
-    else:
-        await attention_message(message, '⚠️ Что бы взаимодействовать с сервисом, '
-                                'вам необходимо <b>зарегистрироваться</b>', 3)

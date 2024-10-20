@@ -3,14 +3,10 @@ from aiogram.types import CallbackQuery
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
+from src.handlers.reactions_menu.notice_reaction import bot_notification_about_like, bot_notification_about_dislike, bot_send_message_about_like, bot_send_message_matchs_likes
 from src.modules.pagination_logic import (no_data_after_reboot_bot_reactions,
                                           back_callback,
                                           load_pagination_start_or_end_data)
-
-from src.modules.notifications import (bot_notification_about_like,
-                                       bot_notification_about_dislike,
-                                       bot_send_message_about_like,
-                                       bot_send_message_matchs_likes)
 
 from src.database.requests.likes_users import (insert_reaction,
                                                delete_and_insert_reactions,
@@ -69,6 +65,7 @@ async def reload_pagination_after_hide_or_like(callback,
                                                 page)
 
 
+# пагинация поиска пользователей
 @ router.callback_query(
     kb.Pagination.filter(F.action.in_(
         ['prev',
@@ -114,9 +111,10 @@ async def pagination_handler(
             # Выход из пагинации (четвертый параметр - текст под инфой пользователя (не обязательный))
             await back_callback(callback.message, user_tg_id, 'users_menu')
 
-        # скрыть пользователя из поиска и перенести в меню "скрытые пользователи"
+        # обработка кнопок "отправить реакцию" и "скрыть пользователя"
         elif callback_data.action in ['hide', 'like']:
 
+            # id текущего пользователя (просматриваемого)
             current_user_id = data[page][0]
 
             # лайк карточки пользователя
@@ -143,8 +141,7 @@ async def pagination_handler(
                     # функция отправки сообщения обоим пользователям
                     await bot_send_message_matchs_likes(user_tg_id,
                                                         current_user_id,
-                                                        bot,
-                                                        callback)
+                                                        bot)
 
                     # удаление текущего пользователя из data и отрисовка пагинации
                     await reload_pagination_after_hide_or_like(callback,
@@ -171,6 +168,7 @@ async def pagination_handler(
                     # всплывающее уведомление для "меня"
                     await bot_notification_about_like(callback.message)
 
+            # добавить пользователя в "скрытые пользователи" и убрать из поиска
             if callback_data.action == 'hide':
 
                 # добавляю в список "скрытые пользователи"

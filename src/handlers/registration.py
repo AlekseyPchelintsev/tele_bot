@@ -1,16 +1,17 @@
 import asyncio
-import logging
 from datetime import datetime
 from aiogram import Bot
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.modules.notifications import notification
-from config import sucessful_registration, video_no_nickname, in_progress
+from config import sucessful_registration, video_no_nickname, in_progress, no_photo_id
 from src.modules.delete_messages import del_messages, del_last_message
-from src.database.requests.photo_data import get_user_photo_id
 from src.database.requests.new_user import add_new_user
+from src.database.requests.user_data import check_user
+from src.modules.get_self_data import get_user_info
+from src.handlers.edit_name import check_emodji
 import src.modules.keyboard as kb
 
 router = Router()
@@ -29,105 +30,317 @@ delete_messages = []
 delete_last_message = []
 
 
+# МЕНЮ РЕГИСТРАЦИИ ПОЛЬЗОВАТЕЛЯ
 @router.callback_query(F.data == 'reg')
 async def reg(callback: CallbackQuery, state: FSMContext):
-    await callback.answer('Загружаю...')
+
     # контрольно убирает состояния если пользователь
     # попал в это меню после удаления анкеты
     await state.clear()
 
+    # получение id пользователя
     user_tg_id = callback.from_user.id
-    user_nickname = callback.from_user.username
-    await del_last_message(callback.message)
 
-    if user_tg_id:
-        if user_nickname:
+    # проверка наличия пользователя в бд
+    data = await asyncio.to_thread(check_user, user_tg_id)
 
-            del_message = await callback.message.answer(text='Пожалуйста, ведите ваше имя:')
-            delete_last_message.append(del_message.message_id)
-            await state.set_state(Registration.name)
+    # если пользователь есть в бд
+    if data:
 
-        else:
-            await callback.message.answer_video(
-                video=video_no_nickname,
-                caption=('\n\n⚠️ Чтобы продолжить, вам нужно указать \n<b>"Имя пользователя"</b> '
-                         'в настройках вашей учетной записи <b>Telegram</b>.\n\n'
-                         'Только после этого вы сможете:'),
-                parse_mode='HTML',
-                reply_markup=kb.regkey
+        # уведомление, что вы уже зарегистрированы
+        await notification(callback.message, '⚠️ <b>Вы уже зарегистрированы!</b>')
 
-            )
     else:
-        await callback.message.answer_photo(photo=in_progress,
-                                            caption=('Что-то пошло не так :( \n'
-                                                     'Попробуйте снова чуть позже.'),
-                                            parse_mode='HTML',
-                                            reply_markup=kb.regkey
-                                            )
 
-# Получение данных пользователя и добавление их в бд
+        # получаю ник пользователя
+        user_nickname = callback.from_user.username
+
+        # проверяю наличие id у пользователя
+        # (после удаления страницы бывает не подтягивает. Разбираюсь)
+        if user_tg_id:
+
+            # проверяю наличие у пользователя ника в телеге
+            if user_nickname:
+
+                # продолжаю регистрацию если ник есть
+                message_to_edit = await callback.message.edit_text(text='Пожалуйста, ведите ваше имя:')
+
+                # добавляю id сообщения для дальнейшего редактирования
+                await state.update_data(message_to_edit=message_to_edit.message_id)
+
+                # перехожу в состояние регистрации имени
+                await state.set_state(Registration.name)
+
+            # если ник в телеге у пользователя не указан
+            else:
+
+                # вывожу сообщение о невозможности зарегистрироваться с инструкцией
+                await callback.message.answer_video(
+                    video=video_no_nickname,
+                    caption=('\n\n⚠️ Чтобы продолжить, вам нужно указать \n<b>"Имя пользователя"</b> '
+                             'в настройках вашей учетной записи <b>Telegram</b>.\n\n'
+                             'Только после этого вы сможете:'),
+                    parse_mode='HTML',
+                    reply_markup=kb.regkey
+
+                )
+
+        # если id не подтянулся после удаления анкеты
+        else:
+
+            # вывожу уведомление с рестартом регистрации
+            await callback.message.answer_photo(photo=in_progress,
+                                                caption=('Что-то пошло не так :( \n'
+                                                         'Попробуйте снова чуть позже.'),
+                                                parse_mode='HTML',
+                                                reply_markup=kb.regkey
+                                                )
 
 
+# ПОЛУЧЕНИЕ ИМЕНИ ПОЛЬЗОВАТЕЛЯ
 @router.message(Registration.name)
 async def reg_name(message: Message, state: FSMContext, bot: Bot):
 
-    await del_messages(message.chat.id, delete_last_message)
-    await message.delete()
-
-    user_tg_id = message.from_user.id
-    name = message.text
-    name = name.title()
-    user_nickname = message.from_user.username
-    photo_id = await get_user_photo_id(bot, user_tg_id)
-
-    await state.update_data(name=name, nickname=user_nickname, photo=photo_id)
-    # Пол
-    await state.set_state(Registration.city)
-    await asyncio.sleep(.5)
-    del_message = await message.answer(text='Напишите в чат название города, в котором вы проживаете.')
-    delete_last_message.append(del_message.message_id)
-
-# Регистрация города
-
-
-@router.message(Registration.city)
-async def get_city(message: Message, state: FSMContext):
-
-    await del_messages(message.chat.id, delete_last_message)
+    # удаляю сообщение от пользователя
     await del_last_message(message)
 
-    data_city = message.text
-    city = data_city.title()
-    await state.update_data(city=city)
-    await state.set_state(Registration.gender)
-    await asyncio.sleep(.3)
-    await message.answer(text='Укажите ваш пол.', reply_markup=kb.gender)
+    # получаю id пользователя
+    user_tg_id = message.from_user.id
 
-    # Регистрация пола
+    # плучаю id сообщения из состояния для его редактирования
+    message_to_edit = await state.get_data()
+    message_id = message_to_edit.get('message_to_edit')
+
+    # завожу проверку на текст и отсутствие смайлов в сообщении
+    if message.content_type == 'text' and len(message.text) < 20:
+
+        # сохраняю текст сообщения и привожу его к заглавному
+        name = message.text.title()
+
+        # сохраняю ник пользователя
+        user_nickname = message.from_user.username
+
+        # проверяю наличие эмодзи в сообщении
+        emodji_checked = await check_emodji(name)
+
+        # если эмодзи есть в сообщении
+        if not emodji_checked:
+
+            # вывожу уведомление об ошибке
+
+            await bot.edit_message_text(chat_id=user_tg_id,
+                                        message_id=message_id,
+                                        text='⚠️ <b>Неверный формат данных</b> ⚠️',
+                                        parse_mode='HTML')
+
+            await asyncio.sleep(2)
+
+            await bot.edit_message_text(chat_id=user_tg_id,
+                                        message_id=message_id,
+                                        text=('❌ Имя должно содержать <b>только текст</b> '
+                                              '(без эмодзи), '
+                                              'а так же не должно превышать длинну в <b>20 символов</b>.'
+                                              '\n\nОтправьте ваше имя в чат:'),
+                                        parse_mode='HTML')
+
+            # возвращаюсь в состояние ожидания нового сообщения с именем
+            return
+
+        # сообщение для редактирования
+        message_to_edit = await bot.edit_message_text(chat_id=user_tg_id,
+                                                      message_id=message_id,
+                                                      text='Напишите в чат название города, '
+                                                      'в котором вы проживаете:')
+
+        # добавляю в состояние id особщения для дальнейшего редактирования
+        # (а также имя и ник)
+        await state.update_data(message_to_edit=message_to_edit.message_id,
+                                name=name,
+                                nickname=user_nickname)
+
+        # перехожу в состояние регистрации города пользователя
+        await state.set_state(Registration.city)
+
+    # если сообщение не текстовое (содержит фото, анимации и т.д.)
+    else:
+
+        # вывожу уведомление об ошибке
+
+        await bot.edit_message_text(chat_id=user_tg_id,
+                                    message_id=message_id,
+                                    text='⚠️ <b>Неверный формат данных</b> ⚠️',
+                                    parse_mode='HTML')
+
+        await asyncio.sleep(2)
+
+        await bot.edit_message_text(chat_id=user_tg_id,
+                                    message_id=message_id,
+                                    text=('❌ Имя не должно содержать изображения или '
+                                          'любой отличный от текста контент, '
+                                          'а так же не должно превышать длинну в <b>20 символов</b>.'
+                                          '\n\nОтправьте ваше имя в чат:'),
+                                    parse_mode='HTML')
+
+        # возвращаюсь в состояние ожидания нового сообщения с именем
+        return
 
 
+# ПОЛУЧЕНИЕ НАЗВАНИЕ ГОРОДА ПОЛЬЗОВАТЕЛЯ
+@router.message(Registration.city)
+async def get_city(message: Message, state: FSMContext, bot: Bot):
+
+    # удаляю сообщение пользователя из чата с названием города
+    await del_last_message(message)
+
+    # получаю id пользователя
+    user_tg_id = message.from_user.id
+
+    # плучаю id сообщения из состояния для его редактирования
+    message_to_edit = await state.get_data()
+    message_id = message_to_edit.get('message_to_edit')
+
+    # TODO ПРОВЕРКА НА ТЕКСТ И СМАЙЛЫ
+
+    # сохраняю данные города из сообщения и привожу название к заглавному
+
+    # завожу проверку на текст и отсутствие смайлов в сообщении
+    if message.content_type == 'text' and len(message.text) < 25:
+
+        # сохраняю текст сообщения и привожу его к заглавному
+        city = message.text.title()
+
+        # проверяю наличие эмодзи в сообщении
+        emodji_checked = await check_emodji(city)
+
+        # если эмодзи есть в сообщении
+        if not emodji_checked:
+
+            # вывожу уведомление об ошибке
+
+            await bot.edit_message_text(chat_id=user_tg_id,
+                                        message_id=message_id,
+                                        text='⚠️ <b>Неверный формат данных</b> ⚠️',
+                                        parse_mode='HTML')
+
+            await asyncio.sleep(2)
+
+            await bot.edit_message_text(chat_id=user_tg_id,
+                                        message_id=message_id,
+                                        text=('❌ Название города должно содержать <b>только текст</b>, не должно содержать эмодзи '
+                                              'и превышать длинну в <b>25 символов</b>.'
+                                              '\n\nОтправьте название вашего города в чат:'),
+                                        parse_mode='HTML')
+
+            # возвращаюсь в состояние ожидания нового сообщения с именем
+            return
+
+        # сообщение для редактирования
+        message_to_edit = await bot.edit_message_text(chat_id=user_tg_id,
+                                                      message_id=message_id,
+                                                      text='Укажите ваш пол.',
+                                                      reply_markup=kb.gender)
+
+        # сохраняю в состоянии название города и сообщение для редактирования
+        await state.update_data(message_to_edit=message_to_edit.message_id, city=city)
+
+        # перехожу в состояние регистрации города пользователя
+        await state.set_state(Registration.gender)
+
+    # если сообщение не текстовое (содержит фото, анимации и т.д.)
+    else:
+
+        # вывожу уведомление об ошибке
+
+        await bot.edit_message_text(chat_id=user_tg_id,
+                                    message_id=message_id,
+                                    text='⚠️ <b>Неверный формат данных</b> ⚠️',
+                                    parse_mode='HTML')
+
+        await asyncio.sleep(2)
+
+        await bot.edit_message_text(chat_id=user_tg_id,
+                                    message_id=message_id,
+                                    text=('❌ Название города не должно содержать изображения или '
+                                          'любой отличный от текста контент, '
+                                          'а так же не должно превышать длинну в <b>25 символов</b>.'
+                                          '\n\nОтправьте название вашего города в чат:'),
+                                    parse_mode='HTML')
+
+        # возвращаюсь в состояние ожидания нового сообщения с именем
+        return
+
+
+# РЕГИСТРАЦИЯ ПОЛА
 @router.callback_query(Registration.gender, F.data.in_(['male', 'female', 'other']))
 async def gender_checked(callback: CallbackQuery, state: FSMContext):
-    await callback.answer('Загружаю...')
-    await del_last_message(callback.message)
+
+    # сохраняю название пола из колбэка
     gender = callback.data
-    await state.update_data(gender=gender)
-    await asyncio.sleep(.3)
+
+    message_to_edit = await callback.message.edit_text(text='Укажите дату вашего рождения в формате <b>"ДД.ММ.ГГГГ"</b>.',
+                                                       parse_mode='HTML')
+
+    # добавляю название пола в состояние
+    await state.update_data(gender=gender, message_to_edit=message_to_edit.message_id)
+
+    # перехожу в состояние регистрации даты рождения
     await state.set_state(Registration.birth_date)
-    del_message = await callback.message.answer(text='Укажите дату вашего рождения в формате "ДД.ММ.ГГГГ".')
-    delete_messages.append(del_message.message_id)
-
-# TODO Регистрация возраста и завершение регистрации
 
 
+# ПОЛУЧЕНИЕ ДАТЫ РОЖДЕНИЯ
 @router.message(Registration.birth_date)
-async def age_checked(message: Message, state: FSMContext):
-    chat_id = message.chat.id
-    delete_messages.append(message.message_id)
-    date_input = message.text
+async def age_checked(message: Message, state: FSMContext, bot: Bot):
 
-    # Обработка даты рождения (вынести в функцию)
+    await del_last_message(message)
+
+    # получаю id пользователя
+    user_tg_id = message.from_user.id
+
+    # плучаю id сообщения из состояния для его редактирования
+    message_to_edit = await state.get_data()
+    message_id = message_to_edit.get('message_to_edit')
+
+    # добавляю в список сообщений для удаления данное сообщение
+    delete_messages.append(message.message_id)
+
+    # поверка присланных данных пользователем
+    if message.content_type == 'text' and message.text:
+
+        # сообщение от пользователя если прошло проверку на текст
+        date_input = message.text
+
+        # проверяю не содержит ли сообщение эмодзи
+        emodji_checked = await check_emodji(date_input)
+
+        # если содержит эмодзи
+        if not emodji_checked:
+
+            # вывожу уведомление об ошибке
+
+            await bot.edit_message_text(chat_id=user_tg_id,
+                                        message_id=message_id,
+                                        text='⚠️ <b>Неверный формат данных</b> ⚠️',
+                                        parse_mode='HTML')
+
+            await asyncio.sleep(2)
+
+            await bot.edit_message_text(chat_id=user_tg_id,
+                                        message_id=message_id,
+                                        text=('❌ Сообщение должно содержать <b>только текст</b> и '
+                                              'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
+                                              '\n(Пример: 01.01.2001)'),
+                                        parse_mode='HTML'
+                                        )
+
+            # возвращаюсь в состояние ожидания нового сообщения
+            return
+
+    # если не содержит эмодзи -
+    # проверяю соответствие формата присланных данных
+    # (ДД.ММ.ГГГГ) и реальность даты
     try:
+
+        # проверяю что дата соответствует формату (ДД.ММ.ГГГГ)
         check_birth_date = datetime.strptime(date_input, '%d.%m.%Y')
         user_birth_date = check_birth_date.strftime('%d.%m.%Y')
         today_date = datetime.today()
@@ -136,41 +349,146 @@ async def age_checked(message: Message, state: FSMContext):
             (check_birth_date.month, check_birth_date.day)
         )
 
-    except ValueError:
-        # Ввели не верный формат
-        await del_messages(chat_id, delete_messages)
-        await notification(message, '⚠️ Неверный формат данных ⚠️')
-        del_message = await message.answer(
-            text='Пожалуйста, введите дату вашего рождения в формате "<b>ДД.ММ.ГГГГ</b>".',
-            parse_mode='HTML'
-        )
-        delete_messages.append(del_message.message_id)
-        await state.set_state(Registration.birth_date)
+    # если формат неверный
+    except:
+
+        # вывожу уведомление об ошибке
+
+        await bot.edit_message_text(chat_id=user_tg_id,
+                                    message_id=message_id,
+                                    text='⚠️ <b>Неверный формат данных</b> ⚠️',
+                                    parse_mode='HTML')
+
+        await asyncio.sleep(2)
+
+        await bot.edit_message_text(chat_id=user_tg_id,
+                                    message_id=message_id,
+                                    text=('❌ Сообщение должно содержать <b>только текст</b> и '
+                                          'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
+                                          '\n(Пример: 01.01.2001)'),
+                                    parse_mode='HTML'
+                                    )
+
+        # возвращаю в состояние ожидания нового сообщения с датой
         return
 
-    # Извлекаем данные из состояния
-    current_datetime = datetime.now()
+    # если все проверки прошли успешно
+    message_to_edit = await bot.edit_message_text(chat_id=user_tg_id,
+                                                  message_id=message_id,
+                                                  text=('📸 Пришлите в чат одно фото, '
+                                                        'которое хотите установить в '
+                                                        'качестве обложки вашей анкеты:'),
+                                                  parse_mode='HTML',
+                                                  reply_markup=kb.late_upload_photo_to_profile)
+
+    # Добавляю id  всписок для удаления в шаге добавления фото
+    delete_messages.append(message_to_edit.message_id)
+
+    # если дата соответствует прошла все проверки - сохраняю ее в состоянии
+    await state.update_data(user_birth_date=user_birth_date,
+                            user_age=user_age,
+                            message_to_edit=message_to_edit.message_id)
+
+    # устанавливаю состояние регистрации фото профиля пользователя
+    await state.set_state(Registration.photo)
+
+
+# ДОБАВЛЕНИЕ ФОТО И ЗАВЕРШЕНИЕ РЕГИСТРАЦИИ
+@router.message(Registration.photo)
+async def add_photo_to_profile(message: Message, state: FSMContext, bot: Bot):
+
+    await del_last_message(message)
+
+    # получаю id пользователя
     user_tg_id = message.from_user.id
+
+    # плучаю id сообщения из состояния для его редактирования
+    message_to_edit = await state.get_data()
+    message_id = message_to_edit.get('message_to_edit')
+
+    # поверка что сообщение - фото
+    if message.photo:
+
+        # плучаю id фото
+        photo_id = message.photo[-1].file_id
+
+        # регистрация нового пользователя и внесение всех необходимых данных в бд
+        await sucess_registration(message, state, photo_id, user_tg_id)
+
+    # если сообщение не фото
+    else:
+
+        # вывожу уведомление об ошибке
+        await bot.edit_message_text(chat_id=user_tg_id,
+                                    message_id=message_id,
+                                    text='⚠️ <b>Неверный формат данных</b> ⚠️',
+                                    parse_mode='HTML')
+
+        await asyncio.sleep(2)
+
+        # отрисовка сообщения с пояснением требований к формату
+        await bot.edit_message_text(chat_id=user_tg_id,
+                                    message_id=message_id,
+                                    text='Фото должно быть в формате <b>.jpg '
+                                    '.jpeg</b> или <b>.png</b>'
+                                    '\n<i>Отправьте фото в чат:</i>'
+                                    '\n\n(Вы можете загрузить фото позже, в '
+                                    'разделе "✏️ <b>Редактировать профиль</b>")',
+                                    parse_mode='HTML',
+                                    reply_markup=kb.late_upload_photo_to_profile)
+
+        # возвращаюсь в состояние ожидания фото
+        return
+
+# ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ СТАЛ ДОБАВЛЯТЬ ФОТО И НАЖАЛ "Загрузить позже"
+
+
+@router.callback_query(F.data == 'late_load_photo')
+async def late_upload_photo(callback: CallbackQuery, state: FSMContext):
+
+    user_tg_id = callback.from_user.id
+
+    # вместо фото от пользователя загружаю "заглушку" об отсутствии фото
+    # регистрация нового пользователя и внесение всех необходимых данных в бд
+    await sucess_registration(callback.message, state, no_photo_id, user_tg_id)
+
+
+# ЛОГИКА ОКОНЧАНИЯ РЕГИСТРАЦИИ
+async def sucess_registration(message, state, photo_id, user_tg_id):
+
+    # получаю текущую дату и время регистрации для внесения в таблицу
+    current_datetime = datetime.now()
+
+    # извлекаю данные из состояния
     data = await state.get_data()
     name = data.get('name')
-    photo_id = data.get('photo')
     nickname = data.get('nickname')
     gender = data.get('gender')
     city = data.get('city')
+    birth_date = data.get('user_birth_date')
+    age = data.get('user_age')
 
-    # Функция добавления пользоваателя
+    # передаю данные в функцию добавления нового пользователя в бд
     await asyncio.to_thread(
         add_new_user, current_datetime, user_tg_id, name, photo_id,
-        nickname, gender, user_age, user_birth_date, city
+        nickname, gender, age, birth_date, city
     )
 
+    # очищаю состояние
     await state.clear()
-    await del_messages(chat_id, delete_messages)
+
+    # удаляю сообщения из списка для удаления сообщений
+    await del_messages(user_tg_id, delete_messages)
+
+    # уведомление об успешной регистрации
     await message.answer_photo(
         photo=f'{sucessful_registration}',
-        caption='<b>Вы успешно зарегистрированы</b> ✅\n\n'
-        'Вы также можете рассказать о своих увлечениях людям, '
-        'чтобы им было проще вас найти.',
+        caption='<b>Вы успешно зарегистрированы!</b> ✅\n\n'
+        '<b>Добавьте несколько увлечений</b>, чтобы другим '
+        'пользователям было проще вас найти.'
+        '\n\n А ещё вы можете рассказать более подробно о своём образовании, '
+        'планах, личных качествах (да и вообще о чем угодно), '
+        'заполнив раздел <b>"О себе"</b>.',
         parse_mode='HTML',
         reply_markup=kb.start_edit
     )

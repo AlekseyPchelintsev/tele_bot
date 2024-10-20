@@ -230,8 +230,6 @@ def search_users(user_tg_id, gender, city, hobbies):
 
                 # Если hobbies = ["all"], возвращаем без фильтра по хобби
                 if hobbies == ["all"]:
-                    print("Запрос без хобби:", base_query)
-                    print("Параметры:", params)
 
                     cursor.execute(base_query, params)
                     users = cursor.fetchall()
@@ -243,9 +241,6 @@ def search_users(user_tg_id, gender, city, hobbies):
                 query_with_hobbies = f"{base_query} AND ({hobby_filters})"
                 params_with_hobbies = params + \
                     [f"%{hobby}%" for hobby in hobbies]
-
-                print("Первый запрос:", query_with_hobbies)
-                print("Параметры:", params_with_hobbies)
 
                 cursor.execute(query_with_hobbies, params_with_hobbies)
                 users = cursor.fetchall()
@@ -267,9 +262,6 @@ def search_users(user_tg_id, gender, city, hobbies):
 
                 query_word_match = f"{
                     base_query} AND ({' OR '.join(hobby_conditions)})"
-
-                print("Второй запрос:", query_word_match)
-                print("Параметры:", params_word_match)
 
                 cursor.execute(query_word_match, params_word_match)
                 users = cursor.fetchall()

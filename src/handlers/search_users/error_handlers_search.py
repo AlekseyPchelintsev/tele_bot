@@ -3,7 +3,6 @@ from aiogram import Router
 from aiogram.types import InputMediaPhoto
 from config import in_progress
 from src.modules.get_self_data import get_user_info
-from src.database.requests.user_data import get_self_data
 import src.modules.keyboard as kb
 
 router = Router()
@@ -17,6 +16,7 @@ async def wrong_search_city_name(user_tg_id, message_id, bot):
 
     # плучаю свои данные
     user_info = await get_user_info(user_tg_id)
+
     # Извлекаю название своего города
     city_data = user_info['data'][0][5]
 
@@ -56,8 +56,6 @@ async def wrong_search_city_name(user_tg_id, message_id, bot):
 
 # Неверный формат данных при поиске пользователей по хобби
 async def wrong_search_hobby_name(user_tg_id, message_id, bot):
-
-    self_data = await asyncio.to_thread(get_self_data, user_tg_id)
 
     await bot.edit_message_media(
         chat_id=user_tg_id,

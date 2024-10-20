@@ -96,11 +96,37 @@ async def load_pagination_start_or_end_data(callback_data,
     gender = await check_gender(data[page][4])
     hobbies = await hobbies_list(data[page][7])
 
-    try:
+    if keyboard_name == 'match_reactions_pagination':
 
-        await callback_data.edit_media(
-            media=InputMediaPhoto(
-                media=f'{data[page][2]}',
+        try:
+
+            # получаю ник пользователя для передачи в кнопку "Чат"
+            nickname = data[page][3]
+
+            # отрисовка страницы (через редактирование сообщения)
+            await callback_data.edit_media(
+                media=InputMediaPhoto(
+                    media=f'{data[page][2]}',
+                    caption=(
+                        f'<b>Имя:</b> {data[page][1]}\n'
+                        f'<b>Возраст:</b> {data[page][5]}\n'
+                        f'<b>Пол:</b> {gender}\n'
+                        f'<b>Город:</b> {data[page][6]}\n'
+                        f'<b>Увлечения:</b> {hobbies}\n\n'
+                        f'{text_info}'
+                    ),
+                    parse_mode='HTML',
+                ),
+                reply_markup=keyboard(
+                    page=page, list_type=list_type, nickname=nickname, total_pages=total_pages)
+            )
+
+        # если не удается отредактировать
+        except:
+
+            # отправляю отдельное сообщение
+            await callback_data.answer_photo(
+                photo=f'{data[page][2]}',
                 caption=(
                     f'<b>Имя:</b> {data[page][1]}\n'
                     f'<b>Возраст:</b> {data[page][5]}\n'
@@ -110,13 +136,53 @@ async def load_pagination_start_or_end_data(callback_data,
                     f'{text_info}'
                 ),
                 parse_mode='HTML',
-            ),
-            reply_markup=keyboard(
-                page=page, list_type=list_type, total_pages=total_pages)
-        )
-    except Exception as e:
-        # print(f'{e}')
-        pass
+                reply_markup=keyboard(
+                    page=page, list_type=list_type, nickname=nickname, total_pages=total_pages
+                )
+            )
+
+    # для всех остальных пунктов меню мои реакции
+    else:
+
+        try:
+
+            # отрисовка страницы (через редактирование сообщения)
+            await callback_data.edit_media(
+                media=InputMediaPhoto(
+                    media=f'{data[page][2]}',
+                    caption=(
+                        f'<b>Имя:</b> {data[page][1]}\n'
+                        f'<b>Возраст:</b> {data[page][5]}\n'
+                        f'<b>Пол:</b> {gender}\n'
+                        f'<b>Город:</b> {data[page][6]}\n'
+                        f'<b>Увлечения:</b> {hobbies}\n\n'
+                        f'{text_info}'
+                    ),
+                    parse_mode='HTML',
+                ),
+                reply_markup=keyboard(
+                    page=page, list_type=list_type, total_pages=total_pages)
+            )
+
+        # если не удается отредактировать
+        except:
+
+            # отправляю отдельное сообщение
+            await callback_data.answer_photo(
+                photo=f'{data[page][2]}',
+                caption=(
+                    f'<b>Имя:</b> {data[page][1]}\n'
+                    f'<b>Возраст:</b> {data[page][5]}\n'
+                    f'<b>Пол:</b> {gender}\n'
+                    f'<b>Город:</b> {data[page][6]}\n'
+                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'{text_info}'
+                ),
+                parse_mode='HTML',
+                reply_markup=keyboard(
+                    page=page, list_type=list_type, total_pages=total_pages
+                )
+            )
 
 
 # загрузка пагинации (для message с передачей bot)

@@ -1,17 +1,17 @@
 import asyncio
 from config import delete_profile_id
 from aiogram import Bot
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
+from src.handlers.reactions_menu.notice_reaction import bot_send_message_about_like, bot_notification_about_dislike, bot_send_message_matchs_likes
 from src.modules.pagination_logic import (no_data_after_reboot_bot_reactions,
                                           back_callback,
                                           load_pagination_start_or_end_data)
 
-from src.modules.notifications import (bot_notification_about_dislike,
-                                       bot_send_message_about_like,
-                                       bot_send_message_matchs_likes,)
+from src.modules.notifications import attention_message
 
+from src.database.requests.user_data import check_user
 from src.database.requests.likes_users import (insert_reaction,
                                                get_reaction,
                                                delete_reaction,
@@ -100,12 +100,8 @@ async def pagination_handler_likes(
     # data[0][3] - ник пользователя
     data = (await state.get_data()).get('users_data')
 
-    # если бот ушел в ребут с открытой пагинацией у пользователя
-    if not data:
-        await no_data_after_reboot_bot_reactions(callback, 'back_reactions')
-
     # Загрузка пагинации если data не None
-    else:
+    try:
 
         # длинна data для отрисовки кнопок переключения карточек
         total_pages = len(data)
@@ -156,7 +152,9 @@ async def pagination_handler_likes(
                                                                     page)
 
                 # отправка сообщения каждому с данными для приватной беседы
-                await bot_send_message_matchs_likes(user_tg_id, current_user_id, bot, callback)
+                await bot_send_message_matchs_likes(user_tg_id,
+                                                    current_user_id,
+                                                    bot)
 
             else:
 
@@ -227,6 +225,7 @@ async def pagination_handler_likes(
                                                                 list_type,
                                                                 page)
 
+            # вывожу уведомление
             await bot_notification_about_dislike(callback.message,
                                                  '🚫 <b>Реакция успешно удалена!</b>')
 
@@ -234,51 +233,42 @@ async def pagination_handler_likes(
         elif callback_data.action == 'delete_contact':
 
             # удаляем реакцию из бд (matchreactions) и выводим уведомление
-            delete = await asyncio.to_thread(delete_from_my_contacts, user_tg_id, current_user_id)
+            await asyncio.to_thread(delete_from_my_contacts, user_tg_id, current_user_id)
 
-            if delete:
-                # добавляем пользователя в ignorelist
-                await asyncio.to_thread(send_user_to_ignore_table, user_tg_id, current_user_id)
+            # добавляем пользователя в ignorelist
+            await asyncio.to_thread(send_user_to_ignore_table, user_tg_id, current_user_id)
 
-                # удаление дизлайкнутого пользователя из data и отрисовка пагинации без него
-                await reload_reaction_pagination_after_hide_or_like(callback,
-                                                                    user_tg_id,
-                                                                    data,
-                                                                    keyboard,
-                                                                    list_type,
-                                                                    page)
+            # удаление дизлайкнутого пользователя из data и отрисовка пагинации без него
+            await reload_reaction_pagination_after_hide_or_like(callback,
+                                                                user_tg_id,
+                                                                data,
+                                                                keyboard,
+                                                                list_type,
+                                                                page)
 
-                await bot_notification_about_dislike(callback.message,
-                                                     '❗️ <b>Пользователь удален из ваших контактов</b>\n'
-                                                     'и добавлен в раздел:\n'
-                                                     '"🚷 <b>Скрытые пользователи</b>"')
-
-            else:
-                await bot_notification_about_dislike(callback.message,
-                                                     '🚧 Что-то пошло не так. Попробуйте позже 🚧')
+            # вывожу уведомление
+            await bot_notification_about_dislike(callback.message,
+                                                 '❗️ <b>Пользователь удален из ваших контактов</b>\n'
+                                                 'и добавлен в раздел:\n'
+                                                 '"🚷 <b>Скрытые пользователи</b>"')
 
         # удаление пользователя из "Скрытые пользователи"
         elif callback_data.action == 'remove_from_ignore':
 
-            # удаляем реакцию из бд (matchreactions) и выводим уведомление
-            delete = await asyncio.to_thread(remove_user_from_ignore_table, user_tg_id, current_user_id)
+            # удаляем реакцию из бд (matchreactions)
+            await asyncio.to_thread(remove_user_from_ignore_table, user_tg_id, current_user_id)
 
-            if delete:
+            # удаление пользователя из data и отрисовка пагинации без него
+            await reload_reaction_pagination_after_hide_or_like(callback,
+                                                                user_tg_id,
+                                                                data,
+                                                                keyboard,
+                                                                list_type,
+                                                                page)
 
-                # удаление пользователя из data и отрисовка пагинации без него
-                await reload_reaction_pagination_after_hide_or_like(callback,
-                                                                    user_tg_id,
-                                                                    data,
-                                                                    keyboard,
-                                                                    list_type,
-                                                                    page)
-
-                await bot_notification_about_dislike(callback.message,
-                                                     '☺️ <b>Пользователь снова доступен в поиске!</b>')
-
-            else:
-                await bot_notification_about_dislike(callback.message,
-                                                     '🚧 <b>Что-то пошло не так. Попробуйте позже</b> 🚧')
+            # вывожу уведомление
+            await bot_notification_about_dislike(callback.message,
+                                                 '☺️ <b>Пользователь снова доступен в поиске!</b>')
 
         # отрисовка клавиатуры при переключении между карточками
         else:
@@ -290,4 +280,38 @@ async def pagination_handler_likes(
                                                     total_pages,
                                                     page)
 
+    # если бот ушел в ребут с открытой пагинацией у пользователя
+    except:
+
+        await no_data_after_reboot_bot_reactions(callback, 'back_reactions')
+
     await callback.answer()
+
+
+# Удаление лишних сообщений из чата (этот файл самая нижняя точка в иерархии)
+
+'''
+F.text – regular text message (this has already been done)
+F.photo – message with photo
+F.video – message with video
+F.animation – message with animation (gifs)
+F.contact – message sending contact details (very useful for FSM)
+F.document – a message with a file (there may also be a photo if it is sent as a document)
+F.data – message with CallData (this was processed in the previous article).
+'''
+
+
+@router.message(F.text | F.photo | F.video | F.animation |
+                F.contact | F.document | F.sticker)
+async def handle_random_message(message: Message):
+    await message.delete()
+    user_tg_id = message.from_user.id
+    data = await asyncio.to_thread(check_user, user_tg_id)
+
+    # если пользователь зарегистрирован
+    if data:
+        await attention_message(message, '⚠️ Если вы хотите внести изменения, перейдите '
+                                'в раздел <b>"редактировать профиль"</b>', 3)
+    else:
+        await attention_message(message, '⚠️ Что бы взаимодействовать с сервисом, '
+                                'вам необходимо <b>зарегистрироваться</b>', 3)

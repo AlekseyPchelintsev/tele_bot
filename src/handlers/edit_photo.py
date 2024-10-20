@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from aiogram import Bot
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router
@@ -7,9 +6,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from config import no_photo_id
 from src.modules.notifications import loader
-from src.modules.check_gender import check_gender
-from src.modules.hobbies_list import hobbies_list
-from src.database.requests.user_data import get_self_data
+from src.modules.get_self_data import get_user_info
 from src.modules.delete_messages import del_last_message
 from src.database.requests.photo_data import (update_user_photo,
                                               delete_user_photo)
@@ -26,27 +23,99 @@ class Registration(StatesGroup):
 delete_messages = []
 delete_last_message = []
 
-# Меню "редактировать фото"
 
+# МЕНЮ "РЕДАКТИРОВАТЬ ФОТО"
 
 @router.callback_query(F.data == 'edit_photo')
 async def edit_photo_menu(callback: CallbackQuery, state: FSMContext):
 
+    # получаю свой id
+    user_tg_id = callback.from_user.id
+
+    # очищаю состояние (на всякий случай)
     await state.clear()
-    await edit_photo_menu(callback)
 
-# Меню загрузки нового фото профиля
+    # получаю свои данные для отрисовки страницы
+    user_info = await get_user_info(user_tg_id)
 
+    # Извлекаю свои данные для отрисовки страницы
+    self_data = user_info['data']
+
+    # поверяю не является id фото в базе id изображения удаленного фото
+    if self_data[0][1] == no_photo_id:
+
+        try:
+
+            # отрисовка страницы без кнопки "удалить фото"
+            await callback.message.edit_media(
+                media=InputMediaPhoto(
+                    media=f'{self_data[0][1]}',
+                    caption=(
+                        '<b>Выберите действие:</b>'
+                    ),
+                    parse_mode='HTML'
+                ),
+                reply_markup=kb.edit_no_photo
+            )
+
+        except:
+
+            await callback.message.answer_photo(
+                photo=f'{self_data[0][1]}',
+                caption=(
+                    '<b>Выберите действие:</b>'
+                ),
+                parse_mode='HTML',
+                reply_markup=kb.edit_no_photo
+            )
+
+    # если id фото в базе не равняется id изображения удаленного фото
+    else:
+
+        try:
+
+            # отрисовка страницы с кнопкой "удалить фото"
+            await callback.message.edit_media(
+                media=InputMediaPhoto(
+                    media=f'{self_data[0][1]}',
+                    caption=(
+                        '<b>Выберите действие:</b>'
+                    ),
+                    parse_mode='HTML'
+                ),
+                reply_markup=kb.edit_photo
+            )
+
+        except:
+
+            await callback.message.answer_photo(
+                photo=f'{self_data[0][1]}',
+                caption=(
+                    '<b>Выберите действие:</b>'
+                ),
+                parse_mode='HTML',
+                reply_markup=kb.edit_photo
+            )
+
+
+# МЕНЮ ЗАГРУЗКИ НОВОГО ФОТО
 
 @router.callback_query(F.data == 'new_photo')
 async def edit_photo(callback: CallbackQuery, state: FSMContext):
 
+    # оплучаю свой id
     user_tg_id = callback.from_user.id
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
 
+    # получаю свои данные для отрисовки страницы
+    user_info = await get_user_info(user_tg_id)
+
+    # Извлекаю свои данные для отрисовки страницы
+    self_data = user_info['data']
+
+    # отрисовка страницы
     edit_message = await callback.message.edit_media(
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
                 '\n\n💬 <b>Отправьте новое фото в чат:</b>'
             ),
@@ -54,108 +123,60 @@ async def edit_photo(callback: CallbackQuery, state: FSMContext):
         ),
         reply_markup=kb.back_to_photo
     )
+
+    # добавление в состояние id сообщения для редактирования
     await state.update_data(message_id=edit_message.message_id)
+
+    # устанавливаю состояние ожидания нового фотого от пользователя
     await state.set_state(Registration.photo)
 
-# Загрузка нового фото профиля
 
+# СОСТОЯНИЕ ОЖИДАНИЯ НОВОГО ФОТО ОТ ПОЛЬЗОВАТЕЛЯ
 
 @router.message(Registration.photo)
 async def get_new_photo(message: Message, state: FSMContext, bot: Bot):
 
+    # получаю свой id
     user_tg_id = message.from_user.id
+
+    # получаю id сообщения для редактирования из состояни
     message_data = await state.get_data()
     message_id = message_data.get('message_id')
-    await del_last_message(message)
+
+    # вношу изменения в бд с новым фото анкеты пользователя
     await add_new_photo(user_tg_id, message, message_id, state, bot)
 
 
-# Удаление фото профиля
-
-
-@router.callback_query(F.data == 'del_photo')
-async def delete_profile_photo(callback: CallbackQuery):
-
-    user_tg_id = callback.from_user.id
-    await delete_photo(user_tg_id, callback)
-
-
-# Логика меню редактирования фото
-
-async def edit_photo_menu(callback):
-    user_tg_id = callback.from_user.id
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
-
-    photo_id = data[0][1]
-    if photo_id == no_photo_id:
-        try:
-            await callback.message.edit_media(
-                media=InputMediaPhoto(
-                    media=f'{data[0][1]}',
-                    caption=(
-                        '<b>Выберите действие:</b>'
-                    ),
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.edit_no_photo
-            )
-        except:
-            try:
-                await del_last_message(callback.message)
-            except:
-                pass
-            await callback.message.answer_photo(
-                photo=f'{data[0][1]}',
-                caption=(
-                    '<b>Выберите действие:</b>'
-                ),
-                parse_mode='HTML',
-                reply_markup=kb.edit_no_photo
-            )
-    else:
-        try:
-            await callback.message.edit_media(
-                media=InputMediaPhoto(
-                    media=f'{data[0][1]}',
-                    caption=(
-                        '<b>Выберите действие:</b>'
-                    ),
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.edit_photo
-            )
-        except:
-            try:
-                await del_last_message(callback.message)
-            except:
-                pass
-            await callback.message.answer_photo(
-                photo=f'{data[0][1]}',
-                caption=(
-                    '<b>Выберите действие:</b>'
-                ),
-                parse_mode='HTML',
-                reply_markup=kb.edit_photo
-            )
-
-# Логика обновления фото профиля
-
+# ОБНОВЛЕНИЕ ФОТО ПРОФИЛЯ (ДОБАВЛЕНИЕ В БД И ОТРИСОВКА СТРАНИЦЫ)
 
 async def add_new_photo(user_tg_id, message, message_id, state, bot):
+
+    # удаляю последнее сообщение пользователя с фото из чата
+    await del_last_message(message)
+
+    # если сообщение является фото
     if message.photo:
 
-        data = await asyncio.to_thread(get_self_data, user_tg_id)
-        gender = await check_gender(data[0][3])
-        hobbies = await hobbies_list(data[1])
+        # получаю свои данные для отрисовки страницы
+        user_info = await get_user_info(user_tg_id)
 
+        # Извлекаю свои данные для отрисовки страницы
+        self_data = user_info['data']
+        self_gender = user_info['gender']
+        self_hobbies = user_info['hobbies']
+
+        # получаю id загруженного изображение ([-1] - лучшее качество)
         photo_id = message.photo[-1].file_id
+
+        # вношу новое фото в бд
         await asyncio.to_thread(update_user_photo, user_tg_id, photo_id)
 
+        # отрисовка страницы
         await bot.edit_message_media(
             chat_id=user_tg_id,
             message_id=message_id,
             media=InputMediaPhoto(
-                media=f'{data[0][1]}',
+                media=f'{self_data[0][1]}',
                 caption=(
                     '📸'
                 ),
@@ -165,15 +186,19 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
 
         await loader(message, 'Загружаю')
 
-        data = await asyncio.to_thread(get_self_data, user_tg_id)
-        gender = await check_gender(data[0][3])
-        hobbies = await hobbies_list(data[1])
+        # получаю свои данные для отрисовки страницы с учетом изменений
+        user_info = await get_user_info(user_tg_id)
+
+        # Извлекаю свои данные для отрисовки страницы с учетом изменений
+        self_data = user_info['data']
+        self_gender = user_info['gender']
+        self_hobbies = user_info['hobbies']
 
         await bot.edit_message_media(
             chat_id=user_tg_id,
             message_id=message_id,
             media=InputMediaPhoto(
-                media=f'{data[0][1]}',
+                media=f'{self_data[0][1]}',
                 caption=(
                     'Фото профиля успешно обновлено ✅'
                 ),
@@ -187,32 +212,40 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
             chat_id=user_tg_id,
             message_id=message_id,
             media=InputMediaPhoto(
-                media=f'{data[0][1]}',
+                media=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {data[0][0]}\n'
-                    f'<b>Возраст:</b> {data[0][4]}\n'
-                    f'<b>Пол:</b> {gender}\n'
-                    f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'\n<b>Имя:</b> {self_data[0][0]}\n'
+                    f'<b>Возраст:</b> {self_data[0][4]}\n'
+                    f'<b>Пол:</b> {self_gender}\n'
+                    f'<b>Город:</b> {self_data[0][5]}\n'
+                    f'<b>Увлечения:</b> {self_hobbies}\n\n'
                     '<b>Редактировать:</b>'
                 ),
                 parse_mode='HTML'
             ),
             reply_markup=kb.about_me
         )
-        await state.clear()
-    else:
-        data = await asyncio.to_thread(get_self_data, user_tg_id)
-        gender = await check_gender(data[0][3])
-        hobbies = await hobbies_list(data[1])
 
+        # очищаю состояние
+        await state.clear()
+
+    # если сообщение не содержит фото
+    else:
+
+        # получаю свои данные для отрисовки страницы с учетом изменений
+        user_info = await get_user_info(user_tg_id)
+
+        # Извлекаю свои данные для отрисовки страницы с учетом изменений
+        self_data = user_info['data']
+
+        # отрисовка страницы
         await bot.edit_message_media(
             chat_id=user_tg_id,
             message_id=message_id,
             media=InputMediaPhoto(
-                media=f'{data[0][1]}',
+                media=f'{self_data[0][1]}',
                 caption=(
-                    '⚠️ <b>Неизвестный формат файла</b> ⚠️'
+                    '⚠️ <b>Неверный формат данных</b> ⚠️'
                 ),
                 parse_mode='HTML'
             )
@@ -223,7 +256,7 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
             chat_id=user_tg_id,
             message_id=message_id,
             media=InputMediaPhoto(
-                media=f'{data[0][1]}',
+                media=f'{self_data[0][1]}',
                 caption=(
                     'Отправьте фото в формате <b>.jpg .jpeg</b> или <b>.png</b>'
                 ),
@@ -232,34 +265,51 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
             reply_markup=kb.back_to_photo
         )
 
-# Логика удаления фото профиля
 
+# УДАЛЕНИЕ ФОТО ПРОФИЛЯ (УДАЛЕНИЕ ИЗ БД И ОТРИСОВКА СТРАНИЦЫ)
 
-async def delete_photo(user_tg_id, callback):
+@router.callback_query(F.data == 'del_photo')
+async def delete_profile_photo(callback: CallbackQuery):
+
+    # получаю свой id
+    user_tg_id = callback.from_user.id
+
     try:
-        data = await asyncio.to_thread(get_self_data, user_tg_id)
-        gender = await check_gender(data[0][3])
-        hobbies = await hobbies_list(data[1])
 
+        # получаю свои данные для отрисовки страницы
+        user_info = await get_user_info(user_tg_id)
+
+        # Извлекаю свои данные для отрисовки страницы
+        self_data = user_info['data']
+
+        # отрисовка страницы
         await callback.message.edit_media(
             media=InputMediaPhoto(
-                media=f'{data[0][1]}',
+                media=f'{self_data[0][1]}',
                 caption=(
                     '🗑'
                 ),
                 parse_mode='HTML'
             )
         )
+
         await loader(callback.message, 'Удаляю')
 
+        # удаление фото из бд и добавление id "заглушки" удаленного фото
         await asyncio.to_thread(delete_user_photo, user_tg_id)
-        data = await asyncio.to_thread(get_self_data, user_tg_id)
-        gender = await check_gender(data[0][3])
-        hobbies = await hobbies_list(data[1])
 
+        # получаю свои данные для отрисовки страницы с учетом изменений
+        user_info = await get_user_info(user_tg_id)
+
+        # Извлекаю свои данные для отрисовки страницы с учетом изменений
+        self_data = user_info['data']
+        self_gender = user_info['gender']
+        self_hobbies = user_info['hobbies']
+
+        # отрисовка страницы с учетом изменений
         await callback.message.edit_media(
             media=InputMediaPhoto(
-                media=f'{data[0][1]}',
+                media=f'{self_data[0][1]}',
                 caption=(
                     'Фото профиля успешно удалено 🚫'
                 ),
@@ -271,13 +321,13 @@ async def delete_photo(user_tg_id, callback):
 
         await callback.message.edit_media(
             media=InputMediaPhoto(
-                media=f'{data[0][1]}',
+                media=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {data[0][0]}\n'
-                    f'<b>Возраст:</b> {data[0][4]}\n'
-                    f'<b>Пол:</b> {gender}\n'
-                    f'<b>Город:</b> {data[0][5]}\n'
-                    f'<b>Увлечения:</b> {hobbies}\n\n'
+                    f'\n<b>Имя:</b> {self_data[0][0]}\n'
+                    f'<b>Возраст:</b> {self_data[0][4]}\n'
+                    f'<b>Пол:</b> {self_gender}\n'
+                    f'<b>Город:</b> {self_data[0][5]}\n'
+                    f'<b>Увлечения:</b> {self_hobbies}\n\n'
                     '<b>Редактировать:</b>'
                 ),
                 parse_mode='HTML'

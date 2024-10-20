@@ -1,15 +1,12 @@
 import asyncio
-import logging
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.modules.notifications import attention_message
 from src.modules.delete_messages import del_last_message
-from src.modules.hobbies_list import hobbies_list
-from src.database.requests.user_data import get_self_data
+from src.modules.get_self_data import get_user_info
 from src.database.requests.hobbies_data import check_hobby, delete_hobby
-from src.modules.check_gender import check_gender
 from src.handlers.edit_name import check_emodji
 import src.modules.keyboard as kb
 
@@ -25,110 +22,281 @@ delete_messages = []
 delete_last_message = []
 
 
-# проверка наличия хобби и вывод с кнопкой удаления или без
-
-async def check_hobbies_list(user_tg_id, callback):
-
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
-    hobbies = await hobbies_list(data[1])
-
-    if hobbies == '-':
-        try:
-            await callback.message.edit_media(
-                media=InputMediaPhoto(
-                    media=f'{data[0][1]}',
-                    caption='\n<b>Список ваших увлечений пуст 🤷‍♂️</b>',
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.no_hobbies)
-        except:
-            await callback.message.answer_photo(
-                photo=f'{data[0][1]}',
-                caption='\n<b>Список ваших увлечений пуст 🤷‍♂️</b>',
-                parse_mode='HTML',
-                reply_markup=kb.no_hobbies)
-    else:
-        try:
-            await callback.message.edit_media(
-                media=InputMediaPhoto(
-                    media=f'{data[0][1]}',
-                    caption=(
-                        f'\n<b>Список ваших увлечений:</b>{hobbies}'
-                    ),
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.edit_hobbies)
-        except:
-            await callback.message.answer_photo(
-                photo=f'{data[0][1]}',
-                caption=(
-                    f'\n<b>Список ваших увлечений:</b>{hobbies}'
-                ),
-                parse_mode='HTML',
-                reply_markup=kb.edit_hobbies)
-
-
-# Редактирование увлечений
-
+# МЕНЮ РЕДАКТИРОВАНИЯ УВЛЕЧЕНИЙ
 
 @router.callback_query(F.data == 'edit_hobbies')
 async def edit_hobbies(callback: CallbackQuery, state: FSMContext):
+
+    # очищаю состояние (на всякий случай)
     await state.clear()
 
+    # получаю свой id
     user_tg_id = callback.from_user.id
+
+    # отрисовка меню изменения увлечений
     await check_hobbies_list(user_tg_id, callback)
 
-# Меню "добавление хобби"
 
+# ПРОВЕРКА НАЛИЧИЯ УВЛЕЧЕНИЙ (В ПРИНЦИПЕ) И ОТРИСОВКА МЕНЮ
+# С КНОПКОЙ УДАЛЕНИЯ (ЕСЛИ ЕСТЬ) ИЛИ БЕЗ (ЕСЛИ УВЛЕЧЕНИЙ НЕТ)
+
+async def check_hobbies_list(user_tg_id, callback):
+
+    # плучаю свои данные для отрисовки страницы
+    user_info = await get_user_info(user_tg_id)
+
+    # извлекаю свои данные для отрисовки страницы
+    self_data = user_info['data']
+    self_hobbies = user_info['hobbies']
+
+    # если хобби нет (в таблице проставлен "-")
+    if self_hobbies == '-':
+        try:
+
+            # отрисовка страницы
+            await callback.message.edit_media(
+                media=InputMediaPhoto(
+                    media=f'{self_data[0][1]}',
+                    caption='\n<b>Список ваших увлечений пуст 🤷‍♂️</b>',
+                    parse_mode='HTML'
+                ),
+                reply_markup=kb.no_hobbies
+            )
+        except:
+
+            try:
+                await del_last_message(callback.message)
+            except:
+                pass
+
+            await callback.message.answer_photo(
+                photo=f'{self_data[0][1]}',
+                caption='\n<b>Список ваших увлечений пуст 🤷‍♂️</b>',
+                parse_mode='HTML',
+                reply_markup=kb.no_hobbies
+            )
+
+    # если хобби есть
+    else:
+        try:
+
+            # отрисовка страницы
+            await callback.message.edit_media(
+                media=InputMediaPhoto(
+                    media=f'{self_data[0][1]}',
+                    caption=(
+                        f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    ),
+                    parse_mode='HTML'
+                ),
+                reply_markup=kb.edit_hobbies
+            )
+        except:
+
+            try:
+                await del_last_message(callback.message)
+            except:
+                pass
+
+            await callback.message.answer_photo(
+                photo=f'{self_data[0][1]}',
+                caption=(
+                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                ),
+                parse_mode='HTML',
+                reply_markup=kb.edit_hobbies
+            )
+
+
+# МЕНЮ "ДОБАВЛЕНИЯ НОВОГО УВЛЕЧЕНИЯ"
 
 @router.callback_query(F.data == 'new_hobby')
 async def new_hobby(callback: CallbackQuery, state: FSMContext):
+
+    # отрисовка меню добавления увлечения
     await new_hobby_menu(callback, state)
+
+    # добавляю в состояние id собщения для редактирования
     await state.update_data(message_id=callback.message.message_id)
+
+
+# ОТРИСОВКА МЕНЮ ДОБАВЛЕНИЯ УВЛЕЧЕНИЙ
+
+async def new_hobby_menu(callback, state):
+
+    # получаю свой id
+    user_tg_id = callback.from_user.id
+
+    # плучаю свои данные для отрисовки страницы
+    user_info = await get_user_info(user_tg_id)
+
+    # извлекаю свои данные для отрисовки страницы
+    self_data = user_info['data']
+    self_hobbies = user_info['hobbies']
+
+    try:
+
+        # отрисовка страницы
+        await callback.message.edit_media(
+            media=InputMediaPhoto(
+                media=f'{self_data[0][1]}',
+                caption=(
+                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    '\n\n‼️ <u>Придерживайтесь принципа</u>:'
+                    '\n<b>Одно увлечение - одно сообщение</b>'
+                    '\n\n💬 Отправьте увлечение сообщением в чат, '
+                    'чтобы я мог его добавить.'
+                ),
+                parse_mode='HTML'
+            ),
+            reply_markup=kb.back_hobbies
+        )
+    except:
+        await callback.message.answer_photo(
+            photo=f'{self_data[0][1]}',
+            caption=(
+                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                '\n\n‼️ <u>Придерживайтесь принципа</u>:'
+                '\n<b>Одно увлечение - одно сообщение</b>'
+                '\n\n💬 Отправьте увлечение сообщением в чат, '
+                'чтобы я мог его добавить.'
+            ),
+            parse_mode='HTML',
+            reply_markup=kb.back_hobbies
+        )
+
+    # устанавливаю состояние добавления нового увлечения
     await state.set_state(Registration.hobby)
 
-# Добавление нового хобби
 
+# СОСТОЯНИЕ ОЖИДАНИЯ СООБЩЕНИЯ ОТ ПОЛЬЗОВАТЕЛЯ С НАЗВАНИЕМ НОВОГО УВЛЕЧЕНИЯ
 
 @router.message(Registration.hobby)
 async def add_hobby(message: Message, state: FSMContext, bot: Bot):
+
+    # удаляю сообщение пользователя из чата с новым увлечением
     await del_last_message(message)
 
+    # получаю свой id
     user_tg_id = message.from_user.id
+
+    # получаю id сообщения для редактирования из состояния
     message_data = await state.get_data()
     message_id = message_data.get('message_id')
 
+    # проверка длинны сообщения от пользователя и что оно является текстом
     if message.content_type == 'text' and len(message.text) <= 50:
+
+        #  сохраняю текст сообщения и привожу к нижнему регистру
         hobby = message.text.lower()
+
+        # проверяю на наличие эмодзи в сообщении
         emodji_checked = await check_emodji(hobby)
 
+        # если в сообщении есть эмодзи
         if not emodji_checked:
+
+            # вывожу уведомление об ошибке
             await wrong_hobby_name(user_tg_id, message_id, bot)
+
+            # возвращаюсь в состояние ожидания сообщения с новым увлечением
             return
 
+        # проверяю есть ли у пользователя уже такое увлечение
         checked = await asyncio.to_thread(check_hobby, user_tg_id, hobby)
 
+        # если такое увлечение уже есть
         if not checked:
+
+            # вывожу уведомление об ошибке
             await hobby_already_exist(user_tg_id, message_id, bot)
+
+            # возвращаюсь в состояние ожидания сообщения с новым увлечением
             return
 
+        # если все проверки прошли успешно
         else:
+
+            # добавляю новое хобби в бд
             await hobby_succesful_added(user_tg_id, message_id, bot)
 
+    # если сообщение не текстовое (фото, анимация и т.д.)
     else:
+
+        # вывожу уведомление об ошибке
         await wrong_hobby_name(user_tg_id, message_id, bot)
+
+        # возвращаюсь в состояние ожидания сообщения с новым увлечением
         return
 
-# Меню удаления хобби
 
+# МЕНЮ УДАЛЕНИЯ УВЛЕЧЕНИЙ
 
 @router.callback_query(F.data == 'del_hobby')
 async def del_hobby(callback: CallbackQuery):
+
+    # получаю свой id
     user_tg_id = callback.from_user.id
+
+    # отрисовка клавиатуры удаления увлечений если они есть у пользователя
     await check_hobby_to_delete(user_tg_id, callback)
 
-# Удаление хобби
 
+# ОТРИСОВКА СТРАНИЦЫ С ИНЛАЙН КНОПКАМИ ДЛЯ УДАЛЕНИЯ КАЖДОГО УВЛЕЧЕНИЯ
+
+async def check_hobby_to_delete(user_tg_id, callback):
+
+    # плучаю свои данные для отрисовки страницы
+    user_info = await get_user_info(user_tg_id)
+
+    # извлекаю свои данные для отрисовки страницы
+    self_data = user_info['data']
+    hobbies_data = self_data[1]
+    self_hobbies = user_info['hobbies']
+
+    # если хобби нет (в таблице проставлен "-")
+    if self_hobbies == '-':
+
+        try:
+
+            # отрисовка страницы
+            await callback.message.edit_media(
+                media=InputMediaPhoto(
+                    media=f'{self_data[0][1]}',
+                    caption='<b> \nСписок ваших увлечений пуст 🤷‍♂️</b>',
+                    parse_mode='HTML'
+                ),
+                reply_markup=kb.no_hobbies)
+        except:
+            await callback.message.answer_photo(
+                photo=f'{self_data[0][1]}',
+                caption='<b> \nСписок ваших увлечений пуст 🤷‍♂️</b>',
+                parse_mode='HTML',
+                reply_markup=kb.no_hobbies)
+    else:
+
+        try:
+            await callback.message.edit_media(
+                media=InputMediaPhoto(
+                    media=f'{self_data[0][1]}',
+                    caption=(
+                        f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    ),
+                    parse_mode='HTML'
+                ),
+                reply_markup=kb.delete_hobbies_keyboard(user_tg_id, hobbies_data))
+
+        except:
+            await callback.message.answer_photo(
+                photo=f'{self_data[0][1]}',
+                caption=(
+                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                ),
+                parse_mode='HTML',
+                reply_markup=kb.delete_hobbies_keyboard(user_tg_id, hobbies_data))
+
+
+# УДАЛЕНИЕ УВЛЕЧЕНИЯ
 
 @router.callback_query(F.data.startswith('remove_hobby:'))
 async def handle_remove_hobby(callback: CallbackQuery):
@@ -141,112 +309,32 @@ async def handle_remove_hobby(callback: CallbackQuery):
     await asyncio.to_thread(delete_hobby, user_tg_id, hobby_id)
 
     # проверяю список хобби пользователя для верной отрисовки на странице
+    # и отрисовываю клавиатуру удаления с учетом изменений
     await check_hobby_to_delete(user_tg_id, callback)
+
+    # уведомление об успешном удалении
     await attention_message(callback.message, 'Увлечение удалено ✅', 1)
 
 
-# Логика удаления хобби
-
-async def check_hobby_to_delete(user_tg_id, callback):
-
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
-    hobbies_data = data[1]
-    hobbies = await hobbies_list(data[1])
-
-    if hobbies == '-':
-
-        try:
-
-            await callback.message.edit_media(
-                media=InputMediaPhoto(
-                    media=f'{data[0][1]}',
-                    caption='<b> \nСписок ваших увлечений пуст 🤷‍♂️</b>',
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.no_hobbies)
-        except:
-            await callback.message.answer_photo(
-                photo=f'{data[0][1]}',
-                caption='<b> \nСписок ваших увлечений пуст 🤷‍♂️</b>',
-                parse_mode='HTML',
-                reply_markup=kb.no_hobbies)
-    else:
-
-        try:
-            await callback.message.edit_media(
-                media=InputMediaPhoto(
-                    media=f'{data[0][1]}',
-                    caption=(
-                        f'\n<b>Список ваших увлечений:</b>{hobbies}'
-                    ),
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.delete_hobbies_keyboard(user_tg_id, hobbies_data))
-
-        except:
-            await callback.message.answer_photo(
-                photo=f'{data[0][1]}',
-                caption=(
-                    f'\n<b>Список ваших увлечений:</b>{hobbies}'
-                ),
-                parse_mode='HTML',
-                reply_markup=kb.delete_hobbies_keyboard(user_tg_id, hobbies_data))
-
-
-# Меню добавления хобби
-
-async def new_hobby_menu(callback, state):
-
-    user_tg_id = callback.from_user.id
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
-    hobbies = await hobbies_list(data[1])
-
-    try:
-        await callback.message.edit_media(
-            media=InputMediaPhoto(
-                media=f'{data[0][1]}',
-                caption=(
-                    f'\n<b>Список ваших увлечений:</b>{hobbies}'
-                    '\n\n‼️ <u>Придерживайтесь принципа</u>:'
-                    '\n<b>Одно увлечение - одно сообщение</b>'
-                    '\n\n💬 Отправьте увлечение сообщением в чат, '
-                    'чтобы я мог его добавить.'
-                ),
-                parse_mode='HTML'
-            ),
-            reply_markup=kb.back_hobbies
-        )
-    except:
-        await callback.message.answer_photo(
-            photo=f'{data[0][1]}',
-            caption=(
-                f'\n<b>Список ваших увлечений:</b>{hobbies}'
-                '\n\n‼️ <u>Придерживайтесь принципа</u>:'
-                '\n<b>Одно увлечение - одно сообщение</b>'
-                '\n\n💬 Отправьте увлечение сообщением в чат, '
-                'чтобы я мог его добавить.'
-            ),
-            parse_mode='HTML',
-            reply_markup=kb.back_hobbies
-        )
-
-    await state.set_state(Registration.hobby)
-
-
-# Неверный формат данных
+# УВЕДОМЛЕНИЕ ОБ ОШИБКЕ ЕСЛИ НЕВЕРНЫЙ ФОРМАТ ДАННЫХ
 
 async def wrong_hobby_name(user_tg_id, message_id, bot):
 
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
-    hobbies = await hobbies_list(data[1])
+    # плучаю свои данные для отрисовки страницы
+    user_info = await get_user_info(user_tg_id)
 
+    # извлекаю свои данные для отрисовки страницы
+    self_data = user_info['data']
+    self_hobbies = user_info['hobbies']
+
+    # отрисовка страницы
     await bot.edit_message_media(
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Список ваших увлечений:</b>{hobbies}'
+                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
@@ -261,9 +349,9 @@ async def wrong_hobby_name(user_tg_id, message_id, bot):
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Список ваших увлечений:</b>{hobbies}'
+                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n❌ Название увлечения должно содержать <b>только текст</b>'
@@ -278,18 +366,25 @@ async def wrong_hobby_name(user_tg_id, message_id, bot):
     )
 
 
+# ЕСЛИ ДОБАВЛЯЕМОЕ УВЛЕЧЕНИЕ УЖЕ ЕСТЬ В СПИСКЕ УВЛЕЧЕНИЙ У ПОЛЬЗОВАТЕЛЯ
+
 async def hobby_already_exist(user_tg_id, message_id, bot):
 
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
-    hobbies = await hobbies_list(data[1])
+    # плучаю свои данные для отрисовки страницы
+    user_info = await get_user_info(user_tg_id)
 
+    # извлекаю свои данные для отрисовки страницы
+    self_data = user_info['data']
+    self_hobbies = user_info['hobbies']
+
+    # отрисовка страницы
     await bot.edit_message_media(
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Список ваших увлечений:</b>{hobbies}'
+                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n❌ Такое увлечение уже находится в вашем списке'
@@ -304,9 +399,9 @@ async def hobby_already_exist(user_tg_id, message_id, bot):
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Список ваших увлечений:</b>{hobbies}'
+                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n💬 Отправьте увлечение сообщением в чат, '
@@ -318,20 +413,25 @@ async def hobby_already_exist(user_tg_id, message_id, bot):
     )
 
 
-# Логика добавления хобби
+# УВЕДОМЛЕНИЕ И ОТРИСОВКА СТРАНИЦЫ ПОСЛЕ ДОБАВЛЕНИИ НОВОГО УВЛЕЧЕНИЯ
 
 async def hobby_succesful_added(user_tg_id, message_id, bot):
 
-    data = await asyncio.to_thread(get_self_data, user_tg_id)
-    hobbies = await hobbies_list(data[1])
+    # плучаю свои данные для отрисовки страницы
+    user_info = await get_user_info(user_tg_id)
 
+    # извлекаю свои данные для отрисовки страницы
+    self_data = user_info['data']
+    self_hobbies = user_info['hobbies']
+
+    # отрисовка страницы
     await bot.edit_message_media(
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Список ваших увлечений:</b>{hobbies}'
+                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n✅ Список ваших увлечений успешно обновлен!'
@@ -346,9 +446,9 @@ async def hobby_succesful_added(user_tg_id, message_id, bot):
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{data[0][1]}',
+            media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Список ваших увлечений:</b>{hobbies}'
+                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n💬 Отправьте увлечение сообщением в чат, '

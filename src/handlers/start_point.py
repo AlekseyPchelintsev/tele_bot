@@ -1,8 +1,7 @@
 import asyncio
-import logging
 from aiogram.types import Message
 from aiogram.filters import CommandStart
-from aiogram import F, Router
+from aiogram import Router
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.database.requests.user_data import check_user
@@ -19,22 +18,30 @@ class Registration(StatesGroup):
 delete_messages = []
 delete_last_message = []
 
-# Входная точка
 
+# КОММАНДА /START
 
 @router.message(CommandStart())
 async def start(message: Message, state: FSMContext):
+
+    # получение id пользователя
     user_tg_id = message.from_user.id
+
+    # проверка наличия пользователя в бд
     data = await asyncio.to_thread(check_user, user_tg_id)
+
+    # если пользователь есть в бд
     if data:
-        # плучаю свои данные
+
+        # плучаю данные пользователя
         user_info = await get_user_info(user_tg_id)
 
-        # Извлекаю свои данные
+        # Извлекаю данные
         self_data = user_info['data']
         self_gender = user_info['gender']
         self_hobbies = user_info['hobbies']
 
+        # отрисовываю страницу
         await message.answer_photo(
             photo=f'{self_data[0][1]}',
             caption=(
@@ -47,14 +54,17 @@ async def start(message: Message, state: FSMContext):
             parse_mode='HTML',
             reply_markup=kb.users
         )
+
+    # если пользователя нет в бд
     else:
-        await state.update_data(user_id=user_tg_id)
+
+        # сообщение с предложением зарегистрироваться
         await message.answer(text='Привет!\nЧтобы продолжить, вам нужно:',
                              reply_markup=kb.regkey)
 
-    # devtools
 
-    # Вытягивает id фото
+# DEVTOOLS
+# Вытягивает id фото
 
 '''
 @router.message(F.photo | F.video | F.animation)
@@ -63,6 +73,8 @@ async def photo_nahui(message: Message):
     # video = message.video
     await message.answer(f'id Этого изображения:\n{data.file_id}')
 '''
+
+
 # Тест функций
 
 '''
