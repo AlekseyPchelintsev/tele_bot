@@ -4,9 +4,9 @@ from src.database.models import get_db_connection
 
 # ----- ИНТЕРЕСЫ -----
 
+
 # плучение id хобби по имени и user id для возврата id хобби
 # чтобы удалить его из списка хобби пользователя
-
 def get_hobby_id_by_hobby_name(user_tg_id, hobby):
 
     connection = get_db_connection()
@@ -33,9 +33,8 @@ def get_hobby_id_by_hobby_name(user_tg_id, hobby):
     finally:
         connection.close()
 
+
 # Проверка существования хобби при добавлении нового
-
-
 def check_hobby(user_tg_id, hobby):
 
     connection = get_db_connection()
@@ -44,57 +43,57 @@ def check_hobby(user_tg_id, hobby):
         with connection:
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
 
+                # Проверяем, привязано ли это хобби к пользователю
                 cursor.execute(
                     """
-                    SELECT 
-                        id,
-                        hobby_name
-                    FROM hobbies
+                    SELECT 1 
+                    FROM userhobbies 
+                    WHERE user_tg_id = %s AND hobby_name = %s
+                    """,
+                    (user_tg_id, hobby)
+                )
+                match = cursor.fetchone()
+
+                return bool(match)  # True, если хобби уже есть, иначе False
+
+    finally:
+        connection.close()
+
+
+# общая функция добавления хобби для пользователя с учетом пройденых проверок
+def add_hobby_for_user(user_tg_id, hobby):
+
+    connection = get_db_connection()
+
+    try:
+        with connection:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+                # Проверяю, существует ли хобби в таблице hobbies
+                cursor.execute(
+                    """
+                    SELECT id 
+                    FROM hobbies 
                     WHERE hobby_name = %s
                     """,
                     (hobby,)
                 )
-
                 exist_hobby = cursor.fetchone()
 
                 if exist_hobby:
-
                     hobby_id = exist_hobby['id']
-
-                    cursor.execute(
-                        """
-                        SELECT 
-                            user_tg_id,
-                            hobby_id
-                        FROM userhobbies
-                        WHERE 
-                            user_tg_id = %s AND
-                            hobby_id = %s
-                        """,
-                        (user_tg_id, hobby_id)
-                    )
-
-                    match = cursor.fetchone()
-
-                    if match:
-                        return False
-
-                    else:
-                        add_hobbie_to_user(user_tg_id, hobby_id, hobby)
-                        return True
                 else:
 
-                    new_hobby_id = add_new_hobby(hobby)
-                    add_hobbie_to_user(user_tg_id, new_hobby_id, hobby)
-                    return True
+                    # Если хобби не существует, добавляю его в таблицу
+                    hobby_id = add_new_hobby(hobby)
+
+                # Добавляю хобби для пользователя
+                add_hobbie_to_user(user_tg_id, hobby_id, hobby)
 
     finally:
         connection.close()
 
 
 # Добавление хобби в общую db Hobbies
-
-
 def add_new_hobby(hobby):
 
     connection = get_db_connection()
@@ -125,9 +124,8 @@ def add_new_hobby(hobby):
     finally:
         connection.close()
 
+
 # Добавление хобби для конкретного пользователя в db UserHobbies
-
-
 def add_hobbie_to_user(user_tg_id, new_hobby_id, hobbie):
 
     connection = get_db_connection()
@@ -150,7 +148,6 @@ def add_hobbie_to_user(user_tg_id, new_hobby_id, hobbie):
 
 
 # Удаление хобби у пользователя из db UserHobbies
-
 def delete_hobby(user_tg_id, hobby_id):
 
     connection = get_db_connection()

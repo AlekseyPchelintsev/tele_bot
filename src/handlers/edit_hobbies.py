@@ -6,7 +6,11 @@ from aiogram.fsm.context import FSMContext
 from src.modules.notifications import attention_message
 from src.modules.delete_messages import del_last_message
 from src.modules.get_self_data import get_user_info
-from src.database.requests.hobbies_data import check_hobby, delete_hobby
+
+from src.database.requests.hobbies_data import (check_hobby,
+                                                add_hobby_for_user,
+                                                delete_hobby)
+
 from src.handlers.edit_name import check_emodji
 import src.modules.keyboard as kb
 
@@ -253,7 +257,7 @@ async def add_hobby(message: Message, state: FSMContext, bot: Bot):
         checked = await asyncio.to_thread(check_hobby, user_tg_id, hobby)
 
         # если такое увлечение уже есть
-        if not checked:
+        if checked:
 
             # вывожу уведомление об ошибке
             await hobby_already_exist(user_tg_id, message_id, bot)
@@ -265,7 +269,7 @@ async def add_hobby(message: Message, state: FSMContext, bot: Bot):
         else:
 
             # добавляю новое хобби в бд
-            await hobby_succesful_added(user_tg_id, message_id, bot)
+            await hobby_succesful_added(user_tg_id, message_id, bot, hobby)
 
     # если сообщение не текстовое (фото, анимация и т.д.)
     else:
@@ -447,7 +451,10 @@ async def hobby_already_exist(user_tg_id, message_id, bot):
 
 # УВЕДОМЛЕНИЕ И ОТРИСОВКА СТРАНИЦЫ ПОСЛЕ ДОБАВЛЕНИИ НОВОГО УВЛЕЧЕНИЯ
 
-async def hobby_succesful_added(user_tg_id, message_id, bot):
+async def hobby_succesful_added(user_tg_id, message_id, bot, hobby):
+
+    # добавляю увлечение в бд
+    await asyncio.to_thread(add_hobby_for_user, user_tg_id, hobby)
 
     # плучаю свои данные для отрисовки страницы
     user_info = await get_user_info(user_tg_id)
@@ -455,38 +462,74 @@ async def hobby_succesful_added(user_tg_id, message_id, bot):
     # извлекаю свои данные для отрисовки страницы
     self_data = user_info['data']
     self_hobbies = user_info['hobbies']
+    hobbies_data = self_data[1]
 
-    # отрисовка страницы
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
-                '\n\n‼️ <u>Придерживайтесь принципа</u>:'
-                '\n<b>Одно увлечение - одно сообщение</b>'
-                '\n\n✅ Увлечение успешно добавлено!'
-            ),
-            parse_mode='HTML'
+    if len(hobbies_data) < 7:
+
+        # отрисовка страницы
+        await bot.edit_message_media(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            media=InputMediaPhoto(
+                media=f'{self_data[0][1]}',
+                caption=(
+                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    '\n\n‼️ <u>Придерживайтесь принципа</u>:'
+                    '\n<b>Одно увлечение - одно сообщение</b>'
+                    '\n\n✅ Увлечение успешно добавлено!'
+                ),
+                parse_mode='HTML'
+            )
         )
-    )
 
-    await asyncio.sleep(1.5)
+        await asyncio.sleep(1.5)
 
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
-                '\n\n‼️ <u>Придерживайтесь принципа</u>:'
-                '\n<b>Одно увлечение - одно сообщение</b>'
-                '\n\n💬 Отправьте увлечение сообщением в чат, '
-                'чтобы я мог его добавить.'
+        await bot.edit_message_media(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            media=InputMediaPhoto(
+                media=f'{self_data[0][1]}',
+                caption=(
+                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    '\n\n‼️ <u>Придерживайтесь принципа</u>:'
+                    '\n<b>Одно увлечение - одно сообщение</b>'
+                    '\n\n💬 Отправьте увлечение сообщением в чат, '
+                    'чтобы я мог его добавить.'
+                ),
+                parse_mode='HTML'
             ),
-            parse_mode='HTML'
-        ),
-        reply_markup=kb.back
-    )
+            reply_markup=kb.back
+        )
+
+    else:
+
+        # отрисовка страницы
+        await bot.edit_message_media(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            media=InputMediaPhoto(
+                media=f'{self_data[0][1]}',
+                caption=(
+                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    '\n\n✅ Увлечение успешно добавлено!'
+                ),
+                parse_mode='HTML'
+            )
+        )
+
+        await asyncio.sleep(1.5)
+
+        await bot.edit_message_media(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            media=InputMediaPhoto(
+                media=f'{self_data[0][1]}',
+                caption=(
+                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    '\n\n⚠️ <b>Вы добавили максимальное количество увлечений.</b>'
+                    '\nЧтобы добавить новое - удалите одно из имеющихся.'
+                ),
+                parse_mode='HTML'
+            ),
+            reply_markup=kb.max_hobbies
+        )
