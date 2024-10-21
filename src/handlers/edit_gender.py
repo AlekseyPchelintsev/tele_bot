@@ -95,12 +95,12 @@ async def gender_changed(callback: CallbackQuery):
         media=InputMediaPhoto(
             media=f'{self_data[0][1]}',
             caption=(
-                f'<b>Имя:</b> {self_data[0][0]}'
-                f'\n<b>Возраст:</b> {self_data[0][4]}'
-                f'\n<b>Пол:</b> {self_gender}'
-                f'\n<b>Город:</b> {self_data[0][5]}'
-                f'\n\n<b>Увлечения:</b> {self_hobbies}'
-                f'\n\n<b>О себе:</b> {about_me}'
+                f'► <b>Имя:</b> {self_data[0][0]}'
+                f'\n► <b>Возраст:</b> {self_data[0][4]}'
+                f'\n► <b>Пол:</b> {self_gender}'
+                f'\n► <b>Город:</b> {self_data[0][5]}'
+                f'\n► <b>Увлечения:</b> {self_hobbies}'
+                f'\n► <b>О себе:</b> {about_me}'
                 '\n\n<b>Редактировать:</b>'
             ),
             parse_mode='HTML'

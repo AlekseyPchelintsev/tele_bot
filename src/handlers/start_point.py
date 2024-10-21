@@ -40,16 +40,18 @@ async def start(message: Message, state: FSMContext):
         self_data = user_info['data']
         self_gender = user_info['gender']
         self_hobbies = user_info['hobbies']
+        about_me = user_info['about_me']
 
         # отрисовываю страницу
         await message.answer_photo(
             photo=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {self_data[0][0]}\n'
-                f'<b>Возраст:</b> {self_data[0][4]}\n'
-                f'<b>Пол:</b> {self_gender}\n'
-                f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}'
+                f'► <b>Имя:</b> {self_data[0][0]}'
+                f'\n► <b>Возраст:</b> {self_data[0][4]}'
+                f'\n► <b>Пол:</b> {self_gender}'
+                f'\n► <b>Город:</b> {self_data[0][5]}'
+                f'\n► <b>Увлечения:</b> {self_hobbies}'
+                f'\n► <b>О себе:</b> {about_me}'
             ),
             parse_mode='HTML',
             reply_markup=kb.users

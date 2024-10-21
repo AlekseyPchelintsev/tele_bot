@@ -90,7 +90,7 @@ async def check_hobbies_list(user_tg_id, callback):
                 media=InputMediaPhoto(
                     media=f'{self_data[0][1]}',
                     caption=(
-                        f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                        f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                         '\n\n⚠️ <b>Вы добавили максимальное количество увлечений.</b>'
                         '\nЧтобы добавить новое - удалите одно из имеющихся.'
                     ),
@@ -109,7 +109,7 @@ async def check_hobbies_list(user_tg_id, callback):
             await callback.message.answer_photo(
                 photo=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                     '\n\n⚠️ <b>Вы добавили максимальное количество увлечений.</b>'
                     '\nЧтобы добавить новое - удалите одно из имеющихся.'
                 ),
@@ -126,7 +126,7 @@ async def check_hobbies_list(user_tg_id, callback):
                 media=InputMediaPhoto(
                     media=f'{self_data[0][1]}',
                     caption=(
-                        f'\n<b>Список ваших увлечений: </b>{self_hobbies}'
+                        f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                     ),
                     parse_mode='HTML'
                 ),
@@ -142,7 +142,7 @@ async def check_hobbies_list(user_tg_id, callback):
             await callback.message.answer_photo(
                 photo=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Список ваших увлечений: </b>{self_hobbies}'
+                    f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                 ),
                 parse_mode='HTML',
                 reply_markup=kb.edit_hobbies
@@ -182,7 +182,7 @@ async def new_hobby_menu(callback, state):
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                     '\n\n‼️ Добавьте <b>не более 7 увлечений</b>.'
                     '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                     '\n<b>Одно увлечение - одно сообщение</b>'
@@ -205,7 +205,7 @@ async def new_hobby_menu(callback, state):
         await callback.message.answer_photo(
             photo=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                 '\n\n‼️ Добавьте <b>не более 5 увлечений</b>.'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
@@ -310,7 +310,7 @@ async def check_hobby_to_delete(user_tg_id, callback):
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                 ),
                 parse_mode='HTML'
             ),
@@ -326,7 +326,7 @@ async def check_hobby_to_delete(user_tg_id, callback):
         await callback.message.answer_photo(
             photo=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
             ),
             parse_mode='HTML',
             reply_markup=kb.delete_hobbies_keyboard(user_tg_id, hobbies_data))
@@ -370,7 +370,7 @@ async def wrong_hobby_name(user_tg_id, message_id, bot):
         media=InputMediaPhoto(
             media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
@@ -387,7 +387,7 @@ async def wrong_hobby_name(user_tg_id, message_id, bot):
         media=InputMediaPhoto(
             media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n❌ Название увлечения должно содержать <b>только текст</b>'
@@ -420,7 +420,7 @@ async def hobby_already_exist(user_tg_id, message_id, bot):
         media=InputMediaPhoto(
             media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n❌ Такое увлечение уже находится в вашем списке'
@@ -437,7 +437,7 @@ async def hobby_already_exist(user_tg_id, message_id, bot):
         media=InputMediaPhoto(
             media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n💬 Отправьте увлечение сообщением в чат, '
@@ -473,7 +473,7 @@ async def hobby_succesful_added(user_tg_id, message_id, bot, hobby):
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                     '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                     '\n<b>Одно увлечение - одно сообщение</b>'
                     '\n\n✅ Увлечение успешно добавлено!'
@@ -490,7 +490,7 @@ async def hobby_succesful_added(user_tg_id, message_id, bot, hobby):
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                     '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                     '\n<b>Одно увлечение - одно сообщение</b>'
                     '\n\n💬 Отправьте увлечение сообщением в чат, '
@@ -510,7 +510,7 @@ async def hobby_succesful_added(user_tg_id, message_id, bot, hobby):
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                     '\n\n✅ Увлечение успешно добавлено!'
                 ),
                 parse_mode='HTML'
@@ -525,7 +525,7 @@ async def hobby_succesful_added(user_tg_id, message_id, bot, hobby):
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                     '\n\n⚠️ <b>Вы добавили максимальное количество увлечений.</b>'
                     '\nЧтобы добавить новое - удалите одно из имеющихся.'
                 ),

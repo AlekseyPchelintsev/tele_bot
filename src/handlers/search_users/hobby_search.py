@@ -5,8 +5,10 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from config import hobby_search
 from src.handlers.search_users.all_users_search import search_all_users
-from src.modules.pagination_logic import load_bot_pagination_start_or_end_data, load_pagination_start_or_end_data
-from src.modules.notifications import (loader, attention_message)
+from src.modules.pagination_logic import (load_bot_pagination_start_or_end_data,
+                                          load_pagination_start_or_end_data)
+
+from src.modules.notifications import loader, attention_message
 
 from src.modules.delete_messages import del_last_message
 from src.handlers.edit_name import check_emodji

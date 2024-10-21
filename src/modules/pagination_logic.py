@@ -104,12 +104,12 @@ async def load_pagination_start_or_end_data(callback_data,
                 media=InputMediaPhoto(
                     media=f'{data[page][2]}',
                     caption=(
-                        f'<b>Имя:</b> {data[page][1]}'
-                        f'\n<b>Возраст:</b> {data[page][5]}'
-                        f'\n<b>Пол:</b> {gender}'
-                        f'\n<b>Город:</b> {data[page][6]}'
-                        f'\n\n<b>Увлечения:</b> {hobbies}'
-                        f'\n\n<b>О себе:</b> {data[page][-1]}'
+                        f'► <b>Имя:</b> {data[page][1]}'
+                        f'\n► <b>Возраст:</b> {data[page][5]}'
+                        f'\n► <b>Пол:</b> {gender}'
+                        f'\n► <b>Город:</b> {data[page][6]}'
+                        f'\n► <b>Увлечения:</b> {hobbies}'
+                        f'\n► <b>О себе:</b> {data[page][-1]}'
                     ),
                     parse_mode='HTML',
                 ),
@@ -124,12 +124,12 @@ async def load_pagination_start_or_end_data(callback_data,
             await callback_data.answer_photo(
                 photo=f'{data[page][2]}',
                 caption=(
-                    f'<b>Имя:</b> {data[page][1]}'
-                    f'\n<b>Возраст:</b> {data[page][5]}'
-                    f'\n<b>Пол:</b> {gender}'
-                    f'\n<b>Город:</b> {data[page][6]}'
-                    f'\n\n<b>Увлечения:</b> {hobbies}'
-                    f'\n\n<b>О себе:</b> {data[page][-1]}'
+                    f'► <b>Имя:</b> {data[page][1]}'
+                    f'\n► <b>Возраст:</b> {data[page][5]}'
+                    f'\n► <b>Пол:</b> {gender}'
+                    f'\n► <b>Город:</b> {data[page][6]}'
+                    f'\n► <b>Увлечения:</b> {hobbies}'
+                    f'\n► <b>О себе:</b> {data[page][-1]}'
                 ),
                 parse_mode='HTML',
                 reply_markup=keyboard(
@@ -147,12 +147,12 @@ async def load_pagination_start_or_end_data(callback_data,
                 media=InputMediaPhoto(
                     media=f'{data[page][2]}',
                     caption=(
-                        f'<b>Имя:</b> {data[page][1]}'
-                        f'\n<b>Возраст:</b> {data[page][5]}'
-                        f'\n<b>Пол:</b> {gender}'
-                        f'\n<b>Город:</b> {data[page][6]}'
-                        f'\n\n<b>Увлечения:</b> {hobbies}'
-                        f'\n\n<b>О себе:</b> {data[page][-1]}'
+                        f'► <b>Имя:</b> {data[page][1]}'
+                        f'\n► <b>Возраст:</b> {data[page][5]}'
+                        f'\n► <b>Пол:</b> {gender}'
+                        f'\n► <b>Город:</b> {data[page][6]}'
+                        f'\n► <b>Увлечения:</b> {hobbies}'
+                        f'\n► <b>О себе:</b> {data[page][-1]}'
                     ),
                     parse_mode='HTML',
                 ),
@@ -167,12 +167,12 @@ async def load_pagination_start_or_end_data(callback_data,
             await callback_data.answer_photo(
                 photo=f'{data[page][2]}',
                 caption=(
-                    f'<b>Имя:</b> {data[page][1]}'
-                    f'\n<b>Возраст:</b> {data[page][5]}'
-                    f'\n<b>Пол:</b> {gender}'
-                    f'\n<b>Город:</b> {data[page][6]}'
-                    f'\n\n<b>Увлечения:</b> {hobbies}'
-                    f'\n\n<b>О себе:</b> {data[page][-1]}'
+                    f'► <b>Имя:</b> {data[page][1]}'
+                    f'\n► <b>Возраст:</b> {data[page][5]}'
+                    f'\n► <b>Пол:</b> {gender}'
+                    f'\n► <b>Город:</b> {data[page][6]}'
+                    f'\n► <b>Увлечения:</b> {hobbies}'
+                    f'\n► <b>О себе:</b> {data[page][-1]}'
                 ),
                 parse_mode='HTML',
                 reply_markup=keyboard(
@@ -205,12 +205,12 @@ async def load_bot_pagination_start_or_end_data(bot,
             media=InputMediaPhoto(
                 media=f'{data[page][2]}',
                 caption=(
-                    f'<b>Имя:</b> {data[page][1]}'
-                    f'\n<b>Возраст:</b> {data[page][5]}'
-                    f'\n<b>Пол:</b> {gender}'
-                    f'\n<b>Город:</b> {data[page][6]}'
-                    f'\n\n<b>Увлечения:</b> {hobbies}'
-                    f'\n\n<b>О себе:</b> {data[page][-1]}'
+                    f'► <b>Имя:</b> {data[page][1]}'
+                    f'\n► <b>Возраст:</b> {data[page][5]}'
+                    f'\n► <b>Пол:</b> {gender}'
+                    f'\n► <b>Город:</b> {data[page][6]}'
+                    f'\n► <b>Увлечения:</b> {hobbies}'
+                    f'\n► <b>О себе:</b> {data[page][-1]}'
                 ),
                 parse_mode='HTML',
             ),
