@@ -32,14 +32,18 @@ async def ignore_users_list(callback: CallbackQuery, state: FSMContext):
     else:
         total_pages = len(data)
 
+        # если найден всего 1 пользователь
+        if total_pages == 1:
+            text_info = '\n\n<code>В списке всего 1 пользователь</code>'
+        else:
+            text_info = ''
+
+        # запускаю пагинацию
         await load_pagination_start_or_end_data(callback.message,
                                                 data,
                                                 'ignored_users_pagination',
                                                 'ignore_users_list',
-                                                total_pages)
-
-        if total_pages == 1:
-
-            await attention_message(callback.message, '<b>В списке всего 1 пользователь</b>', 2)
+                                                total_pages,
+                                                text_info)
 
         await state.update_data(users_data=data)

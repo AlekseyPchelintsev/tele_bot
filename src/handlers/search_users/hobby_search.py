@@ -138,11 +138,18 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
 
                 total_pages = len(data)
 
+                # если найден всего 1 пользователь
+                if total_pages == 1:
+                    text_info = '\n\n<code>Найден всего 1 пользователь</code>'
+                else:
+                    text_info = ''
+
                 await load_pagination_start_or_end_data(callback.message,
                                                         data,
                                                         'paginator',
                                                         'hobbies_users',
-                                                        total_pages)
+                                                        total_pages,
+                                                        text_info)
 
                 if total_pages == 1:
                     await attention_message(callback.message, '<b>Найден всего 1 пользователь</b>', 2)
@@ -204,11 +211,18 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
 
             total_pages = len(data)
 
+            # если найден всего 1 пользователь
+            if total_pages == 1:
+                text_info = '\n\n<code>Найден всего 1 пользователь</code>'
+            else:
+                text_info = ''
+
             await load_pagination_start_or_end_data(callback.message,
                                                     data,
                                                     'paginator',
                                                     'hobbies_users',
-                                                    total_pages)
+                                                    total_pages,
+                                                    text_info)
 
             if total_pages == 1:
                 await attention_message(callback.message, '<b>Найден всего 1 пользователь</b>', 2)
@@ -276,16 +290,20 @@ async def search_by_hobby(message: Message, state: FSMContext, bot: Bot):
 
             total_pages = len(data)
 
+            # если найден всего 1 пользователь
+            if total_pages == 1:
+                text_info = '\n\n<code>Найден всего 1 пользователь</code>'
+            else:
+                text_info = ''
+
             await load_bot_pagination_start_or_end_data(bot,
                                                         user_tg_id,
                                                         message_id,
                                                         data,
                                                         'paginator',
                                                         'hobbies_users',
-                                                        total_pages)
-
-            if total_pages == 1:
-                await attention_message(message, '<b>Найден всего 1 пользователь</b>', 2)
+                                                        total_pages,
+                                                        text_info)
 
             await state.update_data(users_data=data)
 

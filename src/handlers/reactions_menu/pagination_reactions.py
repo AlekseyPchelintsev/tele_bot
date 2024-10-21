@@ -63,7 +63,7 @@ async def reload_reaction_pagination_after_hide_or_like(callback,
                                                 keyboard,
                                                 list_type,
                                                 total_pages,
-                                                page)
+                                                page=page)
 
 
 # Пагинация пользователей в "Мои реакции"
@@ -98,11 +98,17 @@ async def pagination_handler_likes(
     elif list_type == 'ignore_users_list':
         keyboard = 'ignored_users_pagination'
 
-    # data[0][3] - ник пользователя
-    data = (await state.get_data()).get('users_data')
+    # получаю данные пользователей из состояния
+    users_data = await state.get_data()
+    data = users_data.get('users_data')
 
-    # Загрузка пагинации если data не None
-    try:
+    # если бот ушел в ребут с открытой пагинацией у пользователя и данных нет
+    if not data:
+
+        print(f'СРАБОТАЛ БЛОК IF NOT DATA В ПАГИНАЦИИ РЕАКЦИЙ: {data}')
+        await no_data_after_reboot_bot_reactions(callback, 'back_reactions')
+
+    else:
 
         # длинна data для отрисовки кнопок переключения карточек
         total_pages = len(data)
@@ -130,7 +136,7 @@ async def pagination_handler_likes(
                                 'reactions',
                                 menu_text)
 
-            # Блок обрабатывает колбэк "incoming_reactions" / "Входящие запросы"
+        # Блок обрабатывает колбэк "incoming_reactions" / "Входящие запросы"
 
         # прием запроса в "Входящие реакции"
         elif callback_data.action == 'in_reactions_like':
@@ -284,12 +290,7 @@ async def pagination_handler_likes(
                                                     keyboard,
                                                     list_type,
                                                     total_pages,
-                                                    page)
-
-    # если бот ушел в ребут с открытой пагинацией у пользователя
-    except:
-
-        await no_data_after_reboot_bot_reactions(callback, 'back_reactions')
+                                                    page=page)
 
     await callback.answer()
 

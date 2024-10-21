@@ -52,13 +52,22 @@ async def search_all_users(callback, state, gender_data):
         print(f'SHOW ALL USERS ERROR: {e}')
 
     if data:
+
         total_pages = len(data)
+
+        # если найден всего 1 пользователь
+        if total_pages == 1:
+            text_info = '\n\n<code>Найден всего 1 пользователь</code>'
+        else:
+            text_info = ''
+
         await loader(callback.message, 'Секунду, загружаю 🤔')
         await load_pagination_start_or_end_data(callback.message,
                                                 data,
                                                 'paginator',
                                                 'all_users',
-                                                total_pages)
+                                                total_pages,
+                                                text_info)
 
         await state.update_data(users_data=data)
 

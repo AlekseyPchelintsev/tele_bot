@@ -269,7 +269,7 @@ async def add_hobby(message: Message, state: FSMContext, bot: Bot):
         else:
 
             # добавляю новое хобби в бд
-            await hobby_succesful_added(user_tg_id, message_id, bot, hobby)
+            await hobby_succesful_added(user_tg_id, state, message_id, bot, hobby)
 
     # если сообщение не текстовое (фото, анимация и т.д.)
     else:
@@ -451,7 +451,7 @@ async def hobby_already_exist(user_tg_id, message_id, bot):
 
 # УВЕДОМЛЕНИЕ И ОТРИСОВКА СТРАНИЦЫ ПОСЛЕ ДОБАВЛЕНИИ НОВОГО УВЛЕЧЕНИЯ
 
-async def hobby_succesful_added(user_tg_id, message_id, bot, hobby):
+async def hobby_succesful_added(user_tg_id, state, message_id, bot, hobby):
 
     # добавляю увлечение в бд
     await asyncio.to_thread(add_hobby_for_user, user_tg_id, hobby)
@@ -533,3 +533,5 @@ async def hobby_succesful_added(user_tg_id, message_id, bot, hobby):
             ),
             reply_markup=kb.max_hobbies
         )
+
+        await state.clear()

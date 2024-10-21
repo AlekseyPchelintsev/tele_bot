@@ -12,6 +12,8 @@ from src.database.requests.likes_users import (insert_reaction,
                                                delete_and_insert_reactions,
                                                check_matches_two_users,
                                                send_user_to_ignore_table)
+
+from src.modules.notifications import attention_message
 import src.modules.keyboard as kb
 
 
@@ -62,7 +64,7 @@ async def reload_pagination_after_hide_or_like(callback,
                                                 'paginator',
                                                 list_type,
                                                 total_pages,
-                                                page)
+                                                page=page)
 
 
 # пагинация поиска пользователей
@@ -86,7 +88,7 @@ async def pagination_handler(
 
     data = (await state.get_data()).get('users_data')
 
-    # если бот ушел в ребут с открытой пагинацией у пользователя
+    # если бот ушел в ребут с открытой пагинацией у пользователя и данных нет
     if not data:
         await no_data_after_reboot_bot_reactions(callback, 'search_users')
 
@@ -202,6 +204,6 @@ async def pagination_handler(
                                                     'paginator',
                                                     list_type,
                                                     total_pages,
-                                                    page)
+                                                    page=page)
 
     await callback.answer()

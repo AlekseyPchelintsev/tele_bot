@@ -43,6 +43,9 @@ async def back_callback(callback_data, user_tg_id, keyboard_name, check_data_loa
 
         photo_data = search_menu
 
+        # предаю формат в зависимости отданных
+        edit_data = InputMediaVideo
+
     elif check_data_loading == 'reactions':
 
         # плучаю свои данные
@@ -50,12 +53,14 @@ async def back_callback(callback_data, user_tg_id, keyboard_name, check_data_loa
 
         # Извлекаю данные
         self_data = user_info['data']
-
         photo_data = self_data[0][1]
+
+        # предаю формат в зависимости отданных
+        edit_data = InputMediaPhoto
 
     try:
         await callback_data.edit_media(
-            media=InputMediaVideo(
+            media=edit_data(
                 media=f'{photo_data}',
                 caption=(
                     f'{text_info}'
@@ -64,15 +69,30 @@ async def back_callback(callback_data, user_tg_id, keyboard_name, check_data_loa
             ),
             reply_markup=keyboard
         )
+
     except:
-        await callback_data.answer_video(
-            video=f'{photo_data}',
-            caption=(
-                f'{text_info}'
-            ),
-            parse_mode='HTML',
-            reply_markup=keyboard
-        )
+        # в зависимости от колбэка отправляется сообщение с видео или фото
+        if check_data_loading == 'search':
+
+            await callback_data.answer_video(
+                video=f'{photo_data}',
+                caption=(
+                    f'{text_info}'
+                ),
+                parse_mode='HTML',
+                reply_markup=keyboard
+            )
+
+        elif check_data_loading == 'reactions':
+
+            await callback_data.answer_photo(
+                photo=f'{photo_data}',
+                caption=(
+                    f'{text_info}'
+                ),
+                parse_mode='HTML',
+                reply_markup=keyboard
+            )
 
 
 # загрузка пагинации из оработчика callback
@@ -84,8 +104,8 @@ async def load_pagination_start_or_end_data(callback_data,
                                             keyboard_name,
                                             list_type,
                                             total_pages,
-                                            page=0,
-                                            text_info=''):
+                                            text_info='',
+                                            page=0):
 
     keyboard = getattr(kb, keyboard_name, None)
 
@@ -110,6 +130,7 @@ async def load_pagination_start_or_end_data(callback_data,
                         f'\n► <b>Город:</b> {data[page][6]}'
                         f'\n► <b>Увлечения:</b> {hobbies}'
                         f'\n► <b>О себе:</b> {data[page][-1]}'
+                        f'{text_info}'
                     ),
                     parse_mode='HTML',
                 ),
@@ -130,6 +151,7 @@ async def load_pagination_start_or_end_data(callback_data,
                     f'\n► <b>Город:</b> {data[page][6]}'
                     f'\n► <b>Увлечения:</b> {hobbies}'
                     f'\n► <b>О себе:</b> {data[page][-1]}'
+                    f'{text_info}'
                 ),
                 parse_mode='HTML',
                 reply_markup=keyboard(
@@ -153,6 +175,7 @@ async def load_pagination_start_or_end_data(callback_data,
                         f'\n► <b>Город:</b> {data[page][6]}'
                         f'\n► <b>Увлечения:</b> {hobbies}'
                         f'\n► <b>О себе:</b> {data[page][-1]}'
+                        f'{text_info}'
                     ),
                     parse_mode='HTML',
                 ),
@@ -173,6 +196,7 @@ async def load_pagination_start_or_end_data(callback_data,
                     f'\n► <b>Город:</b> {data[page][6]}'
                     f'\n► <b>Увлечения:</b> {hobbies}'
                     f'\n► <b>О себе:</b> {data[page][-1]}'
+                    f'{text_info}'
                 ),
                 parse_mode='HTML',
                 reply_markup=keyboard(
