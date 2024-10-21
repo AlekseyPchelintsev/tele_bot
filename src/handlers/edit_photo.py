@@ -17,7 +17,7 @@ router = Router()
 
 
 class Registration(StatesGroup):
-    photo = State()
+    new_photo = State()
 
 
 delete_messages = []
@@ -128,12 +128,12 @@ async def edit_photo(callback: CallbackQuery, state: FSMContext):
     await state.update_data(message_id=edit_message.message_id)
 
     # устанавливаю состояние ожидания нового фотого от пользователя
-    await state.set_state(Registration.photo)
+    await state.set_state(Registration.new_photo)
 
 
 # СОСТОЯНИЕ ОЖИДАНИЯ НОВОГО ФОТО ОТ ПОЛЬЗОВАТЕЛЯ
 
-@router.message(Registration.photo)
+@router.message(Registration.new_photo)
 async def get_new_photo(message: Message, state: FSMContext, bot: Bot):
 
     # получаю свой id
@@ -193,6 +193,7 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
         self_data = user_info['data']
         self_gender = user_info['gender']
         self_hobbies = user_info['hobbies']
+        about_me = user_info['about_me']
 
         await bot.edit_message_media(
             chat_id=user_tg_id,
@@ -214,12 +215,13 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {self_data[0][0]}\n'
-                    f'<b>Возраст:</b> {self_data[0][4]}\n'
-                    f'<b>Пол:</b> {self_gender}\n'
-                    f'<b>Город:</b> {self_data[0][5]}\n'
-                    f'<b>Увлечения:</b> {self_hobbies}\n\n'
-                    '<b>Редактировать:</b>'
+                    f'<b>Имя:</b> {self_data[0][0]}'
+                    f'\n<b>Возраст:</b> {self_data[0][4]}'
+                    f'\n<b>Пол:</b> {self_gender}'
+                    f'\n<b>Город:</b> {self_data[0][5]}'
+                    f'\n\n<b>Увлечения:</b> {self_hobbies}'
+                    f'\n\n<b>О себе:</b> {about_me}'
+                    '\n\n<b>Редактировать:</b>'
                 ),
                 parse_mode='HTML'
             ),
@@ -264,6 +266,7 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
             ),
             reply_markup=kb.back_to_photo
         )
+        return
 
 
 # УДАЛЕНИЕ ФОТО ПРОФИЛЯ (УДАЛЕНИЕ ИЗ БД И ОТРИСОВКА СТРАНИЦЫ)
@@ -305,6 +308,7 @@ async def delete_profile_photo(callback: CallbackQuery):
         self_data = user_info['data']
         self_gender = user_info['gender']
         self_hobbies = user_info['hobbies']
+        about_me = user_info['about_me']
 
         # отрисовка страницы с учетом изменений
         await callback.message.edit_media(
@@ -323,12 +327,13 @@ async def delete_profile_photo(callback: CallbackQuery):
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {self_data[0][0]}\n'
-                    f'<b>Возраст:</b> {self_data[0][4]}\n'
-                    f'<b>Пол:</b> {self_gender}\n'
-                    f'<b>Город:</b> {self_data[0][5]}\n'
-                    f'<b>Увлечения:</b> {self_hobbies}\n\n'
-                    '<b>Редактировать:</b>'
+                    f'<b>Имя:</b> {self_data[0][0]}'
+                    f'\n<b>Возраст:</b> {self_data[0][4]}'
+                    f'\n<b>Пол:</b> {self_gender}'
+                    f'\n<b>Город:</b> {self_data[0][5]}'
+                    f'\n\n<b>Увлечения:</b> {self_hobbies}'
+                    f'\n\n<b>О себе:</b> {about_me}'
+                    '\n\n<b>Редактировать:</b>'
                 ),
                 parse_mode='HTML'
             ),

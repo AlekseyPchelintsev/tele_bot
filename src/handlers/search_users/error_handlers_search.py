@@ -1,7 +1,7 @@
 import asyncio
 from aiogram import Router
 from aiogram.types import InputMediaPhoto
-from config import in_progress
+from config import city_search, hobby_search
 from src.modules.get_self_data import get_user_info
 import src.modules.keyboard as kb
 
@@ -24,7 +24,7 @@ async def wrong_search_city_name(user_tg_id, message_id, bot):
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{in_progress}',
+            media=f'{city_search}',
             caption=(
                 '\n🔎 <b>В каком городе?</b>'
                 '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
@@ -40,7 +40,7 @@ async def wrong_search_city_name(user_tg_id, message_id, bot):
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{in_progress}',
+            media=f'{city_search}',
             caption=(
                 '\n🔎 <b>В каком городе?</b>'
                 '\n\n❌ Название города должно содержать <b>только текст</b>, не должно содержать эмодзи '
@@ -61,7 +61,7 @@ async def wrong_search_hobby_name(user_tg_id, message_id, bot):
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{in_progress}',
+            media=f'{hobby_search}',
             caption=(
                 '\n🔎 <b>Какие увлечения?</b>'
                 '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
@@ -77,7 +77,7 @@ async def wrong_search_hobby_name(user_tg_id, message_id, bot):
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{in_progress}',
+            media=f'{hobby_search}',
             caption=(
                 '\n🔎 <b>Какие увлечения?</b>'
                 '\n\n❌ Название увлечения должно содержать <b>только текст</b>, не должно содержать эмодзи '

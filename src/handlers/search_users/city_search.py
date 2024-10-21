@@ -1,9 +1,9 @@
 import asyncio
-from aiogram.types import Message, CallbackQuery, InputMediaPhoto
+from aiogram.types import Message, CallbackQuery, InputMediaPhoto, InputMediaVideo
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from config import in_progress
+from config import city_search, hobby_search
 from src.handlers.search_users.hobby_search import search_users_by_hobby
 from src.modules.delete_messages import del_last_message
 from src.modules.get_self_data import get_user_info
@@ -40,8 +40,8 @@ async def serach_users_by_city(callback, state):
     city_data = user_info['data'][0][5]
 
     edit_message = await callback.message.edit_media(
-        media=InputMediaPhoto(
-            media=f'{in_progress}',
+        media=InputMediaVideo(
+            media=f'{city_search}',
             caption=(
                 '\n🔎 <b>В каком городе?</b>'
                 '\n\n📌💬 Пришлите <b>название города</b> в чат'
@@ -100,8 +100,8 @@ async def search_in_city(callback: CallbackQuery, state: FSMContext):
 
             try:
                 await callback.message.edit_media(
-                    media=InputMediaPhoto(
-                        media=f'{in_progress}',
+                    media=InputMediaVideo(
+                        media=f'{city_search}',
                         caption=(
                             '\n<b>Пользователи в вашем городе не найдены</b> 😔'
                             '\n\n📌⌨️ Вы можете выбрать пункт <b>"Не важно"</b> '
@@ -115,7 +115,7 @@ async def search_in_city(callback: CallbackQuery, state: FSMContext):
                 )
             except:
                 await callback.message.answer_photo(
-                    photo=f'{in_progress}',
+                    photo=f'{city_search}',
                     caption=(
                         '\n<b>Пользователи в вашем городе не найдены</b> 😔'
                         '\n\n📌⌨️ Вы можете выбрать пункт <b>"Не важно"</b> '
@@ -184,8 +184,8 @@ async def search_by_city(message: Message, state: FSMContext, bot: Bot):
             await bot.edit_message_media(
                 chat_id=user_tg_id,
                 message_id=message_id,
-                media=InputMediaPhoto(
-                    media=f'{in_progress}',
+                media=InputMediaVideo(
+                    media=f'{hobby_search}',
                     caption=(
                         '\n🔎 <b>Какие увлечения?</b>'
                         '\n\n📌💬 Пришлите <b>увлечение</b> в чат'
@@ -204,8 +204,8 @@ async def search_by_city(message: Message, state: FSMContext, bot: Bot):
             await bot.edit_message_media(
                 chat_id=user_tg_id,
                 message_id=message_id,
-                media=InputMediaPhoto(
-                    media=f'{in_progress}',
+                media=InputMediaVideo(
+                    media=f'{city_search}',
                     caption=(
                         '\n🔎 <b>В каком городе?</b>'
                         f'\n\n❌ Пользователи в городе <b>"{city_name}"</b> '

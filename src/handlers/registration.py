@@ -10,7 +10,6 @@ from config import sucessful_registration, video_no_nickname, in_progress, no_ph
 from src.modules.delete_messages import del_messages, del_last_message
 from src.database.requests.new_user import add_new_user
 from src.database.requests.user_data import check_user
-from src.modules.get_self_data import get_user_info
 from src.handlers.edit_name import check_emodji
 import src.modules.keyboard as kb
 
@@ -63,7 +62,10 @@ async def reg(callback: CallbackQuery, state: FSMContext):
             if user_nickname:
 
                 # продолжаю регистрацию если ник есть
-                message_to_edit = await callback.message.edit_text(text='Пожалуйста, ведите ваше имя:')
+                message_to_edit = await callback.message.edit_text(
+                    text=('<b>✏️📋 Регистрация</b>'
+                          '\n\n🟠 Пожалуйста, напишите в чат <b>ваше имя</b>:'),
+                    parse_mode='HTML')
 
                 # добавляю id сообщения для дальнейшего редактирования
                 await state.update_data(message_to_edit=message_to_edit.message_id)
@@ -90,8 +92,8 @@ async def reg(callback: CallbackQuery, state: FSMContext):
 
             # вывожу уведомление с рестартом регистрации
             await callback.message.answer_photo(photo=in_progress,
-                                                caption=('Что-то пошло не так :( \n'
-                                                         'Попробуйте снова чуть позже.'),
+                                                caption=('Что-то пошло не так :('
+                                                         '\nПопробуйте снова чуть позже.'),
                                                 parse_mode='HTML',
                                                 reply_markup=kb.regkey
                                                 )
@@ -128,29 +130,37 @@ async def reg_name(message: Message, state: FSMContext, bot: Bot):
 
             # вывожу уведомление об ошибке
 
-            await bot.edit_message_text(chat_id=user_tg_id,
-                                        message_id=message_id,
-                                        text='⚠️ <b>Неверный формат данных</b> ⚠️',
-                                        parse_mode='HTML')
+            await bot.edit_message_text(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                text=('<b>✏️📋 Регистрация</b>'
+                      '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
+                parse_mode='HTML')
 
             await asyncio.sleep(2)
 
-            await bot.edit_message_text(chat_id=user_tg_id,
-                                        message_id=message_id,
-                                        text=('❌ Имя должно содержать <b>только текст</b> '
-                                              '(без эмодзи), '
-                                              'а так же не должно превышать длинну в <b>20 символов</b>.'
-                                              '\n\nОтправьте ваше имя в чат:'),
-                                        parse_mode='HTML')
+            await bot.edit_message_text(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                text=('<b>✏️📋 Регистрация</b>'
+                      '\n\n❌ Имя должно содержать <b>только текст</b> '
+                      '(без эмодзи), '
+                      'а так же не должно превышать длинну в <b>20 символов</b>.'
+                      '\n\nОтправьте ваше имя в чат:'),
+                parse_mode='HTML')
 
             # возвращаюсь в состояние ожидания нового сообщения с именем
             return
 
         # сообщение для редактирования
-        message_to_edit = await bot.edit_message_text(chat_id=user_tg_id,
-                                                      message_id=message_id,
-                                                      text='Напишите в чат название города, '
-                                                      'в котором вы проживаете:')
+        message_to_edit = await bot.edit_message_text(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            text=('<b>✏️📋 Регистрация</b>'
+                  '\n\n🟡 Пришлите в чат <b>название города</b>, '
+                  'в котором вы проживаете:'),
+            parse_mode='HTML'
+        )
 
         # добавляю в состояние id особщения для дальнейшего редактирования
         # (а также имя и ник)
@@ -165,21 +175,24 @@ async def reg_name(message: Message, state: FSMContext, bot: Bot):
     else:
 
         # вывожу уведомление об ошибке
-
-        await bot.edit_message_text(chat_id=user_tg_id,
-                                    message_id=message_id,
-                                    text='⚠️ <b>Неверный формат данных</b> ⚠️',
-                                    parse_mode='HTML')
+        await bot.edit_message_text(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            text=('<b>✏️📋 Регистрация</b>'
+                  '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
+            parse_mode='HTML')
 
         await asyncio.sleep(2)
 
-        await bot.edit_message_text(chat_id=user_tg_id,
-                                    message_id=message_id,
-                                    text=('❌ Имя не должно содержать изображения или '
-                                          'любой отличный от текста контент, '
-                                          'а так же не должно превышать длинну в <b>20 символов</b>.'
-                                          '\n\nОтправьте ваше имя в чат:'),
-                                    parse_mode='HTML')
+        await bot.edit_message_text(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            text=('<b>✏️📋 Регистрация</b>'
+                  '\n\n❌ Имя не должно содержать изображения или '
+                  'любой отличный от текста контент, '
+                  'а так же не должно превышать длинну в <b>20 символов</b>.'
+                  '\n\nОтправьте ваше имя в чат:'),
+            parse_mode='HTML')
 
         # возвращаюсь в состояние ожидания нового сообщения с именем
         return
@@ -217,28 +230,36 @@ async def get_city(message: Message, state: FSMContext, bot: Bot):
 
             # вывожу уведомление об ошибке
 
-            await bot.edit_message_text(chat_id=user_tg_id,
-                                        message_id=message_id,
-                                        text='⚠️ <b>Неверный формат данных</b> ⚠️',
-                                        parse_mode='HTML')
+            await bot.edit_message_text(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                text=('<b>✏️📋 Регистрация</b>'
+                      '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
+                parse_mode='HTML')
 
             await asyncio.sleep(2)
 
-            await bot.edit_message_text(chat_id=user_tg_id,
-                                        message_id=message_id,
-                                        text=('❌ Название города должно содержать <b>только текст</b>, не должно содержать эмодзи '
-                                              'и превышать длинну в <b>25 символов</b>.'
-                                              '\n\nОтправьте название вашего города в чат:'),
-                                        parse_mode='HTML')
+            await bot.edit_message_text(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                text=('<b>✏️📋 Регистрация</b>'
+                      '\n\n❌ Название города должно содержать '
+                      '<b>только текст</b>, не должно содержать эмодзи '
+                      'и превышать длинну в <b>25 символов</b>.'
+                      '\n\nОтправьте название вашего города в чат:'),
+                parse_mode='HTML')
 
             # возвращаюсь в состояние ожидания нового сообщения с именем
             return
 
         # сообщение для редактирования
-        message_to_edit = await bot.edit_message_text(chat_id=user_tg_id,
-                                                      message_id=message_id,
-                                                      text='Укажите ваш пол.',
-                                                      reply_markup=kb.gender)
+        message_to_edit = await bot.edit_message_text(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            text=('<b>✏️📋 Регистрация</b>'
+                  '\n\n🟢 Укажите <b>ваш пол</b>, выбрав один из вариантов:'),
+            parse_mode='HTML',
+            reply_markup=kb.gender)
 
         # сохраняю в состоянии название города и сообщение для редактирования
         await state.update_data(message_to_edit=message_to_edit.message_id, city=city)
@@ -251,20 +272,24 @@ async def get_city(message: Message, state: FSMContext, bot: Bot):
 
         # вывожу уведомление об ошибке
 
-        await bot.edit_message_text(chat_id=user_tg_id,
-                                    message_id=message_id,
-                                    text='⚠️ <b>Неверный формат данных</b> ⚠️',
-                                    parse_mode='HTML')
+        await bot.edit_message_text(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            text=('<b>✏️📋 Регистрация</b>'
+                  '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
+            parse_mode='HTML')
 
         await asyncio.sleep(2)
 
-        await bot.edit_message_text(chat_id=user_tg_id,
-                                    message_id=message_id,
-                                    text=('❌ Название города не должно содержать изображения или '
-                                          'любой отличный от текста контент, '
-                                          'а так же не должно превышать длинну в <b>25 символов</b>.'
-                                          '\n\nОтправьте название вашего города в чат:'),
-                                    parse_mode='HTML')
+        await bot.edit_message_text(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            text=('<b>✏️📋 Регистрация</b>'
+                  '\n\n❌ Название города не должно содержать изображения или '
+                  'любой отличный от текста контент, '
+                  'а так же не должно превышать длинну в <b>25 символов</b>.'
+                  '\n\nОтправьте название вашего города в чат:'),
+            parse_mode='HTML')
 
         # возвращаюсь в состояние ожидания нового сообщения с именем
         return
@@ -277,8 +302,12 @@ async def gender_checked(callback: CallbackQuery, state: FSMContext):
     # сохраняю название пола из колбэка
     gender = callback.data
 
-    message_to_edit = await callback.message.edit_text(text='Укажите дату вашего рождения в формате <b>"ДД.ММ.ГГГГ"</b>.',
-                                                       parse_mode='HTML')
+    message_to_edit = await callback.message.edit_text(
+        text=('<b>✏️📋 Регистрация</b>'
+              '\n\n🔵 Напишите в чат <b>дату вашего рождения</b>:'
+              '\n(<i>в формате</i> <b>"ДД.ММ.ГГГГ"</b>'),
+        parse_mode='HTML'
+    )
 
     # добавляю название пола в состояние
     await state.update_data(gender=gender, message_to_edit=message_to_edit.message_id)
@@ -317,20 +346,24 @@ async def age_checked(message: Message, state: FSMContext, bot: Bot):
 
             # вывожу уведомление об ошибке
 
-            await bot.edit_message_text(chat_id=user_tg_id,
-                                        message_id=message_id,
-                                        text='⚠️ <b>Неверный формат данных</b> ⚠️',
-                                        parse_mode='HTML')
+            await bot.edit_message_text(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                text=('<b>✏️📋 Регистрация</b>'
+                      '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
+                parse_mode='HTML')
 
             await asyncio.sleep(2)
 
-            await bot.edit_message_text(chat_id=user_tg_id,
-                                        message_id=message_id,
-                                        text=('❌ Сообщение должно содержать <b>только текст</b> и '
-                                              'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
-                                              '\n(Пример: 01.01.2001)'),
-                                        parse_mode='HTML'
-                                        )
+            await bot.edit_message_text(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                text=('<b>✏️📋 Регистрация</b>'
+                      '\n\n❌ Сообщение должно содержать <b>только текст</b> и '
+                      'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
+                      '\n(Пример: 01.01.2001)'),
+                parse_mode='HTML'
+            )
 
             # возвращаюсь в состояние ожидания нового сообщения
             return
@@ -354,32 +387,37 @@ async def age_checked(message: Message, state: FSMContext, bot: Bot):
 
         # вывожу уведомление об ошибке
 
-        await bot.edit_message_text(chat_id=user_tg_id,
-                                    message_id=message_id,
-                                    text='⚠️ <b>Неверный формат данных</b> ⚠️',
-                                    parse_mode='HTML')
+        await bot.edit_message_text(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            text=('<b>✏️📋 Регистрация</b>'
+                  '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
+            parse_mode='HTML')
 
         await asyncio.sleep(2)
 
-        await bot.edit_message_text(chat_id=user_tg_id,
-                                    message_id=message_id,
-                                    text=('❌ Сообщение должно содержать <b>только текст</b> и '
-                                          'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
-                                          '\n(Пример: 01.01.2001)'),
-                                    parse_mode='HTML'
-                                    )
+        await bot.edit_message_text(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            text=('<b>✏️📋 Регистрация</b>'
+                  '\n\n❌ Сообщение должно содержать <b>только текст</b> и '
+                  'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
+                  '\n(Пример: 01.01.2001)'),
+            parse_mode='HTML'
+        )
 
         # возвращаю в состояние ожидания нового сообщения с датой
         return
 
     # если все проверки прошли успешно
-    message_to_edit = await bot.edit_message_text(chat_id=user_tg_id,
-                                                  message_id=message_id,
-                                                  text=('📸 Пришлите в чат одно фото, '
-                                                        'которое хотите установить в '
-                                                        'качестве обложки вашей анкеты:'),
-                                                  parse_mode='HTML',
-                                                  reply_markup=kb.late_upload_photo_to_profile)
+    message_to_edit = await bot.edit_message_text(
+        chat_id=user_tg_id,
+        message_id=message_id,
+        text=('<b>✏️📋 Регистрация</b>'
+              '\n\n📸 Пришлите в чат <b>одно фото</b>, которое будет '
+              'установлено в качестве обложки вашей анкеты:'),
+        parse_mode='HTML',
+        reply_markup=kb.late_upload_photo_to_profile)
 
     # Добавляю id  всписок для удаления в шаге добавления фото
     delete_messages.append(message_to_edit.message_id)
@@ -421,7 +459,8 @@ async def add_photo_to_profile(message: Message, state: FSMContext, bot: Bot):
         # вывожу уведомление об ошибке
         await bot.edit_message_text(chat_id=user_tg_id,
                                     message_id=message_id,
-                                    text='⚠️ <b>Неверный формат данных</b> ⚠️',
+                                    text=('<b>✏️📋 Регистрация</b>'
+                                          '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
                                     parse_mode='HTML')
 
         await asyncio.sleep(2)
@@ -429,20 +468,20 @@ async def add_photo_to_profile(message: Message, state: FSMContext, bot: Bot):
         # отрисовка сообщения с пояснением требований к формату
         await bot.edit_message_text(chat_id=user_tg_id,
                                     message_id=message_id,
-                                    text='Фото должно быть в формате <b>.jpg '
-                                    '.jpeg</b> или <b>.png</b>'
-                                    '\n<i>Отправьте фото в чат:</i>'
-                                    '\n\n(Вы можете загрузить фото позже, в '
-                                    'разделе "✏️ <b>Редактировать профиль</b>")',
+                                    text=('<b>✏️📋 Регистрация</b>'
+                                          '\n\nФото должно быть в формате <b>.jpg '
+                                          '.jpeg</b> или <b>.png</b>'
+                                          '\n<i>Отправьте фото в чат:</i>'
+                                          '\n\n(Вы можете загрузить фото позже, в '
+                                          'разделе "✏️ <b>Редактировать профиль</b>")'),
                                     parse_mode='HTML',
                                     reply_markup=kb.late_upload_photo_to_profile)
 
         # возвращаюсь в состояние ожидания фото
         return
 
+
 # ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ СТАЛ ДОБАВЛЯТЬ ФОТО И НАЖАЛ "Загрузить позже"
-
-
 @router.callback_query(F.data == 'late_load_photo')
 async def late_upload_photo(callback: CallbackQuery, state: FSMContext):
 
@@ -483,10 +522,10 @@ async def sucess_registration(message, state, photo_id, user_tg_id):
     # уведомление об успешной регистрации
     await message.answer_photo(
         photo=f'{sucessful_registration}',
-        caption='<b>Вы успешно зарегистрированы!</b> ✅\n\n'
-        '<b>Добавьте несколько увлечений</b>, чтобы другим '
-        'пользователям было проще вас найти.'
-        '\n\n А ещё вы можете рассказать более подробно о своём образовании, '
+        caption='<b>Вы успешно зарегистрированы!</b> ✅'
+        '\n\n📌 <b>Добавьте несколько увлечений</b>, чтобы быстрее '
+        'найти интересные контакты и завести новые знакомства!'
+        '\n\n📌 Расскажите более подробно о своём образовании, '
         'планах, личных качествах (да и вообще о чем угодно), '
         'заполнив раздел <b>"О себе"</b>.',
         parse_mode='HTML',

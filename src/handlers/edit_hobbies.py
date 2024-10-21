@@ -39,6 +39,7 @@ async def edit_hobbies(callback: CallbackQuery, state: FSMContext):
 
 # ПРОВЕРКА НАЛИЧИЯ УВЛЕЧЕНИЙ (В ПРИНЦИПЕ) И ОТРИСОВКА МЕНЮ
 # С КНОПКОЙ УДАЛЕНИЯ (ЕСЛИ ЕСТЬ) ИЛИ БЕЗ (ЕСЛИ УВЛЕЧЕНИЙ НЕТ)
+# А ТАКЖЕ ПРОВЕРКА ПО КОЛИЧЕСТВУ УВЛЕЧЕНИЙ ДЛЯ ВЕРНОЙ ОТРИСОВКИ КЛАВИАТУРЫ
 
 async def check_hobbies_list(user_tg_id, callback):
 
@@ -47,9 +48,10 @@ async def check_hobbies_list(user_tg_id, callback):
 
     # извлекаю свои данные для отрисовки страницы
     self_data = user_info['data']
+    hobbies_data = self_data[1]
     self_hobbies = user_info['hobbies']
 
-    # если хобби нет (в таблице проставлен "-")
+    # если хобби нет (в таблице проставлен "-") отрисовка клавиатуры без укнопки удаления
     if self_hobbies == '-':
         try:
 
@@ -76,7 +78,42 @@ async def check_hobbies_list(user_tg_id, callback):
                 reply_markup=kb.no_hobbies
             )
 
-    # если хобби есть
+    # если уже добавлено 5 увлечений (отрисовка с клавиатурой без кнопки добавить)
+    elif len(hobbies_data) >= 7:
+
+        try:
+            await callback.message.edit_media(
+                media=InputMediaPhoto(
+                    media=f'{self_data[0][1]}',
+                    caption=(
+                        f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                        '\n\n⚠️ <b>Вы добавили максимальное количество увлечений.</b>'
+                        '\nЧтобы добавить новое - удалите одно из имеющихся.'
+                    ),
+                    parse_mode='HTML'
+                ),
+                reply_markup=kb.max_hobbies
+            )
+
+        except:
+
+            try:
+                await del_last_message(callback.message)
+            except:
+                pass
+
+            await callback.message.answer_photo(
+                photo=f'{self_data[0][1]}',
+                caption=(
+                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    '\n\n⚠️ <b>Вы добавили максимальное количество увлечений.</b>'
+                    '\nЧтобы добавить новое - удалите одно из имеющихся.'
+                ),
+                parse_mode='HTML',
+                reply_markup=kb.max_hobbies
+            )
+
+    # если хобби есть и не более 7 штук
     else:
         try:
 
@@ -85,7 +122,7 @@ async def check_hobbies_list(user_tg_id, callback):
                 media=InputMediaPhoto(
                     media=f'{self_data[0][1]}',
                     caption=(
-                        f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                        f'\n<b>Список ваших увлечений: </b>{self_hobbies}'
                     ),
                     parse_mode='HTML'
                 ),
@@ -101,7 +138,7 @@ async def check_hobbies_list(user_tg_id, callback):
             await callback.message.answer_photo(
                 photo=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    f'\n<b>Список ваших увлечений: </b>{self_hobbies}'
                 ),
                 parse_mode='HTML',
                 reply_markup=kb.edit_hobbies
@@ -142,24 +179,34 @@ async def new_hobby_menu(callback, state):
                 media=f'{self_data[0][1]}',
                 caption=(
                     f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                    '\n\n‼️ Добавьте <b>не более 7 увлечений</b>.'
                     '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                     '\n<b>Одно увлечение - одно сообщение</b>'
+                    '\n(<u>не более 50 символов</u>)'
                     '\n\n💬 Отправьте увлечение сообщением в чат, '
-                    'чтобы я мог его добавить.'
+                    'чтобы я мог его добавить:'
                 ),
                 parse_mode='HTML'
             ),
             reply_markup=kb.back_hobbies
         )
+
     except:
+
+        try:
+            await del_last_message(callback.message)
+        except:
+            pass
+
         await callback.message.answer_photo(
             photo=f'{self_data[0][1]}',
             caption=(
                 f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+                '\n\n‼️ Добавьте <b>не более 5 увлечений</b>.'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n💬 Отправьте увлечение сообщением в чат, '
-                'чтобы я мог его добавить.'
+                'чтобы я мог его добавить:'
             ),
             parse_mode='HTML',
             reply_markup=kb.back_hobbies
@@ -254,46 +301,31 @@ async def check_hobby_to_delete(user_tg_id, callback):
     hobbies_data = self_data[1]
     self_hobbies = user_info['hobbies']
 
-    # если хобби нет (в таблице проставлен "-")
-    if self_hobbies == '-':
-
-        try:
-
-            # отрисовка страницы
-            await callback.message.edit_media(
-                media=InputMediaPhoto(
-                    media=f'{self_data[0][1]}',
-                    caption='<b> \nСписок ваших увлечений пуст 🤷‍♂️</b>',
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.no_hobbies)
-        except:
-            await callback.message.answer_photo(
-                photo=f'{self_data[0][1]}',
-                caption='<b> \nСписок ваших увлечений пуст 🤷‍♂️</b>',
-                parse_mode='HTML',
-                reply_markup=kb.no_hobbies)
-    else:
-
-        try:
-            await callback.message.edit_media(
-                media=InputMediaPhoto(
-                    media=f'{self_data[0][1]}',
-                    caption=(
-                        f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
-                    ),
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.delete_hobbies_keyboard(user_tg_id, hobbies_data))
-
-        except:
-            await callback.message.answer_photo(
-                photo=f'{self_data[0][1]}',
+    try:
+        await callback.message.edit_media(
+            media=InputMediaPhoto(
+                media=f'{self_data[0][1]}',
                 caption=(
                     f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
                 ),
-                parse_mode='HTML',
-                reply_markup=kb.delete_hobbies_keyboard(user_tg_id, hobbies_data))
+                parse_mode='HTML'
+            ),
+            reply_markup=kb.delete_hobbies_keyboard(user_tg_id, hobbies_data))
+
+    except:
+
+        try:
+            await del_last_message(callback.message)
+        except:
+            pass
+
+        await callback.message.answer_photo(
+            photo=f'{self_data[0][1]}',
+            caption=(
+                f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
+            ),
+            parse_mode='HTML',
+            reply_markup=kb.delete_hobbies_keyboard(user_tg_id, hobbies_data))
 
 
 # УДАЛЕНИЕ УВЛЕЧЕНИЯ
@@ -434,7 +466,7 @@ async def hobby_succesful_added(user_tg_id, message_id, bot):
                 f'\n<b>Список ваших увлечений:</b>{self_hobbies}'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
-                '\n\n✅ Список ваших увлечений успешно обновлен!'
+                '\n\n✅ Увлечение успешно добавлено!'
             ),
             parse_mode='HTML'
         )

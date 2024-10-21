@@ -1,7 +1,7 @@
 import asyncio
 from aiogram.types import Message
 from aiogram.filters import CommandStart
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.database.requests.user_data import check_user
@@ -69,11 +69,10 @@ async def start(message: Message, state: FSMContext):
 '''
 @router.message(F.photo | F.video | F.animation)
 async def photo_nahui(message: Message):
-    data = message.photo[-1]
-    # video = message.video
+    # data = message.photo[-1]
+    data = message.video
     await message.answer(f'id Этого изображения:\n{data.file_id}')
 '''
-
 
 # Тест функций
 

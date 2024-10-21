@@ -110,6 +110,8 @@ about_me = InlineKeyboardMarkup(inline_keyboard=[
                           callback_data='edit_gender'),
      InlineKeyboardButton(text='🌇 Город',
                           callback_data='edit_city')],
+    [InlineKeyboardButton(text='📇 Раздел "О себе"',
+                          callback_data='edit_about_me')],
     [InlineKeyboardButton(text='🗑 Удалить профиль',
                           callback_data='delete_profile')],
     [InlineKeyboardButton(text='↩️ Главное меню', callback_data='main_menu')]])
@@ -128,6 +130,13 @@ edit_hobbies = InlineKeyboardMarkup(inline_keyboard=[
 no_hobbies = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='➕ Добавить увлечение',
                           callback_data='new_hobby')],
+    [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='my_profile')]])
+
+
+# если у пользователя максимальное количество увлечений (клавиатура без кнопки добавить)
+max_hobbies = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='➖ Удалить увлечение',
+                          callback_data='del_hobby')],
     [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='my_profile')]])
 
 
@@ -188,6 +197,26 @@ back_to_photo = InlineKeyboardMarkup(inline_keyboard=[
 # Общий возврат в мой профиль
 back = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='my_profile')]])
+
+
+# Меню редактирования раздела "О себе"
+edit_about_me = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='➕ Добавить "О себе"',
+                          callback_data='add_about_me')],
+    [InlineKeyboardButton(text='➖ Удалить "О себе"',
+                          callback_data='delete_about_me')],
+    [InlineKeyboardButton(text='↩️ Вернуться назад',
+                          callback_data='my_profile')]
+])
+
+
+# Меню редактирования раздела "О себе" без кнопки удалить (если раздел пуст)
+edit_about_me_no_delete_button = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='➕ Добавить "О себе"',
+                          callback_data='add_about_me')],
+    [InlineKeyboardButton(text='↩️ Вернуться назад',
+                          callback_data='my_profile')]
+])
 
 
 # Редактирование пола

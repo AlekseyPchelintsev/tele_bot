@@ -1,5 +1,5 @@
 import asyncio
-from config import delete_profile_id
+from config import in_progress
 from aiogram import Bot
 from aiogram.types import CallbackQuery, Message
 from aiogram import F, Router
@@ -45,6 +45,7 @@ async def reload_reaction_pagination_after_hide_or_like(callback,
         await back_callback(callback.message,
                             user_tg_id,
                             'back_reactions',
+                            'reactions',
                             text_info)
 
     # если True (data не пустая)
@@ -122,7 +123,12 @@ async def pagination_handler_likes(
         if callback_data.action == 'menu_likes':
 
             # Выход из пагинации (четвертый параметр - текст под инфой пользователя (не обязательный))
-            await back_callback(callback.message, user_tg_id, 'reactions')
+            menu_text = '<b>Раздел ваших реакций:</b>'
+            await back_callback(callback.message,
+                                user_tg_id,
+                                'reactions',
+                                'reactions',
+                                menu_text)
 
             # Блок обрабатывает колбэк "incoming_reactions" / "Входящие запросы"
 
@@ -173,7 +179,7 @@ async def pagination_handler_likes(
                                                                     page)
 
                 # сообщение "мне"
-                await callback.message.answer_photo(photo=delete_profile_id,
+                await callback.message.answer_photo(photo=in_progress,
                                                     caption=(
                                                         '<b>Что-то пошло не так</b> 🫤\n\n'
                                                         '<b>Возможно пользователь передумал и удалил свою реакцию</b> 😔\n\n'
@@ -313,5 +319,5 @@ async def handle_random_message(message: Message):
         await attention_message(message, '⚠️ Если вы хотите внести изменения, перейдите '
                                 'в раздел <b>"редактировать профиль"</b>', 3)
     else:
-        await attention_message(message, '⚠️ Что бы взаимодействовать с сервисом, '
+        await attention_message(message, '⚠️ Чтобы взаимодействовать с сервисом, '
                                 'вам необходимо <b>зарегистрироваться</b>', 3)

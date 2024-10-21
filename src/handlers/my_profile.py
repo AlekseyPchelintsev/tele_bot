@@ -30,6 +30,7 @@ async def about_me(callback: CallbackQuery, state: FSMContext):
     self_data = user_info['data']
     self_gender = user_info['gender']
     self_hobbies = user_info['hobbies']
+    about_me = user_info['about_me']
 
     try:
 
@@ -38,12 +39,13 @@ async def about_me(callback: CallbackQuery, state: FSMContext):
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {self_data[0][0]}\n'
-                    f'<b>Возраст:</b> {self_data[0][4]}\n'
-                    f'<b>Пол:</b> {self_gender}\n'
-                    f'<b>Город:</b> {self_data[0][5]}\n'
-                    f'<b>Увлечения:</b> {self_hobbies}\n\n'
-                    '<b>Редактировать:</b>'
+                    f'<b>Имя:</b> {self_data[0][0]}'
+                    f'\n<b>Возраст:</b> {self_data[0][4]}'
+                    f'\n<b>Пол:</b> {self_gender}'
+                    f'\n<b>Город:</b> {self_data[0][5]}'
+                    f'\n\n<b>Увлечения:</b> {self_hobbies}'
+                    f'\n\n<b>О себе:</b> {about_me}'
+                    '\n\n<b>Редактировать:</b>'
                 ),
                 parse_mode='HTML'
             ),

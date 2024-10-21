@@ -1,4 +1,5 @@
 from psycopg2.extras import DictCursor
+from src.database.requests.render_users import render_users
 from src.database.models import get_db_connection
 
 
@@ -185,44 +186,9 @@ def get_users_with_likes(user_tg_id):
                 )
 
                 user_data = cursor.fetchall()
+                result = render_users([user[0] for user in user_data])
 
-                # Выполняем запрос для получения данных о хобби
-                cursor.execute(
-                    """
-                    SELECT 
-                        user_tg_id, 
-                        hobby_name 
-                    FROM userhobbies
-                    """
-                )
-                hobbies_data = cursor.fetchall()
-
-                # Формируем список данных пользователей
-                data = [(row['user_tg_id'],
-                        row['name'],
-                        row['photo_id'],
-                        row['nickname'],
-                        row['gender'],
-                        row['age'],
-                        row['city'])
-                        for row in user_data]
-
-                # Формируем словарь хобби
-                hobbies = {}
-
-                for row in hobbies_data:
-                    user_tg_id = row['user_tg_id']
-                    hobby_name = row['hobby_name']
-                    hobbies.setdefault(user_tg_id, []).append(hobby_name)
-
-                # Добавляем список хобби к данным пользователей
-                for i in range(len(data)):
-                    user_tg_id = data[i][0]  # Извлекаем user_tg_id
-                    hobbies_list = hobbies.get(
-                        user_tg_id)  # Получаем список хобби
-                    data[i] = (*data[i], hobbies_list)
-
-            return data
+                return result
     finally:
         connection.close()
 
@@ -241,44 +207,9 @@ def get_users_who_liked_me(user_tg_id):
                 """, (user_tg_id,))
 
                 user_data = cursor.fetchall()
+                result = render_users([user[0] for user in user_data])
 
-                # Выполняем запрос для получения данных о хобби
-                cursor.execute(
-                    """
-                    SELECT 
-                        user_tg_id, 
-                        hobby_name 
-                    FROM userhobbies
-                    """
-                )
-                hobbies_data = cursor.fetchall()
-
-                # Формируем список данных пользователей
-                data = [(row['user_tg_id'],
-                        row['name'],
-                        row['photo_id'],
-                        row['nickname'],
-                        row['gender'],
-                        row['age'],
-                        row['city'])
-                        for row in user_data]
-
-                # Формируем словарь хобби
-                hobbies = {}
-
-                for row in hobbies_data:
-                    user_tg_id = row['user_tg_id']
-                    hobby_name = row['hobby_name']
-                    hobbies.setdefault(user_tg_id, []).append(hobby_name)
-
-                # Добавляем список хобби к данным пользователей
-                for i in range(len(data)):
-                    user_tg_id = data[i][0]  # Извлекаем user_tg_id
-                    hobbies_list = hobbies.get(
-                        user_tg_id)  # Получаем список хобби
-                    data[i] = (*data[i], hobbies_list)
-
-            return data
+                return result
     finally:
         connection.close()
 
@@ -322,44 +253,10 @@ def get_matches_users_data(user_tg_id):
                 """, (user_tg_id,))
 
                 user_data = cursor.fetchall()
+                result = render_users([user[0] for user in user_data])
 
-                # Выполняем запрос для получения данных о хобби
-                cursor.execute(
-                    """
-                    SELECT 
-                        user_tg_id, 
-                        hobby_name 
-                    FROM userhobbies
-                    """
-                )
-                hobbies_data = cursor.fetchall()
+                return result
 
-                # Формируем список данных пользователей
-                data = [(row['user_tg_id'],
-                        row['name'],
-                        row['photo_id'],
-                        row['nickname'],
-                        row['gender'],
-                        row['age'],
-                        row['city'])
-                        for row in user_data]
-
-                # Формируем словарь хобби
-                hobbies = {}
-
-                for row in hobbies_data:
-                    user_tg_id = row['user_tg_id']
-                    hobby_name = row['hobby_name']
-                    hobbies.setdefault(user_tg_id, []).append(hobby_name)
-
-                # Добавляем список хобби к данным пользователей
-                for i in range(len(data)):
-                    user_tg_id = data[i][0]  # Извлекаем user_tg_id
-                    hobbies_list = hobbies.get(
-                        user_tg_id)  # Получаем список хобби
-                    data[i] = (*data[i], hobbies_list)
-
-            return data
     finally:
         connection.close()
 
@@ -382,44 +279,9 @@ def get_my_ignore_list_users(user_tg_id):
                 )
 
                 user_data = cursor.fetchall()
+                result = render_users([user[0] for user in user_data])
 
-                # Выполняем запрос для получения данных о хобби
-                cursor.execute(
-                    """
-                    SELECT 
-                        user_tg_id, 
-                        hobby_name 
-                    FROM userhobbies
-                    """
-                )
-                hobbies_data = cursor.fetchall()
-
-                # Формируем список данных пользователей
-                data = [(row['user_tg_id'],
-                        row['name'],
-                        row['photo_id'],
-                        row['nickname'],
-                        row['gender'],
-                        row['age'],
-                        row['city'])
-                        for row in user_data]
-
-                # Формируем словарь хобби
-                hobbies = {}
-
-                for row in hobbies_data:
-                    user_tg_id = row['user_tg_id']
-                    hobby_name = row['hobby_name']
-                    hobbies.setdefault(user_tg_id, []).append(hobby_name)
-
-                # Добавляем список хобби к данным пользователей
-                for i in range(len(data)):
-                    user_tg_id = data[i][0]  # Извлекаем user_tg_id
-                    hobbies_list = hobbies.get(
-                        user_tg_id)  # Получаем список хобби
-                    data[i] = (*data[i], hobbies_list)
-
-            return data
+                return result
 
     except Exception as e:
         print(f'ОШИБКА ПОЛУЧЕНИЯ IGNORE LIST USERS: {e}')

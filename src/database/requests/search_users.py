@@ -189,7 +189,8 @@ def check_users_by_hobbies(my_user_tg_id, gender, city, hobbies):
 
 
 # НАХОДИТ ID ВСЕХ ПОЛЬЗОВАТЕЛЕЙ, ОБРАБАТЫВАЕТ IDs И ВОЗВРАЩАЕТ ОБРАБОТАННЫЕ ДАННЫЕ
-def search_users(user_tg_id, gender, city, hobbies):
+'''
+def search_users2(user_tg_id, gender, city, hobbies):
     # Получаем список пользователей для исключения
     exclude_users_ids = get_exclude_users_ids(user_tg_id)
 
@@ -266,8 +267,101 @@ def search_users(user_tg_id, gender, city, hobbies):
                 cursor.execute(query_word_match, params_word_match)
                 users = cursor.fetchall()
 
+                result = render_users([user[0] for user in users])
+
                 # Возвращаем список пользователей
-                return render_users([user[0] for user in users])
+                return result
+
+    finally:
+        connection.close()
+'''
+
+
+def search_users(user_tg_id, gender, city, hobbies):
+    # Получаем список пользователей для исключения
+    exclude_users_ids = get_exclude_users_ids(user_tg_id)
+
+    # Преобразуем хобби в список, если передано строкой
+    if isinstance(hobbies, str):
+        hobbies = [hobbies]
+
+    connection = get_db_connection()
+
+    try:
+        with connection:
+            with connection.cursor() as cursor:
+                # Базовый запрос с исключением пользователей
+                base_query = """
+                SELECT users.user_tg_id
+                FROM users
+                LEFT JOIN userhobbies ON users.user_tg_id = userhobbies.user_tg_id
+                WHERE users.user_tg_id != %s
+                """
+                params = [user_tg_id]
+
+                # Добавляем фильтр на исключение пользователей
+                if exclude_users_ids:
+                    placeholders = ', '.join(['%s'] * len(exclude_users_ids))
+                    base_query += f" AND users.user_tg_id NOT IN ({
+                        placeholders})"
+                    params.extend(exclude_users_ids)
+
+                # Фильтр по полу
+                if gender != "all":
+                    base_query += " AND users.gender = %s"
+                    params.append(gender)
+
+                # Фильтр по городу
+                if city != "all":
+                    base_query += " AND users.city = %s"
+                    params.append(city)
+
+                # Если hobbies = ["all"], возвращаем всех пользователей без фильтра по хобби
+                if hobbies == ["all"]:
+                    cursor.execute(base_query, params)
+                    users = cursor.fetchall()
+                    return render_users([user[0] for user in users])
+
+                # Первый запрос: поиск пользователей с полным совпадением по хобби
+                hobby_filters = " OR ".join(
+                    ["userhobbies.hobby_name ILIKE %s"] * len(hobbies))
+                query_with_hobbies = f"{base_query} AND ({hobby_filters})"
+                params_with_hobbies = params + \
+                    [f"%{hobby}%" for hobby in hobbies]
+
+                cursor.execute(query_with_hobbies, params_with_hobbies)
+                exact_match_users = cursor.fetchall()
+
+                # Сохраняем ID пользователей с точным совпадением, чтобы исключить их позже
+                exact_match_ids = {user[0] for user in exact_match_users}
+
+                # Второй запрос: поиск пользователей по отдельным словам
+                hobby_conditions = []
+                params_word_match = params.copy()
+
+                for hobby in hobbies:
+                    words = hobby.split()  # Разбиваем хобби на слова
+                    word_filters = " OR ".join(
+                        ["userhobbies.hobby_name ILIKE %s"] * len(words))
+                    hobby_conditions.append(f"({word_filters})")
+                    params_word_match.extend([f"%{word}%" for word in words])
+
+                query_word_match = f"{
+                    base_query} AND ({' OR '.join(hobby_conditions)})"
+
+                cursor.execute(query_word_match, params_word_match)
+                word_match_users = cursor.fetchall()
+
+                # Фильтруем пользователей, которые уже найдены в точном совпадении
+                additional_users = [
+                    user for user in word_match_users if user[0] not in exact_match_ids
+                ]
+
+                # Объединяем результаты: точные совпадения + частичные совпадения
+                all_users = exact_match_users + additional_users
+
+                # Гарантируем порядок вывода: точные совпадения первыми
+                return render_users([user[0] for user in all_users])
 
     finally:
         connection.close()

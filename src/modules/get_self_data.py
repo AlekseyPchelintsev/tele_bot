@@ -11,13 +11,18 @@ async def get_user_info(user_tg_id):
     # Получаю свои данные из бд
     self_data = await asyncio.to_thread(get_self_data, user_tg_id)
 
+    # Получаю данные графы "О себе"
+    about_me_data = ''
+
     # Извлекаю и обрабатыва необходимые данные
     self_gender = await check_gender(self_data[0][3])
     self_hobbies = await hobbies_list(self_data[1])
+    about_me = self_data[-1]
 
     # Возвращаю данные в виде словаря
     return {
         'data': self_data,
         'gender': self_gender,
-        'hobbies': self_hobbies
+        'hobbies': self_hobbies,
+        'about_me': about_me
     }

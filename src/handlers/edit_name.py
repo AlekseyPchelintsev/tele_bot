@@ -19,7 +19,6 @@ class Registration(StatesGroup):
 
 
 # МЕНЮ РЕДАКТИРОВАНИЯ ИМЕНИ
-
 @router.callback_query(F.data == 'edit_name')
 async def edit_name_menu(callback: CallbackQuery, state: FSMContext):
 
@@ -56,7 +55,6 @@ async def edit_name_menu(callback: CallbackQuery, state: FSMContext):
 
 
 # СОСТОЯНИЕ ОЖИДАНИЯ СООБЩЕНИЯ ОТ ПОЛЬЗОВАТЕЛЯ С НОВЫМ ИМЕНЕМ
-
 @router.message(Registration.change_name)
 async def edit_name(message: Message, state: FSMContext, bot: Bot):
 
@@ -105,7 +103,6 @@ async def edit_name(message: Message, state: FSMContext, bot: Bot):
 
 
 # УВЕДОМЛЕНИЕ ЕСЛИ НЕВЕРНЫЙ ФОРМАТ ИМЕНИ
-
 async def wrong_name(user_tg_id, message_id, bot):
 
     # плучаю свои данные для отрисовки страницы
@@ -149,7 +146,6 @@ async def wrong_name(user_tg_id, message_id, bot):
 
 
 # ВНЕСЕНИЕ ИЗМЕНЕНИЯ ИМЕНИ В БД И ОТРИСОВКА СТРАНИЦЫ
-
 async def change_name(user_tg_id, message, user_name, message_id, bot):
 
     # плучаю свои данные для отрисовки страницы с учетом изменений
@@ -183,6 +179,7 @@ async def change_name(user_tg_id, message, user_name, message_id, bot):
     self_data = user_info['data']
     self_gender = user_info['gender']
     self_hobbies = user_info['hobbies']
+    about_me = user_info['about_me']
 
     # отрисовка страницы
     await bot.edit_message_media(
@@ -206,12 +203,13 @@ async def change_name(user_tg_id, message, user_name, message_id, bot):
         media=InputMediaPhoto(
             media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {self_data[0][0]}\n'
-                f'<b>Возраст:</b> {self_data[0][4]}\n'
-                f'<b>Пол:</b> {self_gender}\n'
-                f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}\n\n'
-                '<b>Редактировать:</b>'
+                f'<b>Имя:</b> {self_data[0][0]}'
+                f'\n<b>Возраст:</b> {self_data[0][4]}'
+                f'\n<b>Пол:</b> {self_gender}'
+                f'\n<b>Город:</b> {self_data[0][5]}'
+                f'\n\n<b>Увлечения:</b> {self_hobbies}'
+                f'\n\n<b>О себе:</b> {about_me}'
+                '\n\n<b>Редактировать:</b>'
             ),
             parse_mode='HTML'
         ),

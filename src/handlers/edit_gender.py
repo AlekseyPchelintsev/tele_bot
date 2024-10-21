@@ -38,7 +38,7 @@ async def change_gender(callback: CallbackQuery):
 
 
 @router.callback_query(F.data.in_(['male', 'female', 'other']))
-async def gender_checked(callback: CallbackQuery):
+async def gender_changed(callback: CallbackQuery):
 
     # получаю свой id
     user_tg_id = callback.from_user.id
@@ -75,6 +75,7 @@ async def gender_checked(callback: CallbackQuery):
     self_data = user_info['data']
     self_gender = user_info['gender']
     self_hobbies = user_info['hobbies']
+    about_me = user_info['about_me']
 
     # отрисовка страницы с учетом внесенных изменений
     await callback.message.edit_media(
@@ -94,12 +95,13 @@ async def gender_checked(callback: CallbackQuery):
         media=InputMediaPhoto(
             media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {self_data[0][0]}\n'
-                f'<b>Возраст:</b> {self_data[0][4]}\n'
-                f'<b>Пол:</b> {self_gender}\n'
-                f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}\n\n'
-                '<b>Редактировать:</b>'
+                f'<b>Имя:</b> {self_data[0][0]}'
+                f'\n<b>Возраст:</b> {self_data[0][4]}'
+                f'\n<b>Пол:</b> {self_gender}'
+                f'\n<b>Город:</b> {self_data[0][5]}'
+                f'\n\n<b>Увлечения:</b> {self_hobbies}'
+                f'\n\n<b>О себе:</b> {about_me}'
+                '\n\n<b>Редактировать:</b>'
             ),
             parse_mode='HTML'
         ),

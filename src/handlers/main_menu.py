@@ -22,8 +22,6 @@ async def open_main_menu(callback: CallbackQuery, state: FSMContext):
 
     # Извлекаю свои данные для отрисовки страницы
     self_data = user_info['data']
-    self_gender = user_info['gender']
-    self_hobbies = user_info['hobbies']
 
     try:
 
@@ -32,11 +30,8 @@ async def open_main_menu(callback: CallbackQuery, state: FSMContext):
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',
                 caption=(
-                    f'\n<b>Имя:</b> {self_data[0][0]}\n'
-                    f'<b>Возраст:</b> {self_data[0][4]}\n'
-                    f'<b>Пол:</b> {self_gender}\n'
-                    f'<b>Город:</b> {self_data[0][5]}\n'
-                    f'<b>Увлечения:</b> {self_hobbies}'
+                    '<b>Главное меню:</b>'
+
                 ),
                 parse_mode='HTML'
             ),
@@ -52,11 +47,7 @@ async def open_main_menu(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer_photo(
             photo=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {self_data[0][0]}\n'
-                f'<b>Возраст:</b> {self_data[0][4]}\n'
-                f'<b>Пол:</b> {self_gender}\n'
-                f'<b>Город:</b> {self_data[0][5]}\n'
-                f'<b>Увлечения:</b> {self_hobbies}'
+                '<b>Главное меню:</b>'
             ),
             parse_mode='HTML',
             reply_markup=kb.users

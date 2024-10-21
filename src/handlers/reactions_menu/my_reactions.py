@@ -25,6 +25,7 @@ async def my_reactions(callback: CallbackQuery, state: FSMContext):
         await back_callback(callback.message,
                             user_tg_id,
                             'back_reactions',
+                            'reactions',
                             text_info)
 
     # если True (есть данные)

@@ -1,5 +1,5 @@
 import asyncio
-from config import delete_profile_id
+from config import somthing_wrong
 from aiogram import Bot
 from aiogram.types import CallbackQuery, InputMediaPhoto
 from aiogram import F, Router
@@ -48,7 +48,7 @@ async def accept_incoming_request_alert(callback: CallbackQuery, bot: Bot):
         await asyncio.to_thread(insert_reaction, user_tg_id, current_user_id)
         await bot_send_message_about_like(user_tg_id, current_user_id, bot)
         await callback.message.edit_media(media=InputMediaPhoto(
-            media=delete_profile_id,
+            media=somthing_wrong,
             caption=(
                 '<b>Что-то пошло не так</b> 🫤\n\n'
                 '<b>Возможно пользователь передумал и удалил свою реакцию</b> 😔\n\n'
@@ -71,7 +71,7 @@ async def accept_late_incoming_request_alert(callback: CallbackQuery):
         await notification_to_late_incoming_reaction(callback.message)
     else:
         await callback.message.edit_media(media=InputMediaPhoto(
-            media=delete_profile_id,
+            media=somthing_wrong,
             caption=(
                 '<b>Что-то пошло не так</b> 🫤\n\n'
                 '<b>Возможно пользователь случайно отправил вам реакцию\n'

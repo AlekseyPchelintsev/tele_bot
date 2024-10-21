@@ -211,6 +211,7 @@ async def date_changed(user_tg_id, message, user_age, user_birth_date, message_i
     self_data = user_info['data']
     self_gender = user_info['gender']
     self_hobbies = user_info['hobbies']
+    about_me = user_info['about_me']
 
     # отрисовка страницы с учетом внесенных изменений
     await bot.edit_message_media(
@@ -234,11 +235,12 @@ async def date_changed(user_tg_id, message, user_age, user_birth_date, message_i
         media=InputMediaPhoto(
             media=f'{self_data[0][1]}',
             caption=(
-                f'\n<b>Имя:</b> {self_data[0][0]}'
+                f'<b>Имя:</b> {self_data[0][0]}'
                 f'\n<b>Возраст:</b> {self_data[0][4]}'
                 f'\n<b>Пол:</b> {self_gender}'
                 f'\n<b>Город:</b> {self_data[0][5]}'
-                f'\n<b>Увлечения:</b> {self_hobbies}'
+                f'\n\n<b>Увлечения:</b> {self_hobbies}'
+                f'\n\n<b>О себе:</b> {about_me}'
                 '\n\n<b>Редактировать:</b>'
             ),
             parse_mode='HTML'

@@ -1,9 +1,9 @@
 import asyncio
-from aiogram.types import Message, CallbackQuery, InputMediaPhoto
+from aiogram.types import Message, CallbackQuery, InputMediaPhoto, InputMediaVideo
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from config import in_progress
+from config import hobby_search
 from src.handlers.search_users.all_users_search import search_all_users
 from src.modules.pagination_logic import load_bot_pagination_start_or_end_data, load_pagination_start_or_end_data
 from src.modules.notifications import (loader, attention_message)
@@ -41,8 +41,8 @@ async def search_users_by_hobby(callback, state):
     print(f'ЗАГРУЖЕНО МЕНЮ ПОИСК ПО ХОББИ')
 
     edit_message = await callback.message.edit_media(
-        media=InputMediaPhoto(
-            media=f'{in_progress}',
+        media=InputMediaVideo(
+            media=f'{hobby_search}',
             caption=(
                 '\n🔎 <b>Какие увлечения?</b>'
                 '\n\n📌💬 Пришлите <b>увлечение</b> в чат'
@@ -83,8 +83,8 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
 
             try:
                 await callback.message.edit_media(
-                    media=InputMediaPhoto(
-                        media=f'{in_progress}',
+                    media=InputMediaVideo(
+                        media=f'{hobby_search}',
                         caption=(
                             '\n🔎 <b>Какие увлечения?</b>'
                             '\n\n❌ <b>Список ваших увлечений пуст</b>'
@@ -99,7 +99,7 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
                 )
             except:
                 await callback.message.answer_photo(
-                    photo=f'{in_progress}',
+                    photo=f'{hobby_search}',
                     caption=(
                         '\n🔎 <b>Какие увлечения?</b>'
                         '\n\n❌ <b>Список ваших увлечений пуст</b>'
@@ -135,7 +135,6 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
                 await loader(callback.message, 'Секунду, загружаю 🤔')
 
                 total_pages = len(data)
-                print(f'ВСЕГО СТРАНИЦ: {total_pages}')
 
                 await load_pagination_start_or_end_data(callback.message,
                                                         data,
@@ -151,8 +150,8 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
             else:
                 try:
                     await callback.message.edit_media(
-                        media=InputMediaPhoto(
-                            media=f'{in_progress}',
+                        media=InputMediaVideo(
+                            media=f'{hobby_search}',
                             caption=(
                                 '\n🔎 <b>Какие увлечения?</b>'
                                 '\n\n❌ <b>Пользователи в данном городе и с схожими '
@@ -169,7 +168,7 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
                     )
                 except:
                     await callback.message.answer_photo(
-                        photo=f'{in_progress}',
+                        photo=f'{hobby_search}',
                         caption=(
                             '\n🔎 <b>Какие увлечения?</b>'
                             '\n\n❌ <b>Пользователи в данном городе и с схожими '
@@ -202,7 +201,6 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
             await loader(callback.message, 'Секунду, загружаю 🤔')
 
             total_pages = len(data)
-            print(f'ВСЕГО СТРАНИЦ: {total_pages}')
 
             await load_pagination_start_or_end_data(callback.message,
                                                     data,
@@ -297,8 +295,8 @@ async def search_by_hobby(message: Message, state: FSMContext, bot: Bot):
             await bot.edit_message_media(
                 chat_id=user_tg_id,
                 message_id=message_id,
-                media=InputMediaPhoto(
-                    media=f'{in_progress}',
+                media=InputMediaVideo(
+                    media=f'{hobby_search}',
                     caption=(
                         '\n🔎 <b>Какие увлечения?</b>'
                         '\n\n❌ <b>Пользователи с такими увлечениями в данном '

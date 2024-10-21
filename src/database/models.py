@@ -79,6 +79,17 @@ def create_tables():
                     """
                 )
 
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS aboutme (
+                    user_tg_id BIGINT NOT NULL,
+                    about_me TEXT,
+                    UNIQUE (user_tg_id),
+                    FOREIGN KEY (user_tg_id) REFERENCES users(user_tg_id) ON DELETE CASCADE
+                    );
+                    """
+                )
+
     finally:
         connection.close()
 

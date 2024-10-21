@@ -109,7 +109,12 @@ async def pagination_handler(
         if callback_data.action == 'menu':
 
             # Выход из пагинации (четвертый параметр - текст под инфой пользователя (не обязательный))
-            await back_callback(callback.message, user_tg_id, 'users_menu')
+            menu_text = '🔎 <b>Выберите один из вариантов поиска:</b>'
+            await back_callback(callback.message,
+                                user_tg_id,
+                                'users_menu',
+                                'search',
+                                menu_text)
 
         # обработка кнопок "отправить реакцию" и "скрыть пользователя"
         elif callback_data.action in ['hide', 'like']:
