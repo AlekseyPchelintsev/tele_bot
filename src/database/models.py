@@ -21,7 +21,8 @@ def create_tables():
                         age INT,
                         birth_date VARCHAR(10),
                         city VARCHAR(30),
-                        date_time TIMESTAMP NOT NULL
+                        date_time TIMESTAMP NOT NULL,
+                        last_active TIMESTAMP
                     )
                     """
                 )
