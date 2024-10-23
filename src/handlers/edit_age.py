@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from src.modules.get_self_data import get_user_info
 from src.modules.delete_messages import del_last_message
 from src.database.requests.age_change import change_user_age
-from src.handlers.edit_name import check_emodji
+from src.modules.check_emoji import check_emoji
 from src.modules.notifications import loader
 import src.modules.keyboard as kb
 
@@ -88,7 +88,7 @@ async def change_age(user_tg_id, age, message, message_id, state, bot):
         age = message.text
 
         # проверяю не содержит ли сообщение эмодзи
-        emodji_checked = await check_emodji(age)
+        emodji_checked = await check_emoji(age)
 
         # если содержит эмодзи
         if not emodji_checked:

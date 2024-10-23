@@ -7,7 +7,7 @@ from config import city_search, hobby_search
 from src.handlers.search_users.hobby_search import search_users_by_hobby
 from src.modules.delete_messages import del_last_message
 from src.modules.get_self_data import get_user_info
-from src.handlers.edit_name import check_emodji
+from src.modules.check_emoji import check_emoji
 from src.database.requests.search_users import (check_users_in_city)
 from src.handlers.search_users.error_handlers_search import wrong_search_city_name
 
@@ -40,7 +40,7 @@ async def serach_users_by_city(callback, state):
     city_data = user_info['data'][0][5]
 
     edit_message = await callback.message.edit_media(
-        media=InputMediaVideo(
+        media=InputMediaPhoto(
             media=f'{city_search}',
             caption=(
                 '\n🔎 <b>В каком городе?</b>'
@@ -100,7 +100,7 @@ async def search_in_city(callback: CallbackQuery, state: FSMContext):
 
             try:
                 await callback.message.edit_media(
-                    media=InputMediaVideo(
+                    media=InputMediaPhoto(
                         media=f'{city_search}',
                         caption=(
                             '\n<b>Пользователи в вашем городе не найдены</b> 😔'
@@ -167,7 +167,7 @@ async def search_by_city(message: Message, state: FSMContext, bot: Bot):
         city_name = message.text.title()
 
         # проверка на наличие смайлов в сообщении
-        emodji_checked = await check_emodji(city_name)
+        emodji_checked = await check_emoji(city_name)
 
         if not emodji_checked:
             await wrong_search_city_name(user_tg_id, message_id, bot)
@@ -184,7 +184,7 @@ async def search_by_city(message: Message, state: FSMContext, bot: Bot):
             await bot.edit_message_media(
                 chat_id=user_tg_id,
                 message_id=message_id,
-                media=InputMediaVideo(
+                media=InputMediaPhoto(
                     media=f'{hobby_search}',
                     caption=(
                         '\n🔎 <b>Какие увлечения?</b>'
@@ -204,7 +204,7 @@ async def search_by_city(message: Message, state: FSMContext, bot: Bot):
             await bot.edit_message_media(
                 chat_id=user_tg_id,
                 message_id=message_id,
-                media=InputMediaVideo(
+                media=InputMediaPhoto(
                     media=f'{city_search}',
                     caption=(
                         '\n🔎 <b>В каком городе?</b>'

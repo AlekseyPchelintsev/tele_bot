@@ -43,10 +43,9 @@ async def reload_reaction_pagination_after_hide_or_like(callback,
         # выводим сообщение об отсутствии пользователей
         text_info = '<b>Список пользователей пуст</b> 🤷‍♂️'
         await back_callback(callback.message,
-                            user_tg_id,
                             'back_reactions',
                             'reactions',
-                            text_info)
+                            text_info=text_info)
 
     # если True (data не пустая)
     else:
@@ -131,10 +130,9 @@ async def pagination_handler_likes(
             # Выход из пагинации (четвертый параметр - текст под инфой пользователя (не обязательный))
             menu_text = '<b>Раздел ваших реакций:</b>'
             await back_callback(callback.message,
-                                user_tg_id,
                                 'reactions',
                                 'reactions',
-                                menu_text)
+                                text_info=menu_text)
 
         # Блок обрабатывает колбэк "incoming_reactions" / "Входящие запросы"
 

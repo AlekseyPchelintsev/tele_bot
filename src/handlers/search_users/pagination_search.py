@@ -31,7 +31,6 @@ delete_last_message = []
 
 # повторяющаяся логика отрисовки пагинации при отправке реакции/удалении анкеты из поиска
 async def reload_pagination_after_hide_or_like(callback,
-                                               user_tg_id,
                                                data,
                                                list_type,
                                                page):
@@ -45,9 +44,9 @@ async def reload_pagination_after_hide_or_like(callback,
         # выводим сообщение об отсутствии пользователей
         text_info = '<b>Список пользователей пуст</b> 🤷‍♂️'
         await back_callback(callback.message,
-                            user_tg_id,
                             'search_users',
-                            text_info)
+                            'search',
+                            text_info=text_info)
 
     # если True (data не пустая)
     else:
@@ -58,12 +57,18 @@ async def reload_pagination_after_hide_or_like(callback,
             # Переход на последнюю страницу, если текущая выходит за пределы
             page = len(data) - 1
 
-            # отрисовываю клавиатуру с учетом изменений
+        if total_pages == 1:
+            text_info = '\n\n<b>Остался 1 пользователь</b>'
+        else:
+            text_info = ''
+
+        # отрисовываю клавиатуру с учетом изменений
         await load_pagination_start_or_end_data(callback.message,
                                                 data,
                                                 'paginator',
                                                 list_type,
                                                 total_pages,
+                                                text_info=text_info,
                                                 page=page)
 
 
@@ -113,10 +118,9 @@ async def pagination_handler(
             # Выход из пагинации (четвертый параметр - текст под инфой пользователя (не обязательный))
             menu_text = '🔎 <b>Выберите один из вариантов поиска:</b>'
             await back_callback(callback.message,
-                                user_tg_id,
                                 'users_menu',
                                 'search',
-                                menu_text)
+                                text_info=menu_text)
 
         # обработка кнопок "отправить реакцию" и "скрыть пользователя"
         elif callback_data.action in ['hide', 'like']:
@@ -152,7 +156,6 @@ async def pagination_handler(
 
                     # удаление текущего пользователя из data и отрисовка пагинации
                     await reload_pagination_after_hide_or_like(callback,
-                                                               user_tg_id,
                                                                data,
                                                                list_type,
                                                                page)
@@ -167,7 +170,6 @@ async def pagination_handler(
 
                     # удаление текущего пользователя из data и отрисовка пагинации без него
                     await reload_pagination_after_hide_or_like(callback,
-                                                               user_tg_id,
                                                                data,
                                                                list_type,
                                                                page)
@@ -185,7 +187,6 @@ async def pagination_handler(
 
                 # удаление текущего пользователя из data и отрисовка пагинации
                 await reload_pagination_after_hide_or_like(callback,
-                                                           user_tg_id,
                                                            data,
                                                            list_type,
                                                            page)

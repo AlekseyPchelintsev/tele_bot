@@ -1,6 +1,6 @@
 from aiogram.types import CallbackQuery, InputMediaPhoto
 from aiogram import F, Router
-from src.modules.get_self_data import get_user_info
+from config import reactions_menu_logo
 
 import src.modules.keyboard as kb
 
@@ -12,18 +12,11 @@ router = Router()
 @router.callback_query(F.data == 'all_reactions')
 async def all_reactions_menu(callback: CallbackQuery):
 
-    user_tg_id = callback.from_user.id
-
-    # плучаю свои данные
-    user_info = await get_user_info(user_tg_id)
-
-    # Извлекаю свои данные
-    self_data = user_info['data']
-
+    # отрисовка страницы
     try:
         await callback.message.edit_media(
             media=InputMediaPhoto(
-                media=f'{self_data[0][1]}',
+                media=f'{reactions_menu_logo}',
                 caption=(
                     '<b>Раздел ваших реакций:</b>'
                 ),
@@ -33,7 +26,7 @@ async def all_reactions_menu(callback: CallbackQuery):
         )
     except:
         await callback.message.answer_photo(
-            photo=f'{self_data[0][1]}',
+            photo=f'{reactions_menu_logo}',
             caption=(
                 '<b>Раздел ваших реакций:</b>'
             ),

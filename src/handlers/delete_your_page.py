@@ -1,5 +1,5 @@
 import asyncio
-from aiogram.types import CallbackQuery, InputMediaPhoto, InputMediaVideo
+from aiogram.types import CallbackQuery, InputMediaPhoto
 from aiogram import F, Router, Bot
 from aiogram.fsm.context import FSMContext
 from src.modules.notifications import loader
@@ -18,7 +18,7 @@ async def delete_my_profile(callback: CallbackQuery, state: FSMContext):
 
     # сооббщение об удалении анкеты
     edit_message = await callback.message.edit_media(
-        media=InputMediaVideo(
+        media=InputMediaPhoto(
             media=f'{delete_profile_id}',
             caption=(
                 '<b>Вы уверены?</b>'

@@ -5,7 +5,7 @@ from aiogram import F, Router
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.database.requests.user_data import check_user
-from src.modules.get_self_data import get_user_info
+from config import main_menu_logo
 import src.modules.keyboard as kb
 
 router = Router()
@@ -33,25 +33,11 @@ async def start(message: Message, state: FSMContext):
     # если пользователь есть в бд
     if data:
 
-        # плучаю данные пользователя
-        user_info = await get_user_info(user_tg_id)
-
-        # Извлекаю данные
-        self_data = user_info['data']
-        self_gender = user_info['gender']
-        self_hobbies = user_info['hobbies']
-        about_me = user_info['about_me']
-
         # отрисовываю страницу
         await message.answer_photo(
-            photo=f'{self_data[0][1]}',
+            photo=f'{main_menu_logo}',
             caption=(
-                f'► <b>Имя:</b> {self_data[0][0]}'
-                f'\n► <b>Возраст:</b> {self_data[0][4]}'
-                f'\n► <b>Пол:</b> {self_gender}'
-                f'\n► <b>Город:</b> {self_data[0][5]}'
-                f'\n► <b>Увлечения:</b> {self_hobbies}'
-                f'\n► <b>О себе:</b> {about_me}'
+                '<b>Главное меню:</b>'
             ),
             parse_mode='HTML',
             reply_markup=kb.users
@@ -68,13 +54,13 @@ async def start(message: Message, state: FSMContext):
 # DEVTOOLS
 # Вытягивает id фото
 
-'''
+
 @router.message(F.photo | F.video | F.animation)
 async def photo_nahui(message: Message):
-    # data = message.photo[-1]
-    data = message.video
+    data = message.photo[-1]
+    # data = message.video
     await message.answer(f'id Этого изображения:\n{data.file_id}')
-'''
+
 
 # Тест функций
 

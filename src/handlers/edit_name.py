@@ -9,6 +9,7 @@ from src.modules.get_self_data import get_user_info
 from src.database.requests.name_change import change_user_name
 from src.modules.delete_messages import del_last_message
 from src.modules.notifications import loader
+from src.modules.check_emoji import check_emoji
 import src.modules.keyboard as kb
 
 router = Router()
@@ -75,7 +76,7 @@ async def edit_name(message: Message, state: FSMContext, bot: Bot):
         user_name = message.text.title()
 
         # проверяю наличие эмодзи в сообщении
-        emodji_checked = await check_emodji(user_name)
+        emodji_checked = await check_emoji(user_name)
 
         # если эмодзи есть в сообщении
         if not emodji_checked:
@@ -215,18 +216,3 @@ async def change_name(user_tg_id, message, user_name, message_id, bot):
         ),
         reply_markup=kb.about_me
     )
-
-
-# ЛОГИКА ПРОВЕРКИ НА НАЛИЧИЕ ЭМОДЗИ В СООБЩЕНИИ (ПЕРЕНЕСТИ)
-async def check_emodji(user_name):
-    check = re.search(r'('
-                      r'[\U0001F600-\U0001F64F]|'
-                      r'[\U0001F300-\U0001F5FF]|'
-                      r'[\U0001F680-\U0001F6FF]|'
-                      r'[\U0001F700-\U0001F77F]|'
-                      r'[\U0001F800-\U0001F8FF]|'
-                      r'[\U0001F900-\U0001F9FF]|'
-                      r'[\U0001FA00-\U0001FAFF]|'
-                      r'[\U00002700-\U000027BF]'
-                      r')', user_name)
-    return check is None

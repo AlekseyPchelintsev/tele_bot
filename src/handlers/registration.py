@@ -6,11 +6,11 @@ from aiogram import F, Router
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.modules.notifications import notification
-from config import sucessful_registration, video_no_nickname, in_progress, no_photo_id
+from config import video_no_nickname, in_progress, no_photo_id, main_menu_logo
 from src.modules.delete_messages import del_messages, del_last_message
 from src.database.requests.new_user import add_new_user
 from src.database.requests.user_data import check_user
-from src.handlers.edit_name import check_emodji
+from src.modules.check_emoji import check_emoji
 import src.modules.keyboard as kb
 
 router = Router()
@@ -123,7 +123,7 @@ async def reg_name(message: Message, state: FSMContext, bot: Bot):
         user_nickname = message.from_user.username
 
         # проверяю наличие эмодзи в сообщении
-        emodji_checked = await check_emodji(name)
+        emodji_checked = await check_emoji(name)
 
         # если эмодзи есть в сообщении
         if not emodji_checked:
@@ -223,7 +223,7 @@ async def get_city(message: Message, state: FSMContext, bot: Bot):
         city = message.text.title()
 
         # проверяю наличие эмодзи в сообщении
-        emodji_checked = await check_emodji(city)
+        emodji_checked = await check_emoji(city)
 
         # если эмодзи есть в сообщении
         if not emodji_checked:
@@ -339,7 +339,7 @@ async def age_checked(message: Message, state: FSMContext, bot: Bot):
         date_input = message.text
 
         # проверяю не содержит ли сообщение эмодзи
-        emodji_checked = await check_emodji(date_input)
+        emodji_checked = await check_emoji(date_input)
 
         # если содержит эмодзи
         if not emodji_checked:
@@ -521,7 +521,7 @@ async def sucess_registration(message, state, photo_id, user_tg_id):
 
     # уведомление об успешной регистрации
     await message.answer_photo(
-        photo=f'{sucessful_registration}',
+        photo=f'{main_menu_logo}',
         caption='<b>Вы успешно зарегистрированы!</b> ✅'
         '\n\n📌 <b>Добавьте несколько увлечений</b>, чтобы быстрее '
         'найти интересные контакты и завести новые знакомства!'

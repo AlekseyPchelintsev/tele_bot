@@ -11,7 +11,7 @@ from src.database.requests.hobbies_data import (check_hobby,
                                                 add_hobby_for_user,
                                                 delete_hobby)
 
-from src.handlers.edit_name import check_emodji
+from src.modules.check_emoji import check_emoji
 import src.modules.keyboard as kb
 
 router = Router()
@@ -242,7 +242,7 @@ async def add_hobby(message: Message, state: FSMContext, bot: Bot):
         hobby = message.text.lower()
 
         # проверяю на наличие эмодзи в сообщении
-        emodji_checked = await check_emodji(hobby)
+        emodji_checked = await check_emoji(hobby)
 
         # если в сообщении есть эмодзи
         if not emodji_checked:

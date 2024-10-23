@@ -25,10 +25,9 @@ async def my_reactions(callback: CallbackQuery, state: FSMContext):
         # выводим сообщение об отсутствии реакций
         text_info = '<b>Список ваших контактов пуст</b> 😔'
         await back_callback(callback.message,
-                            user_tg_id,
                             'back_reactions',
                             'reactions',
-                            text_info)
+                            text_info=text_info)
 
     # если True (есть данные)
     else:
@@ -37,7 +36,7 @@ async def my_reactions(callback: CallbackQuery, state: FSMContext):
 
         # если найден всего 1 пользователь
         if total_pages == 1:
-            text_info = '\n\n<code>В списке всего 1 пользователь</code>'
+            text_info = '\n\n<b>📍 В списке всего 1 пользователь</b>'
         else:
             text_info = ''
 

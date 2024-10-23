@@ -24,8 +24,6 @@ delete_last_message = []
 @router.callback_query(F.data.in_(['male-search', 'female-search', 'all-search']))
 async def choise_gender_for_search(callback: CallbackQuery, state: FSMContext):
 
-    print(f'ВЫБРАН ПОЛ: {callback.data}')
-
     data = await state.get_data()
     search_data = data.get('type_of_search')
     gender_data = callback.data

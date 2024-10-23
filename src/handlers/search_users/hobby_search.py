@@ -11,7 +11,7 @@ from src.modules.pagination_logic import (load_bot_pagination_start_or_end_data,
 from src.modules.notifications import loader, attention_message
 
 from src.modules.delete_messages import del_last_message
-from src.handlers.edit_name import check_emodji
+from src.modules.check_emoji import check_emoji
 from src.database.requests.search_users import (get_stemmed_hobbies_list,
                                                 check_users_by_hobbies,
                                                 search_users)
@@ -43,7 +43,7 @@ async def search_users_by_hobby(callback, state):
     print(f'ЗАГРУЖЕНО МЕНЮ ПОИСК ПО ХОББИ')
 
     edit_message = await callback.message.edit_media(
-        media=InputMediaVideo(
+        media=InputMediaPhoto(
             media=f'{hobby_search}',
             caption=(
                 '\n🔎 <b>Какие увлечения?</b>'
@@ -66,6 +66,8 @@ async def search_users_by_hobby(callback, state):
 async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
 
     user_tg_id = callback.from_user.id
+
+    # сохраняю данные варианта поиска по хобби
     search_data = callback.data
 
     # получаю данные пола из состояния
@@ -78,17 +80,17 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
         print(f'ВЫБРАН ПОИСК ПО МОИМ ХОББИ')
         print(f'ДАННЫЕ В СОСТОЯНИИ - ПОЛ: {gender_data}, ГОРОД: {city_data}')
 
-        # плучаю список своих хооби (прогоняю через стемминг) и удаляю стоп-слова
+        # плучаю список своих хобби (прогоняю через стемминг) и удаляю стоп-слова
         my_hobbies_data = await asyncio.to_thread(get_stemmed_hobbies_list, user_tg_id=user_tg_id)
 
+        # если у меня не добавлено ни одного хобби
         if not my_hobbies_data:
 
             try:
                 await callback.message.edit_media(
-                    media=InputMediaVideo(
+                    media=InputMediaPhoto(
                         media=f'{hobby_search}',
                         caption=(
-                            '\n🔎 <b>Какие увлечения?</b>'
                             '\n\n❌ <b>Список ваших увлечений пуст</b>'
                             '\n\nДобавтье увлечения в настройках профиля или '
                             'попробуйте изменить параметры поиска, например, '
@@ -103,7 +105,6 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
                 await callback.message.answer_photo(
                     photo=f'{hobby_search}',
                     caption=(
-                        '\n🔎 <b>Какие увлечения?</b>'
                         '\n\n❌ <b>Список ваших увлечений пуст</b>'
                         '\n\nДобавтье увлечения в настройках профиля или '
                         'попробуйте изменить параметры поиска, например, '
@@ -113,8 +114,11 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
                     parse_mode='HTML',
                     reply_markup=kb.hobbies_search
                 )
+
+            # заново устанавливаю состояние ожидания хобби
             await state.set_state(Registration.search_hobby)
 
+        # если у меня есть хотя бы одно хобби
         else:
 
             # поверяю есть ли хотя бы один пользователь с хобби как у "меня"
@@ -124,26 +128,35 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
                                                                 city_data,
                                                                 my_hobbies_data)
 
+            # если есть хотя бы 1 пользователь с хобби как у меня
+            # (с учетом параметров пола и города)
             if check_users_by_my_hobbies:
 
+                # получаю данные всех пользователей
                 data = await asyncio.to_thread(search_users,
                                                user_tg_id,
                                                gender_data,
                                                city_data,
                                                my_hobbies_data)
 
-                await state.clear()
-
                 await loader(callback.message, 'Секунду, загружаю 🤔')
 
+                # получаю длинну списка пользователей для отрисовки кнопок пролистывания
                 total_pages = len(data)
 
-                # если найден всего 1 пользователь
+                # если найден всего 1 пользователь уведомляю в пагинации
                 if total_pages == 1:
-                    text_info = '\n\n<code>Найден всего 1 пользователь</code>'
+                    text_info = '\n\n<b>📍 Найден всего 1 пользователь</b>'
                 else:
                     text_info = ''
 
+                # очищаю данные из состояния
+                await state.clear()
+
+                # передаю в состояние данные пользователей для пагинации
+                await state.update_data(users_data=data)
+
+                # загружаю пагинацию и передаю все данные
                 await load_pagination_start_or_end_data(callback.message,
                                                         data,
                                                         'paginator',
@@ -151,25 +164,19 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
                                                         total_pages,
                                                         text_info)
 
-                if total_pages == 1:
-                    await attention_message(callback.message, '<b>Найден всего 1 пользователь</b>', 2)
-
-                await state.update_data(users_data=data)
-
+            # если не найдено ни одного пользователя по моим хобби
+            # (с параметрами пола и города)
             else:
                 try:
                     await callback.message.edit_media(
-                        media=InputMediaVideo(
+                        media=InputMediaPhoto(
                             media=f'{hobby_search}',
                             caption=(
-                                '\n🔎 <b>Какие увлечения?</b>'
-                                '\n\n❌ <b>Пользователи в данном городе и с схожими '
-                                'увлечениям не найдены 😔</b>'
+                                '\n\n❌ <b>Пользователи не найдены 😔</b>'
                                 '\n\nПопробуйте изменить параметры поиска, например, '
                                 'выберите другой <b>город</b> или <b>пол</b>.'
-                                '\n\n📌⌨️ Вы также можете <b>выбрать один из вариантов</b> ниже'
+                                '\n\n📌⌨️ Вы также можете выбрать вариант <b>"Не важно"</b>'
                                 '\n\n📌💬 или прислать <b>название увлечения</b> в чат'
-
                             ),
                             parse_mode='HTML'
                         ),
@@ -179,12 +186,10 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
                     await callback.message.answer_photo(
                         photo=f'{hobby_search}',
                         caption=(
-                            '\n🔎 <b>Какие увлечения?</b>'
-                            '\n\n❌ <b>Пользователи в данном городе и с схожими '
-                            'увлечениям не найдены 😔</b>'
+                            '\n\n❌ <b>Пользователи не найдены 😔</b>'
                             '\n\nПопробуйте изменить параметры поиска, например, '
                             'выберите другой <b>город</b> или <b>пол</b>.'
-                            '\n\n📌⌨️ Вы также можете <b>выбрать один из вариантов</b> ниже'
+                            '\n\n📌⌨️ Вы также можете выбрать вариант <b>"Не важно"</b>'
                             '\n\n📌💬 или прислать <b>название увлечения</b> в чат'
                         ),
                         parse_mode='HTML',
@@ -192,31 +197,43 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
                     )
                 await state.set_state(Registration.search_hobby)
 
+    # поиск по всем хобби ("Не важно")
     elif search_data == 'all_hobbies':
 
         print(f'ВЫБРАН ПОИСК ПО ВСЕМ ХОББИ (НЕ ВАЖНО)')
 
-        try:
-            hobbies_data = ['all']
+        # присваиваю значение all для логики отбора пользователей из бд
+        hobbies_data = ['all']
 
-            data = await asyncio.to_thread(search_users,
-                                           user_tg_id,
-                                           gender_data,
-                                           city_data,
-                                           hobbies_data)
+        # получаю всех пользователей соответствующих параметрам запроса
+        # (пола и города)
+        data = await asyncio.to_thread(search_users,
+                                       user_tg_id,
+                                       gender_data,
+                                       city_data,
+                                       hobbies_data)
 
-            await state.clear()
+        # если пользователи есть
+        if data:
 
             await loader(callback.message, 'Секунду, загружаю 🤔')
 
+            # получаю длинну списка пользователей для отрисовки кнопок пролистывания
             total_pages = len(data)
 
-            # если найден всего 1 пользователь
+            # если найден всего 1 пользователь вывожу уведомление
             if total_pages == 1:
-                text_info = '\n\n<code>Найден всего 1 пользователь</code>'
+                text_info = '\n\n<b>📍 Найден всего 1 пользователь</b>'
             else:
                 text_info = ''
 
+            # очищаю из состояния данные для поиска
+            await state.clear()
+
+            # добавляю в состояние данные пользователей для пагинации
+            await state.update_data(users_data=data)
+
+            # загружаю пагинацию и передаю все данные
             await load_pagination_start_or_end_data(callback.message,
                                                     data,
                                                     'paginator',
@@ -224,13 +241,41 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
                                                     total_pages,
                                                     text_info)
 
-            if total_pages == 1:
-                await attention_message(callback.message, '<b>Найден всего 1 пользователь</b>', 2)
+        # если пользователи не найдены вывожу уведомление
+        elif not data:
 
-            await state.update_data(users_data=data)
+            try:
+                await callback.message.edit_media(
+                    media=InputMediaPhoto(
+                        media=f'{hobby_search}',
+                        caption=(
+                            '\n\n❌ <b>Пользователи не найдены 😔</b>'
+                            '\n\nПопробуйте изменить параметры поиска, например, '
+                            'выберите другой <b>город</b> или <b>пол</b>.'
+                        ),
+                        parse_mode='HTML'
+                    ),
+                    reply_markup=kb.hobbies_search
+                )
+            except:
+                await callback.message.answer_photo(
+                    photo=f'{hobby_search}',
+                    caption=(
+                        '\n\n❌ <b>Пользователи не найдены 😔</b>'
+                        '\n\nПопробуйте изменить параметры поиска, например, '
+                        'выберите другой <b>город</b> или <b>пол</b>.'
+                    ),
+                    parse_mode='HTML',
+                    reply_markup=kb.hobbies_search
+                )
 
-        except:
+            # перехожу в состояние ожидания хобби от пользователя
+            await state.set_state(Registration.search_hobby)
 
+        # если во всех этапах поиска выбрано "Не важно"
+        elif gender_data == 'all' and city_data == 'all' and hobbies_data == 'all':
+
+            # загружаю всех имеющихся пользователей
             await search_all_users(callback, state, gender_data)
 
 
@@ -239,29 +284,37 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
 
 @router.message(Registration.search_hobby)
 async def search_by_hobby(message: Message, state: FSMContext, bot: Bot):
+
+    # удаляю из чата сообщение с присланным хобби
     await del_last_message(message)
 
     print(f'Я ОТПРАВИЛ ХОББИ В ЧАТ')
 
     user_tg_id = message.from_user.id
+
+    # получаю данные поиска из состояния
     data_state = await state.get_data()
     gender_data = data_state.get('type_of_gender')
     city_data = data_state.get('city_users')
 
+    # получаю id сообщения для редактирования
     edit_message = await state.get_data()
     message_id = edit_message.get('message_id')
 
+    # проверяю является ли сообщение текстовым
     if message.content_type == 'text':
+
+        # если является - сохраняю в переменную и делаю строчным
         request = message.text.lower()
 
         # проверка на наличие смайлов в сообщении
-        emodji_checked = await check_emodji(request)
+        emodji_checked = await check_emoji(request)
 
         if not emodji_checked:
             await wrong_search_hobby_name(user_tg_id, message_id, bot)
             return
 
-        # стемминг запроса и удаление стоп-слов
+        # стемминг запроса и удаление стоп-слов (если есть)
         stemmed_words = await asyncio.to_thread(get_stemmed_hobbies_list, hobby_name=request)
 
         print(f'ХОББИ ПРОШЛО ВСЕ ПРОВЕРКИ')
@@ -275,7 +328,10 @@ async def search_by_hobby(message: Message, state: FSMContext, bot: Bot):
                                                             city_data,
                                                             stemmed_words)
 
+        # если есть хотя бы 1 пользователь по моим параметрам поиска
         if check_users_by_my_hobbies:
+
+            await loader(message, 'Секунду, загружаю 🤔')
 
             # получаю готовый список пользователей
             data = await asyncio.to_thread(search_users,
@@ -284,18 +340,22 @@ async def search_by_hobby(message: Message, state: FSMContext, bot: Bot):
                                            city_data,
                                            stemmed_words)
 
+            # очищаю данные поиска из состояния
             await state.clear()
 
-            await loader(message, 'Секунду, загружаю 🤔')
+            # сохраняю данные найденных пользователей в состоянии
+            await state.update_data(users_data=data)
 
+            # получаю длинну списка пользователей для правильно отрисовки кнопок переключения
             total_pages = len(data)
 
-            # если найден всего 1 пользователь
+            # вывожу уведомление если найден всего 1 пользователь
             if total_pages == 1:
-                text_info = '\n\n<code>Найден всего 1 пользователь</code>'
+                text_info = '\n\n<b>📍 Найден всего 1 пользователь</b>'
             else:
                 text_info = ''
 
+            # загружаю пагинацию и передаю в нее данные
             await load_bot_pagination_start_or_end_data(bot,
                                                         user_tg_id,
                                                         message_id,
@@ -303,10 +363,9 @@ async def search_by_hobby(message: Message, state: FSMContext, bot: Bot):
                                                         'paginator',
                                                         'hobbies_users',
                                                         total_pages,
-                                                        text_info)
+                                                        text_info=text_info)
 
-            await state.update_data(users_data=data)
-
+        # если совпадений по искомому хобби не найдено
         else:
 
             print(f'СРАБОТАЛО УСЛОВИЕ ЕСЛИ НЕТ СОВПАДЕНИЙ ПО ХОББИ: '
@@ -315,12 +374,10 @@ async def search_by_hobby(message: Message, state: FSMContext, bot: Bot):
             await bot.edit_message_media(
                 chat_id=user_tg_id,
                 message_id=message_id,
-                media=InputMediaVideo(
+                media=InputMediaPhoto(
                     media=f'{hobby_search}',
                     caption=(
-                        '\n🔎 <b>Какие увлечения?</b>'
-                        '\n\n❌ <b>Пользователи с такими увлечениями в данном '
-                        'городе не найдены</b> 😔'
+                        '\n\n❌ <b>Пользователи не найдены</b> 😔'
                         '\n\nПопробуйте изменить параметры поиска, например, '
                         'выберите другой <b>город</b> или <b>пол</b>.'
                         '\n\n📌⌨️ Вы также можете <b>выбрать один из вариантов</b> ниже'

@@ -1,9 +1,8 @@
 from src.modules.check_gender import check_gender
 from src.modules.hobbies_list import hobbies_list
-from src.modules.get_self_data import get_user_info
+from config import reactions_menu_logo
 from config import in_progress, search_menu
-from aiogram.types import InputMediaPhoto, InputMediaVideo
-from src.modules.notifications import loader
+from aiogram.types import InputMediaPhoto
 from src.modules import keyboard as kb
 
 # если бот ушел в ребут во время открытой пагинации у пользователя
@@ -35,7 +34,7 @@ async def no_data_after_reboot_bot_reactions(callback, keyboard_name):
 # выход из пагинации и уведомление если список пользователей пуст
 
 
-async def back_callback(callback_data, user_tg_id, keyboard_name, check_data_loading='', text_info=''):
+async def back_callback(callback_data, keyboard_name, check_data_loading='', text_info=''):
 
     keyboard = getattr(kb, keyboard_name, None)
 
@@ -43,24 +42,13 @@ async def back_callback(callback_data, user_tg_id, keyboard_name, check_data_loa
 
         photo_data = search_menu
 
-        # предаю формат в зависимости отданных
-        edit_data = InputMediaVideo
-
     elif check_data_loading == 'reactions':
 
-        # плучаю свои данные
-        user_info = await get_user_info(user_tg_id)
-
-        # Извлекаю данные
-        self_data = user_info['data']
-        photo_data = self_data[0][1]
-
-        # предаю формат в зависимости отданных
-        edit_data = InputMediaPhoto
+        photo_data = reactions_menu_logo
 
     try:
         await callback_data.edit_media(
-            media=edit_data(
+            media=InputMediaPhoto(
                 media=f'{photo_data}',
                 caption=(
                     f'{text_info}'
@@ -235,6 +223,7 @@ async def load_bot_pagination_start_or_end_data(bot,
                     f'\n► <b>Город:</b> {data[page][6]}'
                     f'\n► <b>Увлечения:</b> {hobbies}'
                     f'\n► <b>О себе:</b> {data[page][-1]}'
+                    f'{text_info}'
                 ),
                 parse_mode='HTML',
             ),

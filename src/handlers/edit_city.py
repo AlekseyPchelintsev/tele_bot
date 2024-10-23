@@ -7,7 +7,7 @@ from src.modules.get_self_data import get_user_info
 from src.modules.delete_messages import del_last_message
 from src.modules.notifications import loader
 from src.database.requests.city_data import change_city
-from src.handlers.edit_name import check_emodji
+from src.modules.check_emoji import check_emoji
 import src.modules.keyboard as kb
 
 router = Router()
@@ -77,7 +77,7 @@ async def new_city(message: Message, state: FSMContext, bot: Bot):
         new_city_name = message.text.title()
 
         # проверяю не содержит ли сообщение эмодзи
-        emodji_checked = await check_emodji(new_city_name)
+        emodji_checked = await check_emoji(new_city_name)
 
         # если содержит эмодзи
         if not emodji_checked:

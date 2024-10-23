@@ -28,15 +28,12 @@ delete_last_message = []
 @router.callback_query(F.data == 'users')
 async def check_users_menu(callback: CallbackQuery, state: FSMContext):
 
-    # получаю свой id
-    user_tg_id = callback.from_user.id
-
     # очищаю состояние (контрольно)
     await state.clear()
 
     try:
         await callback.message.edit_media(
-            media=InputMediaVideo(
+            media=InputMediaPhoto(
                 media=f'{search_menu}',
                 caption=(
                     '🔎 <b>Выберите один из вариантов поиска:</b>'
@@ -69,13 +66,23 @@ async def search_users_menu(callback: CallbackQuery, state: FSMContext):
     await state.update_data(type_of_search=data)
 
     # отрисовка сообщения с клавиатурой
-    await callback.message.edit_media(
-        media=InputMediaVideo(
-            media=f'{gender_search}',
+    try:
+        await callback.message.edit_media(
+            media=InputMediaPhoto(
+                media=f'{gender_search}',
+                caption=(
+                    '\n\n<b>🔎 Кого ищем?</b>'
+                ),
+                parse_mode='HTML',
+            ),
+            reply_markup=kb.gender_search
+        )
+    except:
+        await callback.message.answer_photo(
+            photo=f'{gender_search}',
             caption=(
                 '\n\n<b>🔎 Кого ищем?</b>'
             ),
             parse_mode='HTML',
-        ),
-        reply_markup=kb.gender_search
-    )
+            reply_markup=kb.gender_search
+        )

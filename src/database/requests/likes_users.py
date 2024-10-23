@@ -327,6 +327,13 @@ def send_user_to_ignore_table(user_tg_id, like_tg_id):
                         ON CONFLICT (user_tg_id, ignore_user_id) DO NOTHING;
                     """, (user_tg_id, like_tg_id)
                 )
+
+                cursor.execute(
+                    """
+                        DELETE FROM userreactions
+                        WHERE user_tg_id = %s AND like_tg_id = %s
+                    """, (like_tg_id, user_tg_id)
+                )
     finally:
         connection.close()
 
