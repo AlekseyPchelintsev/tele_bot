@@ -13,6 +13,7 @@ from src.database.requests.likes_users import (insert_reaction,
                                                check_matches_two_users,
                                                send_user_to_ignore_table)
 
+from src.database.requests.add_to_favorites import add_to_favorites
 from src.modules.notifications import attention_message
 import src.modules.keyboard as kb
 
@@ -79,7 +80,8 @@ async def reload_pagination_after_hide_or_like(callback,
          'next',
          'menu',
          'like',
-         'hide']
+         'hide',
+         'to_favorite']
     ))
 )
 async def pagination_handler(
@@ -195,6 +197,12 @@ async def pagination_handler(
                 text_info_hide_user = '🚷 Анкета добавлена в раздел <b>"Скрытые пользователи"</b> и удалена из поиска.'
                 await bot_notification_about_dislike(callback.message,
                                                      text_info_hide_user)
+
+        # TODO обработка добавления в иизбранное
+        elif callback_data.action == 'to_favorite':
+
+            await asyncio.to_thread(add_to_favorites, user_tg_id, current_user_id)
+            pass
 
         # обработка перелистывания анкет
         else:

@@ -10,6 +10,8 @@ def create_tables():
     try:
         with connection:
             with connection.cursor() as cursor:
+
+                # основная таблица пользователей
                 cursor.execute(
                     """
                     CREATE TABLE IF NOT EXISTS users (
@@ -26,6 +28,8 @@ def create_tables():
                     )
                     """
                 )
+
+                # таблица увлечений с id
                 cursor.execute(
                     """
                     CREATE TABLE IF NOT EXISTS hobbies (
@@ -34,9 +38,12 @@ def create_tables():
                     )
                     """
                 )
+
+                # увлечения пользователей
                 cursor.execute(
                     """
                     CREATE TABLE IF NOT EXISTS userhobbies (
+                        id SERIAL PRIMARY KEY,
                         hobby_id INT,
                         hobby_name VARCHAR(50),
                         user_tg_id BIGINT,
@@ -45,6 +52,7 @@ def create_tables():
                     """
                 )
 
+                # реакции пользователей (еще не взаименые)
                 cursor.execute(
                     """
                     CREATE TABLE IF NOT EXISTS userreactions (
@@ -58,9 +66,11 @@ def create_tables():
                     """
                 )
 
+                # мои контакты
                 cursor.execute(
                     """
                     CREATE TABLE IF NOT EXISTS matchreactions (
+                        id SERIAL PRIMARY KEY,
                         user_tg_id_1 BIGINT NOT NULL,
                         user_tg_id_2 BIGINT NOT NULL,
                         FOREIGN KEY (user_tg_id_1) REFERENCES users(user_tg_id) ON DELETE CASCADE,
@@ -70,9 +80,25 @@ def create_tables():
                     """
                 )
 
+                # раздел "Избранное"
+                cursor.execute(
+                    """
+                        CREATE TABLE IF NOT EXISTS favoriteusers (
+                        id SERIAL PRIMARY KEY,
+                        user_tg_id_1 BIGINT NOT NULL,
+                        user_tg_id_2 BIGINT NOT NULL,
+                        FOREIGN KEY (user_tg_id_1) REFERENCES users(user_tg_id) ON DELETE CASCADE,
+                        FOREIGN KEY (user_tg_id_2) REFERENCES users(user_tg_id) ON DELETE CASCADE,
+                        UNIQUE (user_tg_id_1, user_tg_id_2)
+                        )
+                    """
+                )
+
+                # скрытые пользователи
                 cursor.execute(
                     """
                     CREATE TABLE IF NOT EXISTS ignoreusers (
+                        id SERIAL PRIMARY KEY,
                         user_tg_id BIGINT NOT NULL,
                         ignore_user_id BIGINT NOT NULL,
                         UNIQUE (user_tg_id, ignore_user_id)
@@ -80,13 +106,38 @@ def create_tables():
                     """
                 )
 
+                # раздел "О себе"
                 cursor.execute(
                     """
                     CREATE TABLE IF NOT EXISTS aboutme (
-                    user_tg_id BIGINT NOT NULL,
+                    user_tg_id BIGINT NOT NULL PRIMARY KEY,
                     about_me TEXT,
                     UNIQUE (user_tg_id),
                     FOREIGN KEY (user_tg_id) REFERENCES users(user_tg_id) ON DELETE CASCADE
+                    );
+                    """
+                )
+
+                # сведения о работе/учебе
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS workandstudy (
+                    user_tg_id BIGINT NOT NULL PRIMARY KEY,
+                    work_or_study TEXT,
+                    work_or_study_info TEXT,
+                    UNIQUE (user_tg_id),
+                    FOREIGN KEY (user_tg_id) REFERENCES users(user_tg_id) ON DELETE CASCADE
+                    );
+                    """
+                )
+
+                # сбор неверных вводов даты рождения
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS birthdateerror (
+                    id SERIAL PRIMARY KEY,
+                    user_tg_id BIGINT NOT NULL,
+                    wrong_birth_date TEXT
                     );
                     """
                 )
@@ -95,6 +146,7 @@ def create_tables():
         connection.close()
 
 
+# подключение к бд
 def get_db_connection():
     try:
         conn = psycopg2.connect(

@@ -27,6 +27,7 @@ from src.handlers.search_users.hobby_search import router as search_hobby
 from src.handlers.search_users.pagination_search import router as search_pagination
 
 # обработка меню "мои реакции"
+from src.handlers.reactions_menu.favorite_users import router as favorite_users
 from src.handlers.reactions_menu.hide_users import router as reactions_hide_users
 from src.handlers.reactions_menu.incoming_reactions import router as reactions_incoming
 from src.handlers.reactions_menu.main_menu_reactions import router as reactions_main_menu
@@ -70,6 +71,7 @@ async def main():
     dp.include_router(search_pagination)
 
     # меню "мои реакции"
+    dp.include_router(favorite_users)
     dp.include_router(reactions_hide_users)
     dp.include_router(reactions_incoming)
     dp.include_router(reactions_main_menu)

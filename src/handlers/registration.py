@@ -10,6 +10,7 @@ from config import video_no_nickname, in_progress, no_photo_id, main_menu_logo
 from src.modules.delete_messages import del_messages, del_last_message
 from src.database.requests.new_user import add_new_user
 from src.database.requests.user_data import check_user
+from src.database.requests.birth_date_errors_on_reg import birth_date_error_catcher
 from src.modules.check_emoji import check_emoji
 import src.modules.keyboard as kb
 
@@ -23,6 +24,7 @@ class Registration(StatesGroup):
     city = State()
     gender = State()
     birth_date = State()
+    job_or_study = State()
 
 
 delete_messages = []
@@ -31,7 +33,7 @@ delete_last_message = []
 
 # МЕНЮ РЕГИСТРАЦИИ ПОЛЬЗОВАТЕЛЯ
 @router.callback_query(F.data == 'reg')
-async def reg(callback: CallbackQuery, state: FSMContext):
+async def registration(callback: CallbackQuery, state: FSMContext):
 
     # контрольно убирает состояния если пользователь
     # попал в это меню после удаления анкеты
@@ -101,7 +103,7 @@ async def reg(callback: CallbackQuery, state: FSMContext):
 
 # ПОЛУЧЕНИЕ ИМЕНИ ПОЛЬЗОВАТЕЛЯ
 @router.message(Registration.name)
-async def reg_name(message: Message, state: FSMContext, bot: Bot):
+async def get_name(message: Message, state: FSMContext, bot: Bot):
 
     # удаляю сообщение от пользователя
     await del_last_message(message)
@@ -297,7 +299,7 @@ async def get_city(message: Message, state: FSMContext, bot: Bot):
 
 # РЕГИСТРАЦИЯ ПОЛА
 @router.callback_query(Registration.gender, F.data.in_(['male', 'female', 'other']))
-async def gender_checked(callback: CallbackQuery, state: FSMContext):
+async def get_gender(callback: CallbackQuery, state: FSMContext):
 
     # сохраняю название пола из колбэка
     gender = callback.data
@@ -318,7 +320,7 @@ async def gender_checked(callback: CallbackQuery, state: FSMContext):
 
 # ПОЛУЧЕНИЕ ДАТЫ РОЖДЕНИЯ
 @router.message(Registration.birth_date)
-async def age_checked(message: Message, state: FSMContext, bot: Bot):
+async def get_age(message: Message, state: FSMContext, bot: Bot):
 
     await del_last_message(message)
 
@@ -385,6 +387,9 @@ async def age_checked(message: Message, state: FSMContext, bot: Bot):
     # если формат неверный
     except:
 
+        # собираю неверные варианты ввода даты для дальнейшего внедрения их редактирования
+        await asyncio.to_thread(birth_date_error_catcher, user_tg_id, message.text)
+
         # вывожу уведомление об ошибке
 
         await bot.edit_message_text(
@@ -414,10 +419,9 @@ async def age_checked(message: Message, state: FSMContext, bot: Bot):
         chat_id=user_tg_id,
         message_id=message_id,
         text=('<b>✏️📋 Регистрация</b>'
-              '\n\n📸 Пришлите в чат <b>одно фото</b>, которое будет '
-              'установлено в качестве обложки вашей анкеты:'),
+              '\n\n🟣 Чем вы занимаетесь?'),
         parse_mode='HTML',
-        reply_markup=kb.late_upload_photo_to_profile)
+        reply_markup=kb.check_job_or_study)
 
     # Добавляю id  всписок для удаления в шаге добавления фото
     delete_messages.append(message_to_edit.message_id)
@@ -427,11 +431,144 @@ async def age_checked(message: Message, state: FSMContext, bot: Bot):
                             user_age=user_age,
                             message_to_edit=message_to_edit.message_id)
 
-    # устанавливаю состояние регистрации фото профиля пользователя
-    await state.set_state(Registration.photo)
+    await state.set_state(Registration.job_or_study)
 
+
+# ПОЛУЧЕНИЕ ДАННЫХ О РАБОТЕ/УЧЕБЕ
+@router.callback_query(Registration.job_or_study, F.data.in_(['work', 'study', 'search_myself']))
+async def get_job_or_study(callback: CallbackQuery, state: FSMContext):
+
+    # сохраняю данные из колбэка
+    employment_data = callback.data
+
+    # отрисовка страницы заполнения данных
+    if employment_data == 'work':
+        message_to_edit = await callback.message.edit_text(
+            text=('<b>✏️📋 Регистрация</b>'
+                  '\n\n⚪️ Напишите коротко <b>кем и в какой сфере вы работаете</b>:'),
+            parse_mode='HTML'
+        )
+
+    elif employment_data == 'study':
+        message_to_edit = await callback.message.edit_text(
+            text=('<b>✏️📋 Регистрация</b>'
+                  '\n\n⚪️ Напишите <b>где и на кого вы учитесь</b>:'),
+            parse_mode='HTML'
+        )
+
+    # сохраняю данные колбэка и id сообщения (для редактирования) в состоянии
+    await state.update_data(employment_data=employment_data,
+                            message_to_edit=message_to_edit.message_id)
+
+    # устанавливаю состояние ввода данных о работе/учебе
+    await state.set_state(Registration.job_or_study)
+
+
+@router.message(Registration.job_or_study)
+async def get_info_about_job_or_study(message: Message, state: FSMContext, bot: Bot):
+    # удаляю сообщение пользователя из чата с названием города
+    await del_last_message(message)
+
+    # получаю id пользователя
+    user_tg_id = message.from_user.id
+
+    # плучаю id сообщения из состояния для его редактирования
+    message_to_edit = await state.get_data()
+    message_id = message_to_edit.get('message_to_edit')
+
+    # TODO ПРОВЕРКА НА ТЕКСТ И СМАЙЛЫ
+
+    # сохраняю данные города из сообщения и привожу название к заглавному
+
+    # завожу проверку на текст и отсутствие смайлов в сообщении
+    if message.content_type == 'text' and len(message.text) < 100:
+
+        # сохраняю текст сообщения и привожу его к заглавному
+        work_or_study_info = message.text
+
+        # если сообщение больше 100 символов - обрезаю его и добавляю ... в конце
+        if len(message.text) > 100:
+            work_or_study_info = work_or_study_info[:100] + '...'
+
+        # проверяю наличие эмодзи в сообщении
+        emodji_checked = await check_emoji(work_or_study_info)
+
+        # если эмодзи есть в сообщении
+        if not emodji_checked:
+
+            # вывожу уведомление об ошибке
+            await bot.edit_message_text(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                text=('<b>✏️📋 Регистрация</b>'
+                      '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
+                parse_mode='HTML')
+
+            await asyncio.sleep(2)
+
+            await bot.edit_message_text(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                text=('<b>✏️📋 Регистрация</b>'
+                      '\n\n❌ Описание должно содержать '
+                      '<b>только текст</b>, не должно содержать эмодзи '
+                      'и превышать длинну в <b>100 символов</b>.'
+                      '\n\nОтправьте описание в чат еще раз:'),
+                parse_mode='HTML')
+
+            # возвращаюсь в состояние ожидания нового сообщения с именем
+            return
+
+        # если все проверки прошли успешно
+        message_to_edit = await bot.edit_message_text(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            text=('<b>✏️📋 Регистрация</b> (<i>последний этап</i> 🤗)'
+                  '\n\n📸 Пришлите в чат <b>одно фото</b>, которое будет '
+                  'установлено в качестве обложки вашей анкеты:'),
+            parse_mode='HTML',
+            reply_markup=kb.late_upload_photo_to_profile)
+
+        # Добавляю id  всписок для удаления в шаге добавления фото
+        delete_messages.append(message_to_edit.message_id)
+
+        # сохраняю в состоянии название города и сообщение для редактирования
+        await state.update_data(message_to_edit=message_to_edit.message_id,
+                                work_or_study_info=work_or_study_info)
+
+        # устанавливаю состояние регистрации фото профиля пользователя
+        await state.set_state(Registration.photo)
+
+    # если сообщение не текстовое (содержит фото, анимации и т.д.)
+    else:
+
+        # вывожу уведомление об ошибке
+
+        await bot.edit_message_text(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            text=('<b>✏️📋 Регистрация</b>'
+                  '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
+            parse_mode='HTML')
+
+        await asyncio.sleep(2)
+
+        await bot.edit_message_text(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            text=('<b>✏️📋 Регистрация</b>'
+                  '\n\n❌ Описание не должно содержать изображения или '
+                  'любой отличный от текста контент, '
+                  'а так же не должно превышать длинну в <b>100 символов</b>.'
+                  '\n\nОтправьте описание в чат еще раз:'),
+            parse_mode='HTML')
+
+        # возвращаюсь в состояние ожидания нового сообщения с именем
+        return
 
 # ДОБАВЛЕНИЕ ФОТО И ЗАВЕРШЕНИЕ РЕГИСТРАЦИИ
+
+
 @router.message(Registration.photo)
 async def add_photo_to_profile(message: Message, state: FSMContext, bot: Bot):
 
@@ -506,11 +643,13 @@ async def sucess_registration(message, state, photo_id, user_tg_id):
     city = data.get('city')
     birth_date = data.get('user_birth_date')
     age = data.get('user_age')
+    employment = data.get('employment_data')
+    employment_info = data.get('work_or_study_info')
 
     # передаю данные в функцию добавления нового пользователя в бд
     await asyncio.to_thread(
         add_new_user, current_datetime, user_tg_id, name, photo_id,
-        nickname, gender, age, birth_date, city
+        nickname, gender, age, birth_date, city, employment, employment_info
     )
 
     # очищаю состояние

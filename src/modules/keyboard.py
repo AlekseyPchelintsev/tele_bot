@@ -19,9 +19,16 @@ gender = InlineKeyboardMarkup(inline_keyboard=[
 # пропустить добавление фото профиля
 late_upload_photo_to_profile = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Загрузить позже',
-                          callback_data='late_load_photo')]
-]
-)
+                          callback_data='late_load_photo')]])
+
+
+# клавиатура выбора работа/учебы при регистрации
+check_job_or_study = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='💼 Работаю', callback_data='work')],
+    [InlineKeyboardButton(text='📚 Учусь', callback_data='study')],
+    [InlineKeyboardButton(text='👀 В поиске себя',
+                          callback_data='search_myself')]
+])
 
 
 # Главное меню
@@ -41,6 +48,8 @@ reactions = InlineKeyboardMarkup(inline_keyboard=[
                           callback_data='my_reactions')],
     [InlineKeyboardButton(text='📥 Входящие запросы',
                           callback_data='incoming_reactions_list')],
+    [InlineKeyboardButton(text='📌 Избранное',
+                          callback_data='favorite_users')],
     [InlineKeyboardButton(text='🤝 Мои контакты',
                           callback_data='match_reactions_list')],
     [InlineKeyboardButton(text='🚷 Скрытые пользователи',
@@ -330,10 +339,12 @@ def paginator(page: int = 0, list_type: str = 'default', action: str = 'like', t
             text=next_text, callback_data=next_callback or 'ignore')
     )
 
-    # Второй ряд: кнопка "Отправить реакцию"
+    # Второй ряд: кнопка "Отправить реакцию" и добавить в избранное
     builder.row(
         InlineKeyboardButton(text='Отправить реакцию 👋', callback_data=Pagination(
-            action='like', page=page, list_type=list_type).pack())
+            action='like', page=page, list_type=list_type).pack()),
+        InlineKeyboardButton(text='В избранное 📌', callback_data=Pagination(
+            action='to_favorite', page=page, list_type=list_type).pack())
     )
 
     # Третий ряд: кнопка "Скрыть"

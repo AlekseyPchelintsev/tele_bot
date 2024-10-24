@@ -52,15 +52,6 @@ async def start(message: Message, state: FSMContext):
 
 
 # DEVTOOLS
-# Вытягивает id фото
-
-
-@router.message(F.photo | F.video | F.animation)
-async def photo_nahui(message: Message):
-    data = message.photo[-1]
-    # data = message.video
-    await message.answer(f'id Этого изображения:\n{data.file_id}')
-
 
 # Тест функций
 

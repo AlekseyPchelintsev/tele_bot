@@ -10,7 +10,7 @@ from src.modules.pagination_logic import (no_data_after_reboot_bot_reactions,
                                           load_pagination_start_or_end_data)
 
 from src.modules.notifications import attention_message
-
+from config import ADMIN_ID
 from src.database.requests.user_data import check_user
 from src.database.requests.likes_users import (insert_reaction,
                                                get_reaction,
@@ -292,8 +292,9 @@ async def pagination_handler_likes(
 
     await callback.answer()
 
-
-# Удаление лишних сообщений из чата (этот файл самая нижняя точка в иерархии)
+# Получение id фото и видео в чате для адмиина и удаление лишних
+# сообщений из чата отправленных другими пользователями
+# (этот файл самая нижняя точка в иерархии)
 
 '''
 F.text – regular text message (this has already been done)
@@ -305,10 +306,32 @@ F.document – a message with a file (there may also be a photo if it is sent as
 F.data – message with CallData (this was processed in the previous article).
 '''
 
+# админом получаю id медиа и вывожу ошибку для остальных юзеров
 
-@router.message(F.text | F.photo | F.video | F.animation |
-                F.contact | F.document | F.sticker)
-async def handle_random_message(message: Message):
+
+@router.message(F.photo | F.video | F.animation)
+async def handle_media_message(message: Message):
+    if message.from_user.id == ADMIN_ID:
+        data = message.photo[-1] if message.photo else message.video if message.video else message.animation
+        await message.answer(f'id этого файла:\n{data.file_id}')
+    else:
+        await message.delete()
+        user_tg_id = message.from_user.id
+        data = await asyncio.to_thread(check_user, user_tg_id)
+
+        # если пользователь зарегистрирован
+        if data:
+            await attention_message(message, '⚠️ Если вы хотите внести изменения, перейдите '
+                                    'в раздел <b>"редактировать профиль"</b>', 3)
+        else:
+            await attention_message(message, '⚠️ Чтобы взаимодействовать с сервисом, '
+                                    'вам необходимо <b>зарегистрироваться</b>', 3)
+
+# вывожу ошибку для остального контента для всех
+
+
+@router.message(F.text | F.contact | F.document | F.sticker)
+async def handle_text_message(message: Message):
     await message.delete()
     user_tg_id = message.from_user.id
     data = await asyncio.to_thread(check_user, user_tg_id)
