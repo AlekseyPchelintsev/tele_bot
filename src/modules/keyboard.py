@@ -341,10 +341,10 @@ def paginator(page: int = 0, list_type: str = 'default', action: str = 'like', t
 
     # Второй ряд: кнопка "Отправить реакцию" и добавить в избранное
     builder.row(
-        InlineKeyboardButton(text='Отправить реакцию 👋', callback_data=Pagination(
-            action='like', page=page, list_type=list_type).pack()),
         InlineKeyboardButton(text='В избранное 📌', callback_data=Pagination(
-            action='to_favorite', page=page, list_type=list_type).pack())
+            action='to_favorite', page=page, list_type=list_type).pack()),
+        InlineKeyboardButton(text='Отправить 👋', callback_data=Pagination(
+            action='like', page=page, list_type=list_type).pack())
     )
 
     # Третий ряд: кнопка "Скрыть"
