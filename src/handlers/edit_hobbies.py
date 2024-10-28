@@ -3,7 +3,6 @@ from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from src.modules.notifications import attention_message
 from src.modules.delete_messages import del_last_message
 from src.modules.get_self_data import get_user_info
 
@@ -11,7 +10,7 @@ from src.database.requests.hobbies_data import (check_hobby,
                                                 add_hobby_for_user,
                                                 delete_hobby)
 
-from src.modules.check_emoji import check_emoji
+from src.modules.check_emoji import check_emoji, check_markdown_hobbies
 import src.modules.keyboard as kb
 
 router = Router()
@@ -55,7 +54,7 @@ async def check_hobbies_list(user_tg_id, callback):
     hobbies_data = self_data[1]
     self_hobbies = user_info['hobbies']
 
-    # если хобби нет (в таблице проставлен "-") отрисовка клавиатуры без укнопки удаления
+    # если хобби нет (в таблице проставлен "-") отрисовка клавиатуры без кнопки удаления
     if self_hobbies == '-':
         try:
 
@@ -184,7 +183,7 @@ async def new_hobby_menu(callback, state):
                 caption=(
                     f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                     '\n\n‼️ Добавьте <b>не более 7 увлечений</b>.'
-                    '\n\n‼️ <u>Придерживайтесь принципа</u>:'
+                    '\n\n👉 <u>Придерживайтесь принципа</u>:'
                     '\n<b>Одно увлечение - одно сообщение</b>'
                     '\n(<u>не более 50 символов</u>)'
                     '\n\n💬 Отправьте увлечение сообщением в чат, '
@@ -243,9 +242,10 @@ async def add_hobby(message: Message, state: FSMContext, bot: Bot):
 
         # проверяю на наличие эмодзи в сообщении
         emodji_checked = await check_emoji(hobby)
+        markdown_checked = await check_markdown_hobbies(hobby)
 
         # если в сообщении есть эмодзи
-        if not emodji_checked:
+        if emodji_checked or markdown_checked:
 
             # вывожу уведомление об ошибке
             await wrong_hobby_name(user_tg_id, message_id, bot)
@@ -305,31 +305,60 @@ async def check_hobby_to_delete(user_tg_id, callback):
     hobbies_data = self_data[1]
     self_hobbies = user_info['hobbies']
 
-    try:
-        await callback.message.edit_media(
-            media=InputMediaPhoto(
-                media=f'{self_data[0][1]}',
-                caption=(
-                    f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
-                ),
-                parse_mode='HTML'
-            ),
-            reply_markup=kb.delete_hobbies_keyboard(user_tg_id, hobbies_data))
-
-    except:
+    if self_hobbies == '-':
 
         try:
-            await del_last_message(callback.message)
+            await callback.message.edit_media(
+                media=InputMediaPhoto(
+                    media=f'{self_data[0][1]}',
+                    caption='\n<b>Список ваших увлечений пуст 🤷‍♂️</b>',
+                    parse_mode='HTML'
+                ),
+                reply_markup=kb.no_hobbies
+            )
         except:
-            pass
 
-        await callback.message.answer_photo(
-            photo=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
-            ),
-            parse_mode='HTML',
-            reply_markup=kb.delete_hobbies_keyboard(user_tg_id, hobbies_data))
+            try:
+                await del_last_message(callback.message)
+            except:
+                pass
+
+            await callback.message.answer_photo(
+                photo=f'{self_data[0][1]}',
+                caption='\n<b>Список ваших увлечений пуст 🤷‍♂️</b>',
+                parse_mode='HTML',
+                reply_markup=kb.no_hobbies
+            )
+
+    else:
+
+        try:
+            await callback.message.edit_media(
+                media=InputMediaPhoto(
+                    media=f'{self_data[0][1]}',
+                    caption=(
+                        f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
+                        '\n\n<b>Удалить:</b>'
+                    ),
+                    parse_mode='HTML'
+                ),
+                reply_markup=kb.delete_hobbies_keyboard(user_tg_id, hobbies_data))
+
+        except:
+
+            try:
+                await del_last_message(callback.message)
+            except:
+                pass
+
+            await callback.message.answer_photo(
+                photo=f'{self_data[0][1]}',
+                caption=(
+                    f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
+                    '\n\n<b>Удалить:</b>'
+                ),
+                parse_mode='HTML',
+                reply_markup=kb.delete_hobbies_keyboard(user_tg_id, hobbies_data))
 
 
 # УДАЛЕНИЕ УВЛЕЧЕНИЯ
@@ -347,9 +376,6 @@ async def handle_remove_hobby(callback: CallbackQuery):
     # проверяю список хобби пользователя для верной отрисовки на странице
     # и отрисовываю клавиатуру удаления с учетом изменений
     await check_hobby_to_delete(user_tg_id, callback)
-
-    # уведомление об успешном удалении
-    await attention_message(callback.message, 'Увлечение удалено ✅', 1)
 
 
 # УВЕДОМЛЕНИЕ ОБ ОШИБКЕ ЕСЛИ НЕВЕРНЫЙ ФОРМАТ ДАННЫХ
@@ -371,30 +397,15 @@ async def wrong_hobby_name(user_tg_id, message_id, bot):
             media=f'{self_data[0][1]}',
             caption=(
                 f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
-                '\n\n‼️ <u>Придерживайтесь принципа</u>:'
-                '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
-            ),
-            parse_mode='HTML'
-        )
-    )
-
-    await asyncio.sleep(1.5)
-
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
-                '\n\n‼️ <u>Придерживайтесь принципа</u>:'
-                '\n<b>Одно увлечение - одно сообщение</b>'
-                '\n\n❌ Название увлечения должно содержать <b>только текст</b>'
+                '\n\n❗️ Название увлечения должно содержать <b>только текст</b>'
                 ', не должно содержать эмодзи и изображения, а так же '
-                'не должно превышать длинну в <b>50 символов</b>.'
+                'превышать длинну в <b>50 символов</b>.'
+                '\n\n👉 <u>Придерживайтесь принципа</u>:'
+                '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n💬 Отправьте увлечение сообщением в чат, '
                 'чтобы я мог его добавить.'
+
             ),
             parse_mode='HTML'
         ),
@@ -421,27 +432,13 @@ async def hobby_already_exist(user_tg_id, message_id, bot):
             media=f'{self_data[0][1]}',
             caption=(
                 f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
-                '\n\n‼️ <u>Придерживайтесь принципа</u>:'
-                '\n<b>Одно увлечение - одно сообщение</b>'
-                '\n\n❌ Такое увлечение уже находится в вашем списке'
-            ),
-            parse_mode='HTML'
-        )
-    )
-
-    await asyncio.sleep(2)
-
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
-                '\n\n‼️ <u>Придерживайтесь принципа</u>:'
+                '\n\n⚠️ <b>Такое увлечение уже находится в вашем списке</b>'
+                '\n\n❗️ <i>Попробуйте добавить другое увлечение</i>'
+                '\n\n <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n💬 Отправьте увлечение сообщением в чат, '
                 'чтобы я мог его добавить.'
+
             ),
             parse_mode='HTML'
         ),
@@ -477,24 +474,8 @@ async def hobby_succesful_added(user_tg_id, state, message_id, bot, hobby):
                     '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                     '\n<b>Одно увлечение - одно сообщение</b>'
                     '\n\n✅ Увлечение успешно добавлено!'
-                ),
-                parse_mode='HTML'
-            )
-        )
-
-        await asyncio.sleep(1.5)
-
-        await bot.edit_message_media(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            media=InputMediaPhoto(
-                media=f'{self_data[0][1]}',
-                caption=(
-                    f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
-                    '\n\n‼️ <u>Придерживайтесь принципа</u>:'
-                    '\n<b>Одно увлечение - одно сообщение</b>'
-                    '\n\n💬 Отправьте увлечение сообщением в чат, '
-                    'чтобы я мог его добавить.'
+                    '\n\n💬 Вы можете добавить еще увлечение, '
+                    'отправив его сообщением в чат:'
                 ),
                 parse_mode='HTML'
             ),
@@ -512,20 +493,6 @@ async def hobby_succesful_added(user_tg_id, state, message_id, bot, hobby):
                 caption=(
                     f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                     '\n\n✅ Увлечение успешно добавлено!'
-                ),
-                parse_mode='HTML'
-            )
-        )
-
-        await asyncio.sleep(1.5)
-
-        await bot.edit_message_media(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            media=InputMediaPhoto(
-                media=f'{self_data[0][1]}',
-                caption=(
-                    f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
                     '\n\n⚠️ <b>Вы добавили максимальное количество увлечений.</b>'
                     '\nЧтобы добавить новое - удалите одно из имеющихся.'
                 ),

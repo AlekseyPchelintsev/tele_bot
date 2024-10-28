@@ -51,7 +51,7 @@ async def search_all_users(callback, state, gender_data):
         else:
             text_info = ''
 
-        await loader(callback.message, 'Секунду, загружаю 🤔')
+        # загрузка пагинации
         await load_pagination_start_or_end_data(callback.message,
                                                 data,
                                                 'paginator',

@@ -46,61 +46,38 @@ async def gender_changed(callback: CallbackQuery):
     # получаю данные пола из колбэка
     new_gender = callback.data
 
-    # плучаю свои данные
-    user_info = await get_user_info(user_tg_id)
-
-    # Извлекаю свои данные
-    self_data = user_info['data']
-    self_gender = user_info['gender']
-
-    # отрисовка страницы
-    await callback.message.edit_media(
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Ваш пол:</b> {self_gender}'
-            ),
-            parse_mode='HTML'
-        )
-    )
-
     # изменение данных в бд
     await asyncio.to_thread(change_user_gender, user_tg_id, new_gender)
-    await loader(callback.message, 'Вношу изменения')
 
     # плучаю свои данные для отрисовки страницы с учетом изменений
     user_info = await get_user_info(user_tg_id)
 
     # Извлекаю свои данные для отрисовки страницы с учетом изменений
     self_data = user_info['data']
+    self_photo = self_data[0][1]
+    self_name = self_data[0][0]
+    self_age = self_data[0][4]
+    self_city = self_data[0][5]
     self_gender = user_info['gender']
     self_hobbies = user_info['hobbies']
     about_me = user_info['about_me']
+    # учеба/работа
+    employment = user_info['employment']
+    employment_info = user_info['employment_info']
 
     # отрисовка страницы с учетом внесенных изменений
     await callback.message.edit_media(
         media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
+            media=f'{self_photo}',
             caption=(
-                f'\n<b>Ваш пол:</b> {self_gender}'
-                '\n\nДанные успешно изменены ✅'
-            ),
-            parse_mode='HTML'
-        )
-    )
-
-    await asyncio.sleep(1.5)
-
-    await callback.message.edit_media(
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'► <b>Имя:</b> {self_data[0][0]}'
-                f'\n► <b>Возраст:</b> {self_data[0][4]}'
-                f'\n► <b>Пол:</b> {self_gender}'
-                f'\n► <b>Город:</b> {self_data[0][5]}'
+                f'{self_gender}'  # пол
+                f' • {self_name}'  # имя
+                f' • {self_age}'  # возраст
+                f' • {self_city}'  # город
+                f'\n► <b>{employment}:</b> {employment_info}'
                 f'\n► <b>Увлечения:</b> {self_hobbies}'
                 f'\n► <b>О себе:</b> {about_me}'
+                '\n\nДанные успешно изменены ✅'
                 '\n\n<b>Редактировать:</b>'
             ),
             parse_mode='HTML'

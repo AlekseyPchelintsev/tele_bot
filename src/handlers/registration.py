@@ -1,17 +1,16 @@
 import asyncio
 from datetime import datetime
-from aiogram import Bot
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
-from aiogram import F, Router
+from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.modules.notifications import notification
-from config import video_no_nickname, in_progress, no_photo_id, main_menu_logo
-from src.modules.delete_messages import del_messages, del_last_message
+from config import video_no_nickname, in_progress, no_photo_id, main_menu_logo, registration_menu
+from src.modules.delete_messages import del_last_message
 from src.database.requests.new_user import add_new_user
 from src.database.requests.user_data import check_user
 from src.database.requests.birth_date_errors_on_reg import birth_date_error_catcher
-from src.modules.check_emoji import check_emoji
+from src.modules.check_emoji import check_emoji, check_all_markdown, check_partial_markdown
 import src.modules.keyboard as kb
 
 router = Router()
@@ -24,6 +23,7 @@ class Registration(StatesGroup):
     city = State()
     gender = State()
     birth_date = State()
+    employment = State()
     job_or_study = State()
 
 
@@ -63,10 +63,14 @@ async def registration(callback: CallbackQuery, state: FSMContext):
             # проверяю наличие у пользователя ника в телеге
             if user_nickname:
 
+                # удаляю сообщение с кнопкой "зарегистрироваться"
+                await del_last_message(callback.message)
+
                 # продолжаю регистрацию если ник есть
-                message_to_edit = await callback.message.edit_text(
-                    text=('<b>✏️📋 Регистрация</b>'
-                          '\n\n🟠 Пожалуйста, напишите в чат <b>ваше имя</b>:'),
+                message_to_edit = await callback.message.answer_photo(
+                    photo=registration_menu,
+                    caption=('<b>✏️📋 Регистрация</b>'
+                             '\n\n🟠 Пожалуйста, напишите <b>ваше имя</b>:'),
                     parse_mode='HTML')
 
                 # добавляю id сообщения для дальнейшего редактирования
@@ -124,44 +128,45 @@ async def get_name(message: Message, state: FSMContext, bot: Bot):
         # сохраняю ник пользователя
         user_nickname = message.from_user.username
 
-        # проверяю наличие эмодзи в сообщении
+        # проверяю наличие эмодзи в сообщении и markdown разметки
         emodji_checked = await check_emoji(name)
+        markdown_checked = await check_all_markdown(name)
 
         # если эмодзи есть в сообщении
-        if not emodji_checked:
+        if emodji_checked or markdown_checked:
 
             # вывожу уведомление об ошибке
 
-            await bot.edit_message_text(
+            await bot.edit_message_media(
                 chat_id=user_tg_id,
                 message_id=message_id,
-                text=('<b>✏️📋 Регистрация</b>'
-                      '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
-                parse_mode='HTML')
-
-            await asyncio.sleep(2)
-
-            await bot.edit_message_text(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                text=('<b>✏️📋 Регистрация</b>'
-                      '\n\n❌ Имя должно содержать <b>только текст</b> '
-                      '(без эмодзи), '
-                      'а так же не должно превышать длинну в <b>20 символов</b>.'
-                      '\n\nОтправьте ваше имя в чат:'),
-                parse_mode='HTML')
+                media=InputMediaPhoto(
+                    media=registration_menu,
+                    caption=(
+                        '<b>✏️📋 Регистрация</b>'
+                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                        '\n\n❗️ Имя должно содержать <b>только текст</b>, '
+                        'не должно содержать эмодзи, а также '
+                        'превышать длинну в <b>20 символов</b>.'
+                        '\n\nОтправьте еще раз ваше имя в чат:'),
+                    parse_mode='HTML'
+                )
+            )
 
             # возвращаюсь в состояние ожидания нового сообщения с именем
             return
 
         # сообщение для редактирования
-        message_to_edit = await bot.edit_message_text(
+        message_to_edit = await bot.edit_message_media(
             chat_id=user_tg_id,
             message_id=message_id,
-            text=('<b>✏️📋 Регистрация</b>'
-                  '\n\n🟡 Пришлите в чат <b>название города</b>, '
-                  'в котором вы проживаете:'),
-            parse_mode='HTML'
+            media=InputMediaPhoto(
+                media=registration_menu,
+                caption=('<b>✏️📋 Регистрация</b>'
+                         '\n\n🟡 Напишите <b>название города</b>, '
+                         'в котором вы проживаете:'),
+                parse_mode='HTML'
+            )
         )
 
         # добавляю в состояние id особщения для дальнейшего редактирования
@@ -177,24 +182,22 @@ async def get_name(message: Message, state: FSMContext, bot: Bot):
     else:
 
         # вывожу уведомление об ошибке
-        await bot.edit_message_text(
+        await bot.edit_message_media(
             chat_id=user_tg_id,
             message_id=message_id,
-            text=('<b>✏️📋 Регистрация</b>'
-                  '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
-            parse_mode='HTML')
-
-        await asyncio.sleep(2)
-
-        await bot.edit_message_text(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            text=('<b>✏️📋 Регистрация</b>'
-                  '\n\n❌ Имя не должно содержать изображения или '
-                  'любой отличный от текста контент, '
-                  'а так же не должно превышать длинну в <b>20 символов</b>.'
-                  '\n\nОтправьте ваше имя в чат:'),
-            parse_mode='HTML')
+            media=InputMediaPhoto(
+                media=registration_menu,
+                caption=(
+                    '<b>✏️📋 Регистрация</b>'
+                    '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                    '\n\n❗️ Имя не должно содержать изображения или '
+                    'любой отличный от текста контент, '
+                    'а также превышать длинну в <b>20 символов</b>.'
+                    '\n\nОтправьте ваше имя в чат:'
+                ),
+                parse_mode='HTML'
+            )
+        )
 
         # возвращаюсь в состояние ожидания нового сообщения с именем
         return
@@ -214,54 +217,53 @@ async def get_city(message: Message, state: FSMContext, bot: Bot):
     message_to_edit = await state.get_data()
     message_id = message_to_edit.get('message_to_edit')
 
-    # TODO ПРОВЕРКА НА ТЕКСТ И СМАЙЛЫ
-
-    # сохраняю данные города из сообщения и привожу название к заглавному
-
     # завожу проверку на текст и отсутствие смайлов в сообщении
     if message.content_type == 'text' and len(message.text) < 25:
 
         # сохраняю текст сообщения и привожу его к заглавному
         city = message.text.title()
 
-        # проверяю наличие эмодзи в сообщении
+        # проверяю наличие эмодзи в сообщении и markdown разметки
         emodji_checked = await check_emoji(city)
+        markdown_checked = await check_all_markdown(city)
 
         # если эмодзи есть в сообщении
-        if not emodji_checked:
+        if emodji_checked or markdown_checked:
 
             # вывожу уведомление об ошибке
 
-            await bot.edit_message_text(
+            await bot.edit_message_media(
                 chat_id=user_tg_id,
                 message_id=message_id,
-                text=('<b>✏️📋 Регистрация</b>'
-                      '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
-                parse_mode='HTML')
-
-            await asyncio.sleep(2)
-
-            await bot.edit_message_text(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                text=('<b>✏️📋 Регистрация</b>'
-                      '\n\n❌ Название города должно содержать '
-                      '<b>только текст</b>, не должно содержать эмодзи '
-                      'и превышать длинну в <b>25 символов</b>.'
-                      '\n\nОтправьте название вашего города в чат:'),
-                parse_mode='HTML')
+                media=InputMediaPhoto(
+                    media=registration_menu,
+                    caption=(
+                        '<b>✏️📋 Регистрация</b>'
+                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                        '\n\n❗️ Название города должно содержать '
+                        '<b>только текст</b>, не должно содержать эмодзи '
+                        'и превышать длинну в <b>25 символов</b>.'
+                        '\n\nНапишите название вашего города в чат:'
+                    ),
+                    parse_mode='HTML'
+                )
+            )
 
             # возвращаюсь в состояние ожидания нового сообщения с именем
             return
 
         # сообщение для редактирования
-        message_to_edit = await bot.edit_message_text(
+        message_to_edit = await bot.edit_message_media(
             chat_id=user_tg_id,
             message_id=message_id,
-            text=('<b>✏️📋 Регистрация</b>'
-                  '\n\n🟢 Укажите <b>ваш пол</b>, выбрав один из вариантов:'),
-            parse_mode='HTML',
-            reply_markup=kb.gender)
+            media=InputMediaPhoto(
+                media=registration_menu,
+                caption=('<b>✏️📋 Регистрация</b>'
+                         '\n\n🟢 Укажите <b>ваш пол</b>, выбрав один из вариантов:'),
+                parse_mode='HTML'
+            ),
+            reply_markup=kb.gender
+        )
 
         # сохраняю в состоянии название города и сообщение для редактирования
         await state.update_data(message_to_edit=message_to_edit.message_id, city=city)
@@ -274,24 +276,22 @@ async def get_city(message: Message, state: FSMContext, bot: Bot):
 
         # вывожу уведомление об ошибке
 
-        await bot.edit_message_text(
+        await bot.edit_message_media(
             chat_id=user_tg_id,
             message_id=message_id,
-            text=('<b>✏️📋 Регистрация</b>'
-                  '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
-            parse_mode='HTML')
-
-        await asyncio.sleep(2)
-
-        await bot.edit_message_text(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            text=('<b>✏️📋 Регистрация</b>'
-                  '\n\n❌ Название города не должно содержать изображения или '
-                  'любой отличный от текста контент, '
-                  'а так же не должно превышать длинну в <b>25 символов</b>.'
-                  '\n\nОтправьте название вашего города в чат:'),
-            parse_mode='HTML')
+            media=InputMediaPhoto(
+                media=registration_menu,
+                caption=(
+                    '<b>✏️📋 Регистрация</b>'
+                    '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                    '\n\n❗️ Название города не должно содержать изображения или '
+                    'любой отличный от текста контент, '
+                    'а также превышать длинну в <b>25 символов</b>.'
+                    '\n\nНапишите название вашего города в чат:'
+                ),
+                parse_mode='HTML'
+            )
+        )
 
         # возвращаюсь в состояние ожидания нового сообщения с именем
         return
@@ -304,15 +304,19 @@ async def get_gender(callback: CallbackQuery, state: FSMContext):
     # сохраняю название пола из колбэка
     gender = callback.data
 
-    message_to_edit = await callback.message.edit_text(
-        text=('<b>✏️📋 Регистрация</b>'
-              '\n\n🔵 Напишите в чат <b>дату вашего рождения</b>:'
-              '\n(<i>в формате</i> <b>"ДД.ММ.ГГГГ"</b>'),
-        parse_mode='HTML'
+    message_to_edit = await callback.message.edit_media(
+        media=InputMediaPhoto(
+            media=registration_menu,
+            caption=('<b>✏️📋 Регистрация</b>'
+                     '\n\n🔵 Напишите в чат <b>дату вашего рождения</b>:'
+                     '\n(<i>в формате</i> <b>"ДД.ММ.ГГГГ"</b>'),
+            parse_mode='HTML'
+        )
     )
 
     # добавляю название пола в состояние
-    await state.update_data(gender=gender, message_to_edit=message_to_edit.message_id)
+    await state.update_data(gender=gender,
+                            message_to_edit=message_to_edit.message_id)
 
     # перехожу в состояние регистрации даты рождения
     await state.set_state(Registration.birth_date)
@@ -332,7 +336,7 @@ async def get_age(message: Message, state: FSMContext, bot: Bot):
     message_id = message_to_edit.get('message_to_edit')
 
     # добавляю в список сообщений для удаления данное сообщение
-    delete_messages.append(message.message_id)
+    # delete_messages.append(message.message_id)
 
     # поверка присланных данных пользователем
     if message.content_type == 'text' and message.text:
@@ -340,31 +344,28 @@ async def get_age(message: Message, state: FSMContext, bot: Bot):
         # сообщение от пользователя если прошло проверку на текст
         date_input = message.text
 
-        # проверяю не содержит ли сообщение эмодзи
+        # проверяю не содержит ли сообщение эмодзи и частично markdown разметку
         emodji_checked = await check_emoji(date_input)
+        markdown_checked = await check_partial_markdown(date_input)
 
         # если содержит эмодзи
-        if not emodji_checked:
+        if emodji_checked or markdown_checked:
 
             # вывожу уведомление об ошибке
-
-            await bot.edit_message_text(
+            await bot.edit_message_media(
                 chat_id=user_tg_id,
                 message_id=message_id,
-                text=('<b>✏️📋 Регистрация</b>'
-                      '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
-                parse_mode='HTML')
-
-            await asyncio.sleep(2)
-
-            await bot.edit_message_text(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                text=('<b>✏️📋 Регистрация</b>'
-                      '\n\n❌ Сообщение должно содержать <b>только текст</b> и '
-                      'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
-                      '\n(Пример: 01.01.2001)'),
-                parse_mode='HTML'
+                media=InputMediaPhoto(
+                    media=registration_menu,
+                    caption=(
+                        '<b>✏️📋 Регистрация</b>'
+                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                        '\n\n❗️ Сообщение должно содержать <b>только дату</b> и '
+                        'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
+                        '\n(Пример: 01.01.2001)'
+                    ),
+                    parse_mode='HTML'
+                )
             )
 
             # возвращаюсь в состояние ожидания нового сообщения
@@ -384,6 +385,31 @@ async def get_age(message: Message, state: FSMContext, bot: Bot):
             (check_birth_date.month, check_birth_date.day)
         )
 
+        if user_age < 0 or user_age > 95:
+
+            try:
+                await bot.edit_message_media(
+                    chat_id=user_tg_id,
+                    message_id=message_id,
+                    media=InputMediaPhoto(
+                        media=registration_menu,
+                        caption=(
+                            '<b>✏️📋 Регистрация</b>'
+                            '\n\n⚠️ <b>Ошибка обработки</b> ⚠️'
+                            '\n<u>Ваш возраст должен быть в диапазоне</u> '
+                            '<u>от 0 до 95 лет</u>'
+                            '\n\n❗️ Пришлите действительную дату вашего рождения, '
+                            'соотвутствующую формату: "<b>ДД.ММ.ГГГГ</b>".'
+                            '\n(Пример: 01.01.2001)'
+                        ),
+                        parse_mode='HTML'
+                    )
+                )
+            except Exception as e:
+                pass
+
+            return
+
     # если формат неверный
     except:
 
@@ -392,50 +418,51 @@ async def get_age(message: Message, state: FSMContext, bot: Bot):
 
         # вывожу уведомление об ошибке
 
-        await bot.edit_message_text(
+        await bot.edit_message_media(
             chat_id=user_tg_id,
             message_id=message_id,
-            text=('<b>✏️📋 Регистрация</b>'
-                  '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
-            parse_mode='HTML')
-
-        await asyncio.sleep(2)
-
-        await bot.edit_message_text(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            text=('<b>✏️📋 Регистрация</b>'
-                  '\n\n❌ Сообщение должно содержать <b>только текст</b> и '
-                  'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
-                  '\n(Пример: 01.01.2001)'),
-            parse_mode='HTML'
+            media=InputMediaPhoto(
+                media=registration_menu,
+                caption=(
+                    '<b>✏️📋 Регистрация</b>'
+                    '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                    '\n\n❗️ Сообщение должно содержать <b>только дату</b> и '
+                    'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
+                    '\n(Пример: 01.01.2001)'
+                ),
+                parse_mode='HTML'
+            )
         )
 
         # возвращаю в состояние ожидания нового сообщения с датой
         return
 
     # если все проверки прошли успешно
-    message_to_edit = await bot.edit_message_text(
+    message_to_edit = await bot.edit_message_media(
         chat_id=user_tg_id,
         message_id=message_id,
-        text=('<b>✏️📋 Регистрация</b>'
-              '\n\n🟣 Чем вы занимаетесь?'),
-        parse_mode='HTML',
-        reply_markup=kb.check_job_or_study)
+        media=InputMediaPhoto(
+            media=registration_menu,
+            caption=('<b>✏️📋 Регистрация</b>'
+                     '\n\n🟣 Чем вы занимаетесь?'),
+            parse_mode='HTML'
+        ),
+        reply_markup=kb.check_job_or_study
+    )
 
     # Добавляю id  всписок для удаления в шаге добавления фото
-    delete_messages.append(message_to_edit.message_id)
+    # delete_messages.append(message_to_edit.message_id)
 
     # если дата соответствует прошла все проверки - сохраняю ее в состоянии
     await state.update_data(user_birth_date=user_birth_date,
                             user_age=user_age,
                             message_to_edit=message_to_edit.message_id)
 
-    await state.set_state(Registration.job_or_study)
+    await state.set_state(Registration.employment)
 
 
 # ПОЛУЧЕНИЕ ДАННЫХ О РАБОТЕ/УЧЕБЕ
-@router.callback_query(Registration.job_or_study, F.data.in_(['work', 'study', 'search_myself']))
+@router.callback_query(Registration.employment, F.data.in_(['work', 'study', 'search_myself']))
 async def get_job_or_study(callback: CallbackQuery, state: FSMContext):
 
     # сохраняю данные из колбэка
@@ -443,29 +470,74 @@ async def get_job_or_study(callback: CallbackQuery, state: FSMContext):
 
     # отрисовка страницы заполнения данных
     if employment_data == 'work':
-        message_to_edit = await callback.message.edit_text(
-            text=('<b>✏️📋 Регистрация</b>'
-                  '\n\n⚪️ Напишите коротко <b>кем и в какой сфере вы работаете</b>:'),
-            parse_mode='HTML'
+
+        employment_data = 'Работаю'
+
+        message_to_edit = await callback.message.edit_media(
+            media=InputMediaPhoto(
+                media=registration_menu,
+                caption=('<b>✏️📋 Регистрация</b>'
+                         '\n\n⚪️ Напишите коротко <b>кем и в какой сфере вы работаете</b>:'),
+                parse_mode='HTML'
+            )
         )
+
+        # сохраняю данные колбэка и id сообщения (для редактирования) в состоянии
+        await state.update_data(employment_data=employment_data,
+                                message_to_edit=message_to_edit.message_id)
+
+        # устанавливаю состояние ввода данных о работе/учебе
+        await state.set_state(Registration.job_or_study)
 
     elif employment_data == 'study':
-        message_to_edit = await callback.message.edit_text(
-            text=('<b>✏️📋 Регистрация</b>'
-                  '\n\n⚪️ Напишите <b>где и на кого вы учитесь</b>:'),
-            parse_mode='HTML'
+
+        employment_data = 'Учусь'
+
+        message_to_edit = await callback.message.edit_media(
+            media=InputMediaPhoto(
+                media=registration_menu,
+                caption=('<b>✏️📋 Регистрация</b>'
+                         '\n\n⚪️ Напишите <b>где и на кого вы учитесь</b>:'),
+                parse_mode='HTML'
+            )
         )
 
-    # сохраняю данные колбэка и id сообщения (для редактирования) в состоянии
-    await state.update_data(employment_data=employment_data,
-                            message_to_edit=message_to_edit.message_id)
+        # сохраняю данные колбэка и id сообщения (для редактирования) в состоянии
+        await state.update_data(employment_data=employment_data,
+                                message_to_edit=message_to_edit.message_id)
 
-    # устанавливаю состояние ввода данных о работе/учебе
-    await state.set_state(Registration.job_or_study)
+        # устанавливаю состояние ввода данных о работе/учебе
+        await state.set_state(Registration.job_or_study)
+
+    elif employment_data == 'search_myself':
+
+        employment_data = 'В поиске себя'
+
+        in_search_myself = '👀'
+
+        message_to_edit = await callback.message.edit_media(
+            media=InputMediaPhoto(
+                media=registration_menu,
+                caption=('<b>✏️📋 Регистрация</b> (<i>последний этап</i> 🤗)'
+                         '\n\n📸 Пришлите в чат <b>одно фото</b>, которое будет '
+                         'установлено в качестве обложки вашей анкеты:'),
+                parse_mode='HTML'
+            ),
+            reply_markup=kb.late_upload_photo_to_profile
+        )
+
+        # сохраняю данные колбэка и id сообщения (для редактирования) в состоянии
+        await state.update_data(employment_data=employment_data,
+                                work_or_study_info=in_search_myself,
+                                message_to_edit=message_to_edit.message_id)
+
+        # утсанавливаю состояние регистрации фото
+        await state.set_state(Registration.photo)
 
 
 @router.message(Registration.job_or_study)
 async def get_info_about_job_or_study(message: Message, state: FSMContext, bot: Bot):
+
     # удаляю сообщение пользователя из чата с названием города
     await del_last_message(message)
 
@@ -490,47 +562,47 @@ async def get_info_about_job_or_study(message: Message, state: FSMContext, bot: 
         if len(message.text) > 100:
             work_or_study_info = work_or_study_info[:100] + '...'
 
-        # проверяю наличие эмодзи в сообщении
+        # проверяю наличие эмодзи и markdown разметки в сообщении
         emodji_checked = await check_emoji(work_or_study_info)
+        markdown_checked = await check_partial_markdown(work_or_study_info)
 
         # если эмодзи есть в сообщении
-        if not emodji_checked:
+        if emodji_checked or markdown_checked:
 
             # вывожу уведомление об ошибке
-            await bot.edit_message_text(
+            await bot.edit_message_media(
                 chat_id=user_tg_id,
                 message_id=message_id,
-                text=('<b>✏️📋 Регистрация</b>'
-                      '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
-                parse_mode='HTML')
-
-            await asyncio.sleep(2)
-
-            await bot.edit_message_text(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                text=('<b>✏️📋 Регистрация</b>'
-                      '\n\n❌ Описание должно содержать '
-                      '<b>только текст</b>, не должно содержать эмодзи '
-                      'и превышать длинну в <b>100 символов</b>.'
-                      '\n\nОтправьте описание в чат еще раз:'),
-                parse_mode='HTML')
+                media=InputMediaPhoto(
+                    media=registration_menu,
+                    caption=(
+                        '<b>✏️📋 Регистрация</b>'
+                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                        '\n\n❗️ Описание должно содержать '
+                        '<b>только текст</b>, не должно содержать эмодзи, '
+                        'а также превышать длинну в <b>100 символов</b>.'
+                        '\n\nОтправьте описание в чат еще раз:'
+                    ),
+                    parse_mode='HTML'
+                )
+            )
 
             # возвращаюсь в состояние ожидания нового сообщения с именем
             return
 
         # если все проверки прошли успешно
-        message_to_edit = await bot.edit_message_text(
+        message_to_edit = await bot.edit_message_media(
             chat_id=user_tg_id,
             message_id=message_id,
-            text=('<b>✏️📋 Регистрация</b> (<i>последний этап</i> 🤗)'
-                  '\n\n📸 Пришлите в чат <b>одно фото</b>, которое будет '
-                  'установлено в качестве обложки вашей анкеты:'),
-            parse_mode='HTML',
-            reply_markup=kb.late_upload_photo_to_profile)
-
-        # Добавляю id  всписок для удаления в шаге добавления фото
-        delete_messages.append(message_to_edit.message_id)
+            media=InputMediaPhoto(
+                media=registration_menu,
+                caption=('<b>✏️📋 Регистрация</b> (<i>последний этап</i> 🤗)'
+                         '\n\n📸 Пришлите в чат <b>одно фото</b>, которое будет '
+                         'установлено в качестве обложки вашей анкеты:'),
+                parse_mode='HTML'
+            ),
+            reply_markup=kb.late_upload_photo_to_profile
+        )
 
         # сохраняю в состоянии название города и сообщение для редактирования
         await state.update_data(message_to_edit=message_to_edit.message_id,
@@ -544,31 +616,28 @@ async def get_info_about_job_or_study(message: Message, state: FSMContext, bot: 
 
         # вывожу уведомление об ошибке
 
-        await bot.edit_message_text(
+        await bot.edit_message_media(
             chat_id=user_tg_id,
             message_id=message_id,
-            text=('<b>✏️📋 Регистрация</b>'
-                  '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
-            parse_mode='HTML')
-
-        await asyncio.sleep(2)
-
-        await bot.edit_message_text(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            text=('<b>✏️📋 Регистрация</b>'
-                  '\n\n❌ Описание не должно содержать изображения или '
-                  'любой отличный от текста контент, '
-                  'а так же не должно превышать длинну в <b>100 символов</b>.'
-                  '\n\nОтправьте описание в чат еще раз:'),
-            parse_mode='HTML')
+            media=InputMediaPhoto(
+                media=registration_menu,
+                caption=(
+                    '<b>✏️📋 Регистрация</b>'
+                    '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                    '\n\n❗️ Описание не должно содержать изображения или '
+                    'любой отличный от текста контент, '
+                    'а также превышать длинну в <b>100 символов</b>.'
+                    '\n\nОтправьте описание в чат еще раз:'
+                ),
+                parse_mode='HTML'
+            )
+        )
 
         # возвращаюсь в состояние ожидания нового сообщения с именем
         return
 
+
 # ДОБАВЛЕНИЕ ФОТО И ЗАВЕРШЕНИЕ РЕГИСТРАЦИИ
-
-
 @router.message(Registration.photo)
 async def add_photo_to_profile(message: Message, state: FSMContext, bot: Bot):
 
@@ -588,31 +657,30 @@ async def add_photo_to_profile(message: Message, state: FSMContext, bot: Bot):
         photo_id = message.photo[-1].file_id
 
         # регистрация нового пользователя и внесение всех необходимых данных в бд
-        await sucess_registration(message, state, photo_id, user_tg_id)
+        await sucess_registration(message, state, photo_id, user_tg_id, bot, message_id)
 
     # если сообщение не фото
     else:
 
         # вывожу уведомление об ошибке
-        await bot.edit_message_text(chat_id=user_tg_id,
-                                    message_id=message_id,
-                                    text=('<b>✏️📋 Регистрация</b>'
-                                          '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'),
-                                    parse_mode='HTML')
-
-        await asyncio.sleep(2)
-
-        # отрисовка сообщения с пояснением требований к формату
-        await bot.edit_message_text(chat_id=user_tg_id,
-                                    message_id=message_id,
-                                    text=('<b>✏️📋 Регистрация</b>'
-                                          '\n\nФото должно быть в формате <b>.jpg '
-                                          '.jpeg</b> или <b>.png</b>'
-                                          '\n<i>Отправьте фото в чат:</i>'
-                                          '\n\n(Вы можете загрузить фото позже, в '
-                                          'разделе "✏️ <b>Редактировать профиль</b>")'),
-                                    parse_mode='HTML',
-                                    reply_markup=kb.late_upload_photo_to_profile)
+        await bot.edit_message_media(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            media=InputMediaPhoto(
+                media=registration_menu,
+                caption=(
+                    '<b>✏️📋 Регистрация</b> (<i>последний этап</i> 🤗'
+                    '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                    '\n\nФото должно быть в формате <b>.jpg '
+                    '.jpeg</b> или <b>.png</b>'
+                    '\n<i>Отправьте фото в чат:</i>'
+                    '\n\n(Вы можете загрузить фото позже, в '
+                    'разделе "✏️ <b>Редактировать профиль</b>")'
+                ),
+                parse_mode='HTML'
+            ),
+            reply_markup=kb.late_upload_photo_to_profile
+        )
 
         # возвращаюсь в состояние ожидания фото
         return
@@ -620,17 +688,21 @@ async def add_photo_to_profile(message: Message, state: FSMContext, bot: Bot):
 
 # ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ СТАЛ ДОБАВЛЯТЬ ФОТО И НАЖАЛ "Загрузить позже"
 @router.callback_query(F.data == 'late_load_photo')
-async def late_upload_photo(callback: CallbackQuery, state: FSMContext):
+async def late_upload_photo(callback: CallbackQuery, state: FSMContext, bot: Bot):
 
     user_tg_id = callback.from_user.id
 
+    # плучаю id сообщения из состояния для его редактирования
+    message_to_edit = await state.get_data()
+    message_id = message_to_edit.get('message_to_edit')
+
     # вместо фото от пользователя загружаю "заглушку" об отсутствии фото
     # регистрация нового пользователя и внесение всех необходимых данных в бд
-    await sucess_registration(callback.message, state, no_photo_id, user_tg_id)
+    await sucess_registration(callback.message, state, no_photo_id, user_tg_id, bot, message_id)
 
 
 # ЛОГИКА ОКОНЧАНИЯ РЕГИСТРАЦИИ
-async def sucess_registration(message, state, photo_id, user_tg_id):
+async def sucess_registration(message, state, photo_id, user_tg_id, bot, message_id):
 
     # получаю текущую дату и время регистрации для внесения в таблицу
     current_datetime = datetime.now()
@@ -656,17 +728,42 @@ async def sucess_registration(message, state, photo_id, user_tg_id):
     await state.clear()
 
     # удаляю сообщения из списка для удаления сообщений
-    await del_messages(user_tg_id, delete_messages)
+    # await del_messages(user_tg_id, delete_messages)
 
     # уведомление об успешной регистрации
-    await message.answer_photo(
-        photo=f'{main_menu_logo}',
-        caption='<b>Вы успешно зарегистрированы!</b> ✅'
-        '\n\n📌 <b>Добавьте несколько увлечений</b>, чтобы быстрее '
-        'найти интересные контакты и завести новые знакомства!'
-        '\n\n📌 Расскажите более подробно о своём образовании, '
-        'планах, личных качествах (да и вообще о чем угодно), '
-        'заполнив раздел <b>"О себе"</b>.',
-        parse_mode='HTML',
-        reply_markup=kb.start_edit
-    )
+    try:
+        await message.edit_media(
+            media=InputMediaPhoto(
+                media=f'{main_menu_logo}',
+                caption=(
+                    '<b>Вы успешно зарегистрированы!</b>'
+                    '\n\n📌 <b>Добавьте несколько увлечений</b>, чтобы быстрее '
+                    'найти интересные контакты и завести новые знакомства!'
+                    '\n\n📌 Расскажите более подробно о своём образовании, '
+                    'планах, личных качествах (да и вообще о чем угодно), '
+                    'заполнив раздел <b>"О себе"</b>.'
+                ),
+                parse_mode='HTML'
+            ),
+            reply_markup=kb.start_edit
+        )
+
+    except:
+
+        await bot.edit_message_media(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            media=InputMediaPhoto(
+                media=f'{main_menu_logo}',
+                caption=(
+                    '<b>Вы успешно зарегистрированы!</b>'
+                    '\n\n📌 <b>Добавьте несколько увлечений</b>, чтобы быстрее '
+                    'найти интересные контакты и завести новые знакомства!'
+                    '\n\n📌 Расскажите более подробно о своём образовании, '
+                    'планах, личных качествах (да и вообще о чем угодно), '
+                    'заполнив раздел <b>"О себе"</b>.'
+                ),
+                parse_mode='HTML'
+            ),
+            reply_markup=kb.start_edit
+        )

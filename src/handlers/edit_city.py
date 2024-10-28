@@ -5,9 +5,8 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.modules.get_self_data import get_user_info
 from src.modules.delete_messages import del_last_message
-from src.modules.notifications import loader
 from src.database.requests.city_data import change_city
-from src.modules.check_emoji import check_emoji
+from src.modules.check_emoji import check_emoji, check_markdown_city_name
 import src.modules.keyboard as kb
 
 router = Router()
@@ -22,7 +21,6 @@ delete_last_message = []
 
 
 # МЕНЮ РЕДАКТИРОВАНИЯ ГОРОДА
-
 @router.callback_query(F.data == 'edit_city')
 async def edit_city(callback: CallbackQuery, state: FSMContext):
 
@@ -56,7 +54,6 @@ async def edit_city(callback: CallbackQuery, state: FSMContext):
 
 
 # СОСТОЯНИЕ ОЖИДАНИЯ СООБЩЕНИЯ ОТ ПОЛЬЗОВАТЕЛЯ С НАЗВАНИЕМ ГОРОДА
-
 @router.message(Registration.change_city)
 async def new_city(message: Message, state: FSMContext, bot: Bot):
 
@@ -78,9 +75,10 @@ async def new_city(message: Message, state: FSMContext, bot: Bot):
 
         # проверяю не содержит ли сообщение эмодзи
         emodji_checked = await check_emoji(new_city_name)
+        markdown_checked = await check_markdown_city_name(new_city_name)
 
         # если содержит эмодзи
-        if not emodji_checked:
+        if emodji_checked or markdown_checked:
 
             # вывожу ошибку
             await wrong_city_name(user_tg_id, message_id, bot)
@@ -103,7 +101,6 @@ async def new_city(message: Message, state: FSMContext, bot: Bot):
 
 
 # НЕВЕРНЫЙ ФОРМАТ ДАННЫХ В НАЗВАНИИ ГОРОДА
-
 async def wrong_city_name(user_tg_id, message_id, bot):
 
     # плучаю свои данные для отрисовки страницы
@@ -113,40 +110,29 @@ async def wrong_city_name(user_tg_id, message_id, bot):
     self_data = user_info['data']
 
     # отрисовка сообщения
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Ваш текущий город:</b> {self_data[0][5]}'
-                '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+    try:
+        await bot.edit_message_media(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            media=InputMediaPhoto(
+                media=f'{self_data[0][1]}',
+                caption=(
+                    f'\n<b>Ваш текущий город:</b> {self_data[0][5]}'
+                    '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                    '\n\n❌ Название города должно содержать <b>только текст</b>, '
+                    'не должно содержать эмодзи '
+                    'и изображения, а так же не должно превышать длинну в '
+                    '<b>25 символов</b>.'
+                ),
+                parse_mode='HTML'
             ),
-            parse_mode='HTML'
-        ),
-        reply_markup=kb.back
-    )
-
-    await asyncio.sleep(1.5)
-
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Ваш текущий город:</b> {self_data[0][5]}'
-                '\n\n❌ Название города должно содержать <b>только текст</b>, не должно содержать эмодзи '
-                'и изображения, а так же не должно превышать длинну в <b>25 символов</b>.'
-            ),
-            parse_mode='HTML'
-        ),
-        reply_markup=kb.back
-    )
+            reply_markup=kb.back
+        )
+    except Exception as e:
+        pass
 
 
 # ИЗМЕНЕНИЕ НАЗВАНИЯ ГОРОДА(ВНЕСЕНИЕ ИЗМЕНЕНИЙ В БД) И ОТРИСОВКА СТРАНИЦЫ
-
 async def change_city_name(user_tg_id, message, message_id, new_city_name, bot, state):
 
     # плучаю свои данные для отрисовки страницы
@@ -155,61 +141,40 @@ async def change_city_name(user_tg_id, message, message_id, new_city_name, bot, 
     # Извлекаю свои данные для отрисовки страницы
     self_data = user_info['data']
 
-    # отрисовка страницы
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Ваш текущий город:</b> {self_data[0][5]}'
-            ),
-            parse_mode='HTML'
-        )
-    )
-
-    await loader(message, 'Вношу изменения')
-
-    # вношу изменения в бд
+    # внесение данных в бд
     await asyncio.to_thread(change_city, new_city_name, user_tg_id)
 
     # плучаю свои данные для отрисовки страницы с внесенными изменениями
     user_info = await get_user_info(user_tg_id)
 
-    # Извлекаю свои данные для отрисовки страницы с внесенными изменениями
+    # Извлекаю свои данные для отрисовки страницы с учетом изменений
     self_data = user_info['data']
+    self_photo = self_data[0][1]
+    self_name = self_data[0][0]
+    self_age = self_data[0][4]
+    self_city = self_data[0][5]
     self_gender = user_info['gender']
     self_hobbies = user_info['hobbies']
     about_me = user_info['about_me']
+    # учеба/работа
+    employment = user_info['employment']
+    employment_info = user_info['employment_info']
 
     # отрисовка страницы с новыми данными
     await bot.edit_message_media(
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
+            media=f'{self_photo}',
             caption=(
-                f'\n<b>Город:</b> {self_data[0][5]}'
-                '\n\nНазвание города успешно изменено ✅'
-            ),
-            parse_mode='HTML'
-        )
-    )
-
-    await asyncio.sleep(1.5)
-
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'► <b>Имя:</b> {self_data[0][0]}'
-                f'\n► <b>Возраст:</b> {self_data[0][4]}'
-                f'\n► <b>Пол:</b> {self_gender}'
-                f'\n► <b>Город:</b> {self_data[0][5]}'
+                f'{self_gender}'  # пол
+                f' • {self_name}'  # имя
+                f' • {self_age}'  # возраст
+                f' • {self_city}'  # город
+                f'\n► <b>{employment}:</b> {employment_info}'
                 f'\n► <b>Увлечения:</b> {self_hobbies}'
                 f'\n► <b>О себе:</b> {about_me}'
+                '\n\n✅ Название города успешно изменено'
                 '\n\n<b>Редактировать:</b>'
             ),
             parse_mode='HTML'

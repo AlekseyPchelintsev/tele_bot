@@ -18,6 +18,7 @@ async def check_emodji(user_name):
 
 
 async def check_emoji(text):
+    # Шаблон для проверки эмодзи
     emoji_pattern = (
         r'[\U0001F600-\U0001F64F]|'  # Эмодзи лиц
         r'[\U0001F300-\U0001F5FF]|'  # Эмодзи объектов
@@ -33,5 +34,44 @@ async def check_emoji(text):
         r'[\U0001F1E6-\U0001F1FF]{2}'  # Флаги (двойные символы)
     )
 
-    # Возвращает False, если эмодзи найдены, и True, если их нет
-    return re.search(emoji_pattern, text) is None
+    # Проверяем наличие эмодзи
+    return re.search(emoji_pattern, text) is not None
+    # Проверяем наличие специальных символов Markdown
+
+# проверка наличия полной markdown разметки
+
+
+async def check_all_markdown(text):
+
+    # Шаблон для проверки специальных символов Markdown
+    markdown_pattern = r'([*_{}()\[\]~`>#+\-.!?|<%])'
+
+    return re.search(markdown_pattern, text) is not None
+
+
+# проверка наличия частичной markdown разметки
+async def check_partial_markdown(text):
+
+    # Шаблон для проверки специальных символов Markdown
+    markdown_pattern = r'([{}\[\]~`>#+\|<%])'
+
+    return re.search(markdown_pattern, text) is not None
+
+
+# проверка наличия частичной markdown разметки для увлечений
+async def check_markdown_hobbies(text):
+
+    # Шаблон для проверки специальных символов Markdown
+    markdown_pattern = r'([{}\[\]~`>#+\|!<%])'
+
+    return re.search(markdown_pattern, text) is not None
+
+# поверка наличия чистичной markdown разметки для названия города
+
+
+async def check_markdown_city_name(text):
+
+    # Шаблон для проверки специальных символов Markdown
+    markdown_pattern = r'([*_{}()\[\]~`>#+\.!?:%|<])'
+
+    return re.search(markdown_pattern, text) is not None

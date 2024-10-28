@@ -16,6 +16,7 @@ from src.handlers.edit_name import router as edit_name
 from src.handlers.edit_age import router as edit_age
 from src.handlers.edit_gender import router as edit_gender
 from src.handlers.edit_about_me import router as edit_about_me
+from src.handlers.edit_employment import router as edit_employment
 from src.handlers.delete_your_page import router as delete_page_router
 
 # обработка поиска пользователей
@@ -60,6 +61,7 @@ async def main():
     dp.include_router(edit_age)
     dp.include_router(edit_gender)
     dp.include_router(edit_about_me)
+    dp.include_router(edit_employment)
     dp.include_router(delete_page_router)
 
     # система поиска пользователей

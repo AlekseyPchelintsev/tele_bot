@@ -52,5 +52,5 @@ async def confirm_delete(callback: CallbackQuery, state: FSMContext, bot: Bot):
     await bot.delete_message(chat_id=user_tg_id, message_id=message_id)
 
     # ввыожу сообщение о необходимости зарегистрироваться после удаления анкеты
-    await callback.message.answer(text='Привет!\nЧтобы продолжить, вам нужно:',
+    await callback.message.answer(text='Для начала вам нужно:',
                                   reply_markup=kb.regkey)

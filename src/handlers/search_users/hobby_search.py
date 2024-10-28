@@ -1,5 +1,5 @@
 import asyncio
-from aiogram.types import Message, CallbackQuery, InputMediaPhoto, InputMediaVideo
+from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
@@ -8,10 +8,8 @@ from src.handlers.search_users.all_users_search import search_all_users
 from src.modules.pagination_logic import (load_bot_pagination_start_or_end_data,
                                           load_pagination_start_or_end_data)
 
-from src.modules.notifications import loader, attention_message
-
 from src.modules.delete_messages import del_last_message
-from src.modules.check_emoji import check_emoji
+from src.modules.check_emoji import check_emoji, check_markdown_hobbies
 from src.database.requests.search_users import (get_stemmed_hobbies_list,
                                                 check_users_by_hobbies,
                                                 search_users)
@@ -139,8 +137,6 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
                                                city_data,
                                                my_hobbies_data)
 
-                await loader(callback.message, 'Секунду, загружаю 🤔')
-
                 # получаю длинну списка пользователей для отрисовки кнопок пролистывания
                 total_pages = len(data)
 
@@ -215,8 +211,6 @@ async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
 
         # если пользователи есть
         if data:
-
-            await loader(callback.message, 'Секунду, загружаю 🤔')
 
             # получаю длинну списка пользователей для отрисовки кнопок пролистывания
             total_pages = len(data)
@@ -309,8 +303,9 @@ async def search_by_hobby(message: Message, state: FSMContext, bot: Bot):
 
         # проверка на наличие смайлов в сообщении
         emodji_checked = await check_emoji(request)
+        markdown_checked = await check_markdown_hobbies(request)
 
-        if not emodji_checked:
+        if emodji_checked or markdown_checked:
             await wrong_search_hobby_name(user_tg_id, message_id, bot)
             return
 
@@ -330,8 +325,6 @@ async def search_by_hobby(message: Message, state: FSMContext, bot: Bot):
 
         # если есть хотя бы 1 пользователь по моим параметрам поиска
         if check_users_by_my_hobbies:
-
-            await loader(message, 'Секунду, загружаю 🤔')
 
             # получаю готовый список пользователей
             data = await asyncio.to_thread(search_users,

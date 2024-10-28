@@ -48,8 +48,8 @@ reactions = InlineKeyboardMarkup(inline_keyboard=[
                           callback_data='my_reactions')],
     [InlineKeyboardButton(text='📥 Входящие запросы',
                           callback_data='incoming_reactions_list')],
-    [InlineKeyboardButton(text='📌 Избранное',
-                          callback_data='favorite_users')],
+    # [InlineKeyboardButton(text='📌 Избранное',
+    # callback_data='favorite_users')],
     [InlineKeyboardButton(text='🤝 Мои контакты',
                           callback_data='match_reactions_list')],
     [InlineKeyboardButton(text='🚷 Скрытые пользователи',
@@ -119,8 +119,10 @@ about_me = InlineKeyboardMarkup(inline_keyboard=[
                           callback_data='edit_gender'),
      InlineKeyboardButton(text='🌇 Город',
                           callback_data='edit_city')],
-    [InlineKeyboardButton(text='📇 Раздел "О себе"',
-                          callback_data='edit_about_me')],
+    [InlineKeyboardButton(text='📇 "О себе"',
+                          callback_data='edit_about_me'),
+     InlineKeyboardButton(text='💼 Занятость',
+                          callback_data='edit_employment')],
     [InlineKeyboardButton(text='🗑 Удалить профиль',
                           callback_data='delete_profile')],
     [InlineKeyboardButton(text='↩️ Главное меню', callback_data='main_menu')]])
@@ -210,7 +212,7 @@ back = InlineKeyboardMarkup(inline_keyboard=[
 
 # Меню редактирования раздела "О себе"
 edit_about_me = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='➕ Добавить "О себе"',
+    [InlineKeyboardButton(text='➕ Редактировать "О себе"',
                           callback_data='add_about_me')],
     [InlineKeyboardButton(text='➖ Удалить "О себе"',
                           callback_data='delete_about_me')],
@@ -223,6 +225,17 @@ edit_about_me = InlineKeyboardMarkup(inline_keyboard=[
 edit_about_me_no_delete_button = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='➕ Добавить "О себе"',
                           callback_data='add_about_me')],
+    [InlineKeyboardButton(text='↩️ Вернуться назад',
+                          callback_data='my_profile')]
+])
+
+
+# редактирование работы/учебы
+edit_job_or_study = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='💼 Работаю', callback_data='work')],
+    [InlineKeyboardButton(text='📚 Учусь', callback_data='study')],
+    [InlineKeyboardButton(text='👀 В поиске себя',
+                          callback_data='search_myself')],
     [InlineKeyboardButton(text='↩️ Вернуться назад',
                           callback_data='my_profile')]
 ])
@@ -341,8 +354,8 @@ def paginator(page: int = 0, list_type: str = 'default', action: str = 'like', t
 
     # Второй ряд: кнопка "Отправить реакцию" и добавить в избранное
     builder.row(
-        InlineKeyboardButton(text='В избранное 📌', callback_data=Pagination(
-            action='to_favorite', page=page, list_type=list_type).pack()),
+        # InlineKeyboardButton(text='В избранное 📌', callback_data=Pagination(
+        # action='to_favorite', page=page, list_type=list_type).pack()),
         InlineKeyboardButton(text='Отправить 👋', callback_data=Pagination(
             action='like', page=page, list_type=list_type).pack())
     )

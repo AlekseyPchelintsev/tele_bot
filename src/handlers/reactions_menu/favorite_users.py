@@ -13,6 +13,7 @@ import src.modules.keyboard as kb
 router = Router()
 
 
+# добавление пользователя в раздел "избранное"
 @router.callback_query(F.data == 'favorite_users')
 async def add_to_favorite_users(callback: CallbackQuery):
 

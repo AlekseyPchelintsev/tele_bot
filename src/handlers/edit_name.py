@@ -1,5 +1,4 @@
 import asyncio
-import re
 from aiogram import Bot
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router
@@ -8,8 +7,7 @@ from aiogram.fsm.context import FSMContext
 from src.modules.get_self_data import get_user_info
 from src.database.requests.name_change import change_user_name
 from src.modules.delete_messages import del_last_message
-from src.modules.notifications import loader
-from src.modules.check_emoji import check_emoji
+from src.modules.check_emoji import check_emoji, check_all_markdown
 import src.modules.keyboard as kb
 
 router = Router()
@@ -77,9 +75,10 @@ async def edit_name(message: Message, state: FSMContext, bot: Bot):
 
         # проверяю наличие эмодзи в сообщении
         emodji_checked = await check_emoji(user_name)
+        markdown_checked = await check_all_markdown(user_name)
 
         # если эмодзи есть в сообщении
-        if not emodji_checked:
+        if emodji_checked or markdown_checked:
 
             # вывожу уведомление об ошибке
             await wrong_name(user_tg_id, message_id, bot)
@@ -112,63 +111,30 @@ async def wrong_name(user_tg_id, message_id, bot):
     # Извлекаю свои данные для отрисовки страницы
     self_data = user_info['data']
 
-    # отрисовка страницы
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Ваше текущее имя:</b> {self_data[0][0]}'
-                '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+    # отрисовка страницы с ошибкой
+    try:
+        await bot.edit_message_media(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            media=InputMediaPhoto(
+                media=f'{self_data[0][1]}',
+                caption=(
+                    f'\n<b>Ваше текущее имя:</b> {self_data[0][0]}'
+                    '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                    '\n\n❌ Имя должно содержать <b>только буквы</b>, не должно '
+                    'содержать эмодзи и изображения, '
+                    'а так же превышать длинну в <b>20 символов</b>.'
+                ),
+                parse_mode='HTML'
             ),
-            parse_mode='HTML'
-        ),
-        reply_markup=kb.back
-    )
-
-    await asyncio.sleep(1.5)
-
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Ваше текущее имя:</b> {self_data[0][0]}'
-                '\n\n❌ Имя должно содержать <b>только текст</b>, не должно '
-                'содержать эмодзи и изображения, '
-                'а так же не должно превышать длинну в <b>20 символов</b>.'
-            ),
-            parse_mode='HTML'
-        ),
-        reply_markup=kb.back
-    )
+            reply_markup=kb.back
+        )
+    except Exception as e:
+        pass
 
 
 # ВНЕСЕНИЕ ИЗМЕНЕНИЯ ИМЕНИ В БД И ОТРИСОВКА СТРАНИЦЫ
 async def change_name(user_tg_id, message, user_name, message_id, bot):
-
-    # плучаю свои данные для отрисовки страницы с учетом изменений
-    user_info = await get_user_info(user_tg_id)
-
-    # Извлекаю свои данные для отрисовки страницы с учетом изменений
-    self_data = user_info['data']
-
-    # отрисовка страницы
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'\n<b>Ваше текущее имя:</b> {self_data[0][0]}'
-            ),
-            parse_mode='HTML'
-        )
-    )
-
-    await loader(message, 'Вношу изменения')
 
     # внесение изменений в бд
     await asyncio.to_thread(change_user_name, user_tg_id, user_name)
@@ -178,38 +144,32 @@ async def change_name(user_tg_id, message, user_name, message_id, bot):
 
     # Извлекаю свои данные для отрисовки страницы с учетом изменений
     self_data = user_info['data']
+    self_photo = self_data[0][1]
+    self_name = self_data[0][0]
+    self_age = self_data[0][4]
+    self_city = self_data[0][5]
     self_gender = user_info['gender']
     self_hobbies = user_info['hobbies']
     about_me = user_info['about_me']
+    # учеба/работа
+    employment = user_info['employment']
+    employment_info = user_info['employment_info']
 
     # отрисовка страницы
     await bot.edit_message_media(
         chat_id=user_tg_id,
         message_id=message_id,
         media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
+            media=f'{self_photo}',
             caption=(
-                f'\n<b>Ваше имя:</b> {self_data[0][0]}'
-                '\n\nИмя успешно изменено ✅'
-            ),
-            parse_mode='HTML'
-        )
-    )
-
-    await asyncio.sleep(1.5)
-
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_data[0][1]}',
-            caption=(
-                f'► <b>Имя:</b> {self_data[0][0]}'
-                f'\n► <b>Возраст:</b> {self_data[0][4]}'
-                f'\n► <b>Пол:</b> {self_gender}'
-                f'\n► <b>Город:</b> {self_data[0][5]}'
+                f'{self_gender}'  # пол
+                f' • {self_name}'  # имя
+                f' • {self_age}'  # возраст
+                f' • {self_city}'  # город
+                f'\n► <b>{employment}:</b> {employment_info}'
                 f'\n► <b>Увлечения:</b> {self_hobbies}'
                 f'\n► <b>О себе:</b> {about_me}'
+                '\n\n✅ Имя успешно изменено'
                 '\n\n<b>Редактировать:</b>'
             ),
             parse_mode='HTML'

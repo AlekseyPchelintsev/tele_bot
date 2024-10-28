@@ -47,7 +47,7 @@ async def start(message: Message, state: FSMContext):
     else:
 
         # сообщение с предложением зарегистрироваться
-        await message.answer(text='Привет!\nЧтобы продолжить, вам нужно:',
+        await message.answer(text='Для начала вам нужно:',
                              reply_markup=kb.regkey)
 
 

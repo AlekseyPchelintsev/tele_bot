@@ -52,6 +52,7 @@ def get_self_data(user_tg_id):
         with connection:
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
 
+                # получаю основные данные из таблицы users
                 cursor.execute(
                     """
                     SELECT 
@@ -68,6 +69,7 @@ def get_self_data(user_tg_id):
                 )
                 user_data = cursor.fetchall()
 
+                # получаю данные об увлечениях
                 cursor.execute(
                     """
                     SELECT hobby_name 
@@ -78,6 +80,7 @@ def get_self_data(user_tg_id):
                 )
                 user_hobbies = cursor.fetchall()
 
+                # получаю данные "О себе"
                 cursor.execute(
                     """
                     SELECT 
@@ -87,6 +90,18 @@ def get_self_data(user_tg_id):
                     """, (user_tg_id,)
                 )
                 user_about_me = cursor.fetchone()
+
+                # получаю данные о роде деятельности
+                cursor.execute(
+                    """
+                    SELECT 
+                        work_or_study,
+                        work_or_study_info
+                    FROM workandstudy
+                    WHERE user_tg_id = %s
+                    """, (user_tg_id,)
+                )
+                user_employment = cursor.fetchone()
 
                 data = [(row['name'],
                          row['photo_id'],
@@ -98,9 +113,16 @@ def get_self_data(user_tg_id):
 
                 hobbies = [row['hobby_name'] for row in user_hobbies]
 
+                # Преобразуем данные о роде деятельности в кортеж
+                employment_data = (
+                    user_employment['work_or_study'],
+                    user_employment['work_or_study_info'] if user_employment else '-'
+                )
+
                 data.append(hobbies)
                 data.append(user_about_me['about_me']
                             if user_about_me else '-')
+                data.append(employment_data)
 
                 return data
     finally:

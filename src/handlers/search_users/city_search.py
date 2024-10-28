@@ -7,7 +7,7 @@ from config import city_search, hobby_search
 from src.handlers.search_users.hobby_search import search_users_by_hobby
 from src.modules.delete_messages import del_last_message
 from src.modules.get_self_data import get_user_info
-from src.modules.check_emoji import check_emoji
+from src.modules.check_emoji import check_emoji, check_all_markdown
 from src.database.requests.search_users import (check_users_in_city)
 from src.handlers.search_users.error_handlers_search import wrong_search_city_name
 
@@ -168,8 +168,9 @@ async def search_by_city(message: Message, state: FSMContext, bot: Bot):
 
         # проверка на наличие смайлов в сообщении
         emodji_checked = await check_emoji(city_name)
+        markdown_checked = await check_all_markdown(city_name)
 
-        if not emodji_checked:
+        if emodji_checked or markdown_checked:
             await wrong_search_city_name(user_tg_id, message_id, bot)
             return
 
