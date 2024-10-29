@@ -115,7 +115,7 @@ def get_self_data(user_tg_id):
 
                 # Преобразуем данные о роде деятельности в кортеж
                 employment_data = (
-                    user_employment['work_or_study'],
+                    user_employment['work_or_study'] if user_employment else '-',
                     user_employment['work_or_study_info'] if user_employment else '-'
                 )
 

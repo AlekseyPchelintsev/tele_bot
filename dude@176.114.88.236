@@ -1,0 +1,60 @@
+# E6H3wTSwn42m
+
+# work version
+'''
+TOKEN = "7692874648:AAG9ATSma8hN_3Epnt5sEkbw5VRhtklDzfE" #work
+ADMIN_ID = 303336267
+registration_menu = 'AgACAgIAAxkBAAIQZ2cegznkG5QXfRzfUts5oUdwfIi2AAJP4zEbukP5SD-Q_hezBlMUAQADAgADeAADNgQ'
+no_photo_id = 'AgACAgIAAxkBAAIPYWcZCOq9IuT-QJI12ZR6-3YbWiGPAAIY6TEbtFDJSL3Pa3wuqS_OAQADAgADeAADNgQ'
+delete_profile_id = 'AgACAgIAAxkBAAIPe2cZMiRCpYSs_e-N9-X1a632V6n-AAL_6TEbtFDJSCWEx2hFfik5AQADAgADeAADNgQ'
+sucessful_registration = 'AgACAgIAAxkBAAIKxGcEVrn2mhxbD1RtN3SVqUiNK5TKAAJf4TEbmtEgSMeIVZQECUuHAQADAgADeAADNgQ'
+video_no_nickname = 'BAACAgIAAxkBAAIMAAFnCcOQwhpV-uCJsW-XoYbjA-7srAACrFgAAvsUUEjxS0F_WKVAODYE'
+in_progress = 'AgACAgIAAxkBAAIPm2cZTCSJL_yPYwuqVnYVVzyYlxx7AAKX5TEbvTPRSBlgzcrwY0TvAQADAgADeAADNgQ'
+somthing_wrong = 'AgACAgIAAxkBAAIPpWcZTwXBBO101Jv4qhbyAYsgan-TAAKm5TEbvTPRSM4XMhncTucZAQADAgADeAADNgQ'
+main_menu_logo = 'AgACAgIAAxkBAAIPHWcYPZxIms__ZHKGp_8JglITDZ-xAAJj5DEbvTPJSH-wIqp0GDMHAQADAgADeAADNgQ'
+reactions_menu_logo = 'AgACAgIAAxkBAAIN3WcXvXEbOqsBjK0PjjqvO-UWcGZRAALL5jEbDJfASCiq1z3Ck8WjAQADAgADeAADNgQ'
+# заставки для поиска
+search_menu = 'AgACAgIAAxkBAAINVGcW9pIPMwkv53DGzSOkKm4nAAHCwQACw-QxG8otuEjudl_RoxUnLgEAAwIAA3gAAzYE'
+gender_search = 'AgACAgIAAxkBAAINy2cXoXJ3qnVGSXy8oQUAAUFO-eJU4gACFOYxGwyXwEgnUvcHA8dghAEAAwIAA3gAAzYE'
+city_search = 'AgACAgIAAxkBAAINWGcW9p9cMVuL928ox39DX-LE1UO9AALF5DEbyi24SDE_EbIQN_VBAQADAgADeAADNgQ'
+hobby_search = 'AgACAgIAAxkBAAINWmcW9qHYepGYP0livzCiImqTPGEgAALG5DEbyi24SAw4UH0VB2i5AQADAgADeAADNgQ'
+'''
+
+# dev version
+TOKEN = "7276090811:AAF7A5FvTCumc2DypulKb-p07hlXrl5Y4RM"  # dev
+ADMIN_ID = 303336267
+
+# меню регистрации
+registration_menu = 'AgACAgIAAxkBAAI42Gcehip4dkpKdc4HQ4QuDWaaBvI4AAKP5zEb6on4SMt-YF2vCI5iAQADAgADeAADNgQ'
+
+# если нет фото
+no_photo_id = 'AgACAgIAAxkBAAI4JWcZB98dkBHeo-ys1GGCLJnePnLpAAIY6TEbtFDJSCWzTI0a-89gAQADAgADeAADNgQ'
+
+# удаление профиля
+delete_profile_id = 'AgACAgIAAxkBAAI4L2cZJZENHwUD4sr7dwdkTRT26jUOAAL_6TEbtFDJSHlEtVLC-fm4AQADAgADeAADNgQ'
+
+# успешная регистрация
+sucessful_registration = 'AgACAgIAAxkBAAIpV2cEWMZ8det2LyGqI24FWjvRxKjKAAKR2zEbWI0oSPguxi2hfAIeAQADAgADeAADNgQ'
+
+# если нет ника при регистрации
+video_no_nickname = 'BAACAgIAAxkBAAItRWcJqUj35smgzkP8NUcyIg1Nx5DXAAJ8VwACA8BRSCb8V0uXlbqWNgQ'
+
+# главное меню и раздел реакций
+main_menu_logo = 'AgACAgIAAxkBAAI4FmcYPeeONS97QoU9W0chwS5TDzqNAAJj5DEbvTPJSE0XxOOKBarxAQADAgADeAADNgQ'
+reactions_menu_logo = 'AgACAgIAAxkBAAI3w2cXvn2FGkhy4s_wr3svqJcTbB4LAAKA5DEbyi3ASLcWd7QV6mBVAQADAgADeAADNgQ'
+
+# заставки для поиска
+search_menu = 'AgACAgIAAxkBAAI3T2cW86-bXzf-SQPlHsXThUpf3SydAALD5DEbyi24SI-ghSQmErwTAQADAgADeAADNgQ'
+gender_search = 'AgACAgIAAxkBAAI3tWcXohIHKWT517uSkuOFyQcKkiyfAAIU5jEbDJfASIJ1o0-0hX7fAQADAgADeAADNgQ'
+city_search = 'AgACAgIAAxkBAAI3VGcW89Z7cPVjGMN-6IQTQCAPsxA6AALF5DEbyi24SJE1z3S4j4GoAQADAgADeAADNgQ'
+hobby_search = 'AgACAgIAAxkBAAI3VmcW89lmWZusT1wmcW_GPpj3yEsWAALG5DEbyi24SI4UoMulfHgqAQADAgADeAADNgQ'
+
+# прочие заставки (ведутся работы и тд)
+in_progress = 'AgACAgIAAxkBAAI4XGcZTZ8DrMICOhEZkX-CFYg0CnpsAAJH4DEbtFDRSJLCUxuDr7WnAQADAgADeAADNgQ'
+somthing_wrong = 'AgACAgIAAxkBAAI4Y2cZT-lYHo8YbtFoVQTXPaqfnddmAAKm5TEbvTPRSF_O3-ZXNHJPAQADAgADeAADNgQ'
+
+# db connect
+user = 'postgres'
+password = '123'
+database = 'test_bot_tg'
+host = 'localhost'
