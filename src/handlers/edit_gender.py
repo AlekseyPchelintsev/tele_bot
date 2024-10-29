@@ -1,7 +1,6 @@
 import asyncio
 from aiogram.types import CallbackQuery, InputMediaPhoto
 from aiogram import F, Router
-from src.modules.notifications import loader
 from src.modules.get_self_data import get_user_info
 from src.database.requests.gender_change import change_user_gender
 

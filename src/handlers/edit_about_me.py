@@ -9,7 +9,6 @@ from src.modules.get_self_data import get_user_info
 from src.modules.delete_messages import del_last_message
 from src.database.requests.about_me_data import edit_about_me_data, delete_about_me_data
 from src.modules.check_emoji import check_partial_markdown
-from src.modules.notifications import loader
 import src.modules.keyboard as kb
 
 router = Router()

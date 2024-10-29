@@ -14,7 +14,6 @@ from src.database.requests.likes_users import (insert_reaction,
                                                send_user_to_ignore_table)
 
 from src.database.requests.add_to_favorites import add_to_favorites
-from src.modules.notifications import attention_message
 import src.modules.keyboard as kb
 
 

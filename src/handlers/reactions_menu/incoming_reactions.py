@@ -4,7 +4,6 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from src.modules.pagination_logic import load_pagination_start_or_end_data, back_callback
 from src.database.requests.likes_users import get_users_who_liked_me
-from src.modules.notifications import attention_message
 
 
 router = Router()

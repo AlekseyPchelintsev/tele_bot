@@ -3,7 +3,6 @@ from aiogram.types import InputMediaPhoto
 from aiogram import Router
 from aiogram.fsm.state import State, StatesGroup
 from src.modules.pagination_logic import load_pagination_start_or_end_data
-from src.modules.notifications import loader
 from src.database.requests.search_users import search_users
 from config import gender_search
 

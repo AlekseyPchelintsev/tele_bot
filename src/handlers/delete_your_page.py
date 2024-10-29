@@ -2,7 +2,6 @@ import asyncio
 from aiogram.types import CallbackQuery, InputMediaPhoto
 from aiogram import F, Router, Bot
 from aiogram.fsm.context import FSMContext
-from src.modules.notifications import loader
 from src.database.requests.delete_profile import delete_profile
 from config import delete_profile_id
 
@@ -46,7 +45,6 @@ async def confirm_delete(callback: CallbackQuery, state: FSMContext, bot: Bot):
 
     # удаляю данные пользовтеля из таблицы users
     await asyncio.to_thread(delete_profile, user_tg_id)
-    await loader(callback.message, 'Удаляю')
 
     # удаляю сообщение с подтверждением удаления из чата
     await bot.delete_message(chat_id=user_tg_id, message_id=message_id)

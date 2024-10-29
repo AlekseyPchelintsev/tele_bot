@@ -6,7 +6,6 @@ from src.modules.pagination_logic import (back_callback,
                                           load_pagination_start_or_end_data)
 
 from src.database.requests.likes_users import get_matches_users_data
-from src.modules.notifications import attention_message
 
 
 router = Router()
