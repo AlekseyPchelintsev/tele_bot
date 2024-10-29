@@ -156,7 +156,7 @@ async def changed_employment(message: Message, state: FSMContext, bot: Bot):
     employment = data_state.get('employment')
 
     # завожу проверку на текст и отсутствие смайлов в сообщении
-    if message.content_type == 'text' and len(message.text) < 100:
+    if message.content_type == 'text':
 
         # сохраняю текст сообщения и привожу его к заглавному
         employment_info = message.text
@@ -200,48 +200,82 @@ async def changed_employment(message: Message, state: FSMContext, bot: Bot):
             # возвращаюсь в состояние ожидания нового сообщения с именем
             return
 
-    # изменение данных в бд
-    await asyncio.to_thread(change_user_employment,
-                            user_tg_id,
-                            employment,
-                            employment_info)
+        # изменение данных в бд
+        await asyncio.to_thread(change_user_employment,
+                                user_tg_id,
+                                employment,
+                                employment_info)
 
-    # плучаю свои данные
-    user_info = await get_user_info(user_tg_id)
+        # плучаю свои данные
+        user_info = await get_user_info(user_tg_id)
 
-    # Извлекаю свои данные для отрисовки страницы с учетом изменений
-    self_data = user_info['data']
-    self_photo = self_data[0][1]
-    self_name = self_data[0][0]
-    self_age = self_data[0][4]
-    self_city = self_data[0][5]
-    self_gender = user_info['gender']
-    self_hobbies = user_info['hobbies']
-    about_me = user_info['about_me']
-    # учеба/работа
-    employment = user_info['employment']
-    employment_info = user_info['employment_info']
+        # Извлекаю свои данные для отрисовки страницы с учетом изменений
+        self_data = user_info['data']
+        self_photo = self_data[0][1]
+        self_name = self_data[0][0]
+        self_age = self_data[0][4]
+        self_city = self_data[0][5]
+        self_gender = user_info['gender']
+        self_hobbies = user_info['hobbies']
+        about_me = user_info['about_me']
+        # учеба/работа
+        employment = user_info['employment']
+        employment_info = user_info['employment_info']
 
-    # отрисовка страницы с учетом внесенных изменений
-    await bot.edit_message_media(
-        chat_id=user_tg_id,
-        message_id=message_id,
-        media=InputMediaPhoto(
-            media=f'{self_photo}',
-            caption=(
-                f'{self_gender}'  # пол
-                f' • {self_name}'  # имя
-                f' • {self_age}'  # возраст
-                f' • {self_city}'  # город
-                f'\n► <b>{employment}:</b> {employment_info}'
-                f'\n► <b>Увлечения:</b> {self_hobbies}'
-                f'\n► <b>О себе:</b> {about_me}'
-                '\n\nДанные успешно изменены ✅'
-                '\n\n<b>Редактировать:</b>'
+        # отрисовка страницы с учетом внесенных изменений
+        await bot.edit_message_media(
+            chat_id=user_tg_id,
+            message_id=message_id,
+            media=InputMediaPhoto(
+                media=f'{self_photo}',
+                caption=(
+                    f'{self_gender}'  # пол
+                    f' • {self_name}'  # имя
+                    f' • {self_age}'  # возраст
+                    f' • {self_city}'  # город
+                    f'\n► <b>{employment}:</b> {employment_info}'
+                    f'\n► <b>Увлечения:</b> {self_hobbies}'
+                    f'\n► <b>О себе:</b> {about_me}'
+                    '\n\nДанные успешно изменены ✅'
+                    '\n\n<b>Редактировать:</b>'
+                ),
+                parse_mode='HTML'
             ),
-            parse_mode='HTML'
-        ),
-        reply_markup=kb.about_me
-    )
+            reply_markup=kb.about_me
+        )
 
-    await state.clear()
+        await state.clear()
+
+    else:
+
+        # плучаю свои данные
+        user_info = await get_user_info(user_tg_id)
+
+        # Извлекаю свои данные для отрисовки страницы с учетом изменений
+        self_data = user_info['data']
+        self_photo = self_data[0][1]
+
+        # вывожу уведомление об ошибке
+        try:
+            await bot.edit_message_media(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                media=InputMediaPhoto(
+                    media=self_photo,
+                    caption=(
+                        '⚠️ <b>Неверный формат данных</b> ⚠️'
+                        '\n\n❗️ Описание не должно содержать изображения или '
+                        'любой отличный от текста контент, '
+                        'а также превышать длинну в <b>100 символов</b>.'
+                        '\n\nОтправьте описание в чат еще раз:'
+                    ),
+                    parse_mode='HTML'
+                ),
+                reply_markup=kb.back
+            )
+
+        except Exception as e:
+            pass
+
+        # возвращаюсь в состояние ожидания нового сообщения с именем
+        return

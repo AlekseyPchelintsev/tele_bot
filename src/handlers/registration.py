@@ -553,7 +553,7 @@ async def get_info_about_job_or_study(message: Message, state: FSMContext, bot: 
     # сохраняю данные города из сообщения и привожу название к заглавному
 
     # завожу проверку на текст и отсутствие смайлов в сообщении
-    if message.content_type == 'text' and len(message.text) < 100:
+    if message.content_type == 'text':
 
         # сохраняю текст сообщения и привожу его к заглавному
         work_or_study_info = message.text
@@ -615,7 +615,6 @@ async def get_info_about_job_or_study(message: Message, state: FSMContext, bot: 
     else:
 
         # вывожу уведомление об ошибке
-
         await bot.edit_message_media(
             chat_id=user_tg_id,
             message_id=message_id,
