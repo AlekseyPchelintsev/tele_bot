@@ -11,13 +11,14 @@ def change_user_employment(user_tg_id, employment, employment_info):
 
                 cursor.execute(
                     """
-                    UPDATE workandstudy 
-                    SET 
-                        work_or_study = %s,
-                        work_or_study_info = %s
-                    WHERE user_tg_id = %s
+                    INSERT INTO workandstudy (user_tg_id, work_or_study, work_or_study_info)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (user_tg_id) 
+                    DO UPDATE SET 
+                        work_or_study = EXCLUDED.work_or_study,
+                        work_or_study_info = EXCLUDED.work_or_study_info
                     """,
-                    (employment, employment_info, user_tg_id)
+                    (user_tg_id, employment, employment_info)
                 )
 
     except Exception as e:
