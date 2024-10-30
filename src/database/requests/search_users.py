@@ -60,7 +60,11 @@ def get_stemmed_hobbies_list(user_tg_id: int = None, hobby_name: str = None):
 
     # НАСТРОЙКА СТЕММЕРА
     # Настройка пути для nltk
-    nltk.data.path.append('/Users/dude/dev/python/tele_bot/nltk_data')
+
+    # домашнаяя версия
+    # nltk.data.path.append('/Users/dude/dev/python/tele_bot/nltk_data')
+    # серверная версия
+    nltk.data.path.append('/home/dude/tele_bot/nltk_data')
 
     # Инициализация стеммера и списка стоп-слов
     language = 'russian'
