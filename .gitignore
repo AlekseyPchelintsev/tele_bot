@@ -3,5 +3,3 @@ test.py
 .DS_Store
 .venv/
 __pycache__/
-# библиотека стемминга
-nltk_data/
