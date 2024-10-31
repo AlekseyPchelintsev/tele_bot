@@ -1,13 +1,10 @@
 import asyncio
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
-from aiogram.filters import CommandStart
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from src.database.requests.user_data import check_user
-from src.handlers.for_admin.send_to_ban_list import check_ban_message
 from src.modules.get_self_data import get_user_info
-from config import main_menu_logo, feedback_chat_id
+from config import main_menu_logo, feedback_chat_id, feedback_menu_logo
 from src.modules.notifications import notification
 from src.modules.delete_messages import del_last_message
 import src.modules.keyboard as kb
@@ -20,6 +17,7 @@ class Registration(StatesGroup):
     feedback = State()
 
 
+# меню обратной связи
 @router.callback_query(F.data == 'feedback')
 async def feedback_from_users(callback: CallbackQuery, state: FSMContext):
 
@@ -27,7 +25,7 @@ async def feedback_from_users(callback: CallbackQuery, state: FSMContext):
     try:
         message_to_edit = await callback.message.edit_media(
             media=InputMediaPhoto(
-                media=main_menu_logo,
+                media=feedback_menu_logo,
                 caption=(
                     '<i>Здесь вы можете написать разработчикам свои отзывы и '
                     'пожелания, а также сообщить о возникновении трудностей '
@@ -40,7 +38,7 @@ async def feedback_from_users(callback: CallbackQuery, state: FSMContext):
         )
     except:
         message_to_edit = await callback.message.send_photo(
-            photo=main_menu_logo,
+            photo=feedback_menu_logo,
             caption=(
                 '<i>Здесь вы можете написать разработчикам свои отзывы и '
                 'пожелания, а также сообщить о возникновении трудностей '

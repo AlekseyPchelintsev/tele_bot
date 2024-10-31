@@ -66,8 +66,9 @@ async def test(message: Message, bot: Bot):
 
 # получение id гурппы(чата)
 
-
+'''
 @router.message(F.text)
 async def get_group_id(message: Message):
 
     await message.answer(f'ID группы: {message.chat.id}')
+'''

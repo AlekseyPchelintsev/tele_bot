@@ -5,7 +5,7 @@ from aiogram.fsm.state import State, StatesGroup
 from src.modules.check_gender import check_gender
 from src.modules.get_self_data import get_user_info
 from src.database.requests.photo_data import delete_user_photo
-from config import admins_chat_id, delete_profile_id
+from config import admins_chat_id, somthing_wrong
 
 import src.handlers.for_admin.admin_keyboards as kb_admin
 import src.modules.keyboard as kb
@@ -94,7 +94,7 @@ async def delete_photo_new_user(callback: CallbackQuery, bot: Bot):
 
         await bot.send_photo(
             chat_id=new_user_id,
-            photo=delete_profile_id,
+            photo=somthing_wrong,
             caption=('Похоже ваше фото не прошло модерацию '
                      'и было отклонено администратором. '
                      '\n\n📸 <b>Попробуйте загрузить другое фото</b>'),
