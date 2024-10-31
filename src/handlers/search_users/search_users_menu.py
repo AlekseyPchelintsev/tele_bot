@@ -6,6 +6,7 @@ from src.modules.delete_messages import del_last_message
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.modules.get_self_data import get_user_info
+from src.handlers.for_admin.send_to_ban_list import check_ban_callback
 
 import src.modules.keyboard as kb
 
@@ -26,6 +27,7 @@ delete_last_message = []
 
 
 @router.callback_query(F.data == 'users')
+@check_ban_callback
 async def check_users_menu(callback: CallbackQuery, state: FSMContext):
 
     # очищаю состояние (контрольно)
@@ -57,6 +59,7 @@ async def check_users_menu(callback: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data.in_(['advanced_search', 'all_users']))
+@check_ban_callback
 async def search_users_menu(callback: CallbackQuery, state: FSMContext):
 
     # получаю данные из состояния для следующей загрузки вида поиска

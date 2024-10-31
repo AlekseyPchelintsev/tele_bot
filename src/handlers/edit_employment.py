@@ -180,22 +180,25 @@ async def changed_employment(message: Message, state: FSMContext, bot: Bot):
             self_photo = self_data[0][1]
 
             # вывожу уведомление об ошибке
-            await bot.edit_message_media(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                media=InputMediaPhoto(
-                    media=self_photo,
-                    caption=(
-                        '⚠️ <b>Неверный формат данных</b> ⚠️'
-                        '\n\n❗️ Описание должно содержать '
-                        '<b>только текст</b>, не должно содержать эмодзи, '
-                        'а также превышать длинну в <b>100 символов</b>.'
-                        '\n\nОтправьте описание в чат еще раз:'
+            try:
+                await bot.edit_message_media(
+                    chat_id=user_tg_id,
+                    message_id=message_id,
+                    media=InputMediaPhoto(
+                        media=self_photo,
+                        caption=(
+                            '⚠️ <b>Неверный формат данных</b> ⚠️'
+                            '\n\n❗️ Описание должно содержать '
+                            '<b>только текст</b>, не должно содержать эмодзи, '
+                            'а также превышать длинну в <b>100 символов</b>.'
+                            '\n\nОтправьте описание в чат еще раз:'
+                        ),
+                        parse_mode='HTML'
                     ),
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.back
-            )
+                    reply_markup=kb.back
+                )
+            except Exception as e:
+                pass
 
             # возвращаюсь в состояние ожидания нового сообщения с именем
             return

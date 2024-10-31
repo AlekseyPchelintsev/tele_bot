@@ -3,6 +3,7 @@ from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from src.modules.delete_messages import del_last_message
 from src.modules.get_self_data import get_user_info
+from src.handlers.for_admin.send_to_ban_list import check_ban_callback
 import src.modules.keyboard as kb
 
 
@@ -15,6 +16,7 @@ router = Router()
 
 
 @router.callback_query(F.data == 'my_profile')
+@check_ban_callback
 async def about_me(callback: CallbackQuery, state: FSMContext):
 
     # получаю свой id
@@ -38,23 +40,6 @@ async def about_me(callback: CallbackQuery, state: FSMContext):
     try:
 
         # отрисовка страницы
-        '''await callback.message.edit_media(
-            media=InputMediaPhoto(
-                media=f'{self_data[0][1]}',
-                caption=(
-                    f'► <b>Имя:</b> {self_data[0][0]}'
-                    f'\n► <b>Возраст:</b> {self_data[0][4]}'
-                    f'\n► <b>Пол:</b> {self_gender}'
-                    f'\n► <b>Город:</b> {self_data[0][5]}'
-                    f'\n► <b>{employment}:</b> {employment_info}'
-                    f'\n► <b>Увлечения:</b> {self_hobbies}'
-                    f'\n► <b>О себе:</b> {about_me}'
-                    '\n\n<b>Редактировать:</b>'
-                ),
-                parse_mode='HTML'
-            ),
-            reply_markup=kb.about_me
-        )'''
         await callback.message.edit_media(
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',

@@ -38,7 +38,9 @@ users = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='👋 Мои реакции',
                           callback_data='all_reactions')],
     [InlineKeyboardButton(text='✏️ Редактировать профиль',
-                          callback_data='my_profile')]
+                          callback_data='my_profile')],
+    [InlineKeyboardButton(text='📬 Оставить отзыв',
+                          callback_data='feedback')]
 ])
 
 
@@ -209,6 +211,10 @@ back_to_photo = InlineKeyboardMarkup(inline_keyboard=[
 back = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='↩️ Вернуться назад', callback_data='my_profile')]])
 
+
+# Общий возврат в главное меню
+back_to_main_menu = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text='↩️ В главное меню', callback_data='main_menu')]])
 
 # Меню редактирования раздела "О себе"
 edit_about_me = InlineKeyboardMarkup(inline_keyboard=[

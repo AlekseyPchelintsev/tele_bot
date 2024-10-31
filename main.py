@@ -37,6 +37,11 @@ from src.handlers.reactions_menu.my_reactions import router as reactions_my
 from src.handlers.reactions_menu.notice_reaction import router as reactions_notice
 from src.handlers.reactions_menu.pagination_reactions import router as reactions_pagination
 
+# админка
+from src.handlers.for_admin.check_users_photos import router as admin_check_photo
+from src.handlers.for_admin.send_to_ban_list import router as ban_user
+from src.handlers.feedback_from_users import router as feedback_from_users
+
 # создание таблиц в бд (если не созданы)
 from src.database.models import create_tables
 
@@ -46,6 +51,11 @@ bot = Bot(token=TOKEN)
 async def main():
     await asyncio.to_thread(create_tables)
     dp = Dispatcher()
+
+    # администрирование
+    dp.include_router(admin_check_photo)
+    dp.include_router(ban_user)
+    dp.include_router(feedback_from_users)
 
     # обработка меню
     dp.include_router(command_start_router)

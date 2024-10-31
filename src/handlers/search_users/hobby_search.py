@@ -15,6 +15,7 @@ from src.database.requests.search_users import (get_stemmed_hobbies_list,
                                                 search_users)
 
 from src.handlers.search_users.error_handlers_search import wrong_search_hobby_name
+from src.handlers.for_admin.send_to_ban_list import check_ban_callback, check_ban_message
 
 import src.modules.keyboard as kb
 
@@ -61,6 +62,7 @@ async def search_users_by_hobby(callback, state):
 
 
 @router.callback_query(F.data.in_(['my_hobbies', 'all_hobbies']))
+@check_ban_callback
 async def my_hobbies_or_all(callback: CallbackQuery, state: FSMContext):
 
     user_tg_id = callback.from_user.id

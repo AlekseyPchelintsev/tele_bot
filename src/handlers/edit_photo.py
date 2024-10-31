@@ -7,6 +7,7 @@ from aiogram.fsm.context import FSMContext
 from config import no_photo_id
 from src.modules.get_self_data import get_user_info
 from src.modules.delete_messages import del_last_message
+from src.handlers.for_admin.check_users_photos import check_new_photo_user
 from src.database.requests.photo_data import (update_user_photo,
                                               delete_user_photo)
 
@@ -187,6 +188,17 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
         employment = user_info['employment']
         employment_info = user_info['employment_info']
 
+        # отправляю фото на модерацию
+        info_text = 'Пользователь изменил свое фото'
+        await check_new_photo_user(photo_id,
+                                   self_gender,
+                                   self_name,
+                                   self_age,
+                                   self_city,
+                                   user_tg_id,
+                                   bot,
+                                   info_text)
+
         # отрисовка страницы
         await bot.edit_message_media(
             chat_id=user_tg_id,
@@ -223,20 +235,23 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
         self_photo = self_data[0][1]
 
         # отрисовка страницы
-        await bot.edit_message_media(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            media=InputMediaPhoto(
-                media=f'{self_photo}',
-                caption=(
-                    '⚠️ <b>Неверный формат данных</b> ⚠️'
-                    '\n\nОтправьте фото в формате <b>.jpg .jpeg</b> '
-                    'или <b>.png</b>'
+        try:
+            await bot.edit_message_media(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                media=InputMediaPhoto(
+                    media=f'{self_photo}',
+                    caption=(
+                        '⚠️ <b>Неверный формат данных</b> ⚠️'
+                        '\n\nОтправьте фото в формате <b>.jpg .jpeg</b> '
+                        'или <b>.png</b>'
+                    ),
+                    parse_mode='HTML'
                 ),
-                parse_mode='HTML'
-            ),
-            reply_markup=kb.back_to_photo
-        )
+                reply_markup=kb.back_to_photo
+            )
+        except Exception as e:
+            pass
 
         return
 

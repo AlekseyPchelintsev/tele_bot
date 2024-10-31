@@ -142,6 +142,16 @@ def create_tables():
                     """
                 )
 
+                # список забаненых id
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS banlist (
+                    user_tg_id BIGINT NOT NULL PRIMARY KEY,
+                    UNIQUE (user_tg_id)
+                    );
+                    """
+                )
+
     finally:
         connection.close()
 

@@ -43,7 +43,8 @@ async def edit_about_me_menu(callback: CallbackQuery, state: FSMContext):
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',
                 caption=(
-                    f'<b>О себе:</b> {about_me}'
+                    '<b>Редактирование раздела</b>'
+                    f'\n<b>О себе:</b> {about_me}'
                 ),
                 parse_mode='HTML'
             ),
@@ -57,7 +58,8 @@ async def edit_about_me_menu(callback: CallbackQuery, state: FSMContext):
             media=InputMediaPhoto(
                 media=f'{self_data[0][1]}',
                 caption=(
-                    f'<b>О себе:</b> {about_me}'
+                    '<b>Редактирование раздела</b>'
+                    f'\n<b>О себе:</b> {about_me}'
                 ),
                 parse_mode='HTML'
             ),
@@ -87,7 +89,8 @@ async def edit_about_me(callback: CallbackQuery, state: FSMContext):
         media=InputMediaPhoto(
             media=f'{self_data[0][1]}',
             caption=(
-                f'<b>О себе:</b> {about_me}'
+                '<b>Редактирование раздела</b>'
+                f'\n<b>О себе:</b> {about_me}'
                 '\n\n💬 <b>Пришлите в чат информацию для раздела "О себе".</b>'
                 '\n\n📍 <u>Не используйте ненормативную лексику.</u>'
                 '\n📍 <b>Относитесь уважительно к другим пользователям</b>!'
@@ -138,22 +141,26 @@ async def edit_about_me_state(message: Message, state: FSMContext, bot: Bot):
         if markdown_checked:
 
             # вывожу ошибку
-            await bot.edit_message_media(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                media=InputMediaPhoto(
-                    media=f'{self_data[0][1]}',
-                    caption=(
-                        f'<b>О себе:</b> {about_me}'
-                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
-                        '\n\n❗️ Сведения "О себе" могут содержать '
-                        '<b>только текст</b> (без специальных символов) <b>и эмодзи</b> 😉.'
-                        '\n\n💬 <b>Пришлите в чат информацию для раздела "О себе".</b>'
+            try:
+                await bot.edit_message_media(
+                    chat_id=user_tg_id,
+                    message_id=message_id,
+                    media=InputMediaPhoto(
+                        media=f'{self_data[0][1]}',
+                        caption=(
+                            '<b>Редактирование раздела</b>'
+                            f'\n<b>О себе:</b> {about_me}'
+                            '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                            '\n\n❗️ Сведения "О себе" могут содержать '
+                            '<b>только текст</b> (без специальных символов) <b>и эмодзи</b> 😉.'
+                            '\n\n💬 <b>Пришлите в чат информацию для раздела "О себе".</b>'
+                        ),
+                        parse_mode='HTML'
                     ),
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.back
-            )
+                    reply_markup=kb.back
+                )
+            except Exception as e:
+                pass
 
             # возвращаюсь в состояние ожидания нового сообщения
             return
@@ -210,22 +217,26 @@ async def edit_about_me_state(message: Message, state: FSMContext, bot: Bot):
     else:
 
         # отрисовка сообщения
-        await bot.edit_message_media(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            media=InputMediaPhoto(
-                media=f'{self_data[0][1]}',
-                caption=(
-                    f'<b>О себе:</b> {about_me}'
-                    '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
-                    '\n\n❗️ Сведения "О себе" могут содержать '
-                    '<b>только текст и эмодзи 😉</b>.'
-                    '\n\n💬 <b>Пришлите в чат информацию для раздела "О себе".</b>'
+        try:
+            await bot.edit_message_media(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                media=InputMediaPhoto(
+                    media=f'{self_data[0][1]}',
+                    caption=(
+                        '<b>Редактирование раздела</b>'
+                        f'\n<b>О себе:</b> {about_me}'
+                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                        '\n\n❗️ Сведения "О себе" могут содержать '
+                        '<b>только текст и эмодзи 😉</b>.'
+                        '\n\n💬 <b>Пришлите в чат информацию для раздела "О себе".</b>'
+                    ),
+                    parse_mode='HTML'
                 ),
-                parse_mode='HTML'
-            ),
-            reply_markup=kb.back
-        )
+                reply_markup=kb.back
+            )
+        except Exception as e:
+            pass
 
         # возвращаюсь в состояние ожидания данных от пользователя
         return

@@ -1,10 +1,11 @@
 import asyncio
 from aiogram.types import Message
 from aiogram.filters import CommandStart
-from aiogram import F, Router
+from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.database.requests.user_data import check_user
+from src.handlers.for_admin.send_to_ban_list import check_ban_message
 from config import main_menu_logo
 import src.modules.keyboard as kb
 
@@ -22,6 +23,7 @@ delete_last_message = []
 # КОММАНДА /START
 
 @router.message(CommandStart())
+@check_ban_message
 async def start(message: Message, state: FSMContext):
 
     # получение id пользователя
@@ -57,9 +59,15 @@ async def start(message: Message, state: FSMContext):
 
 '''
 @router.message(F.text == '/test')
-async def test(message: Message):
-    user_tg_id = message.from_user.id
-    hobby = 'цц'
-    test = await asyncio.to_thread(check_hobby, hobby)
-    await message.answer(f'{test}')
+async def test(message: Message, bot: Bot):
+    chat_id = '-4573727711'
+    await bot.send_message(chat_id=chat_id, text='Check: OK')
 '''
+
+# получение id гурппы(чата)
+
+
+@router.message(F.text)
+async def get_group_id(message: Message):
+
+    await message.answer(f'ID группы: {message.chat.id}')

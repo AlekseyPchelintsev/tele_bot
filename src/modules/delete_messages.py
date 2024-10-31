@@ -1,5 +1,3 @@
-import asyncio
-
 
 async def del_messages(chat_id, delete_messages):
     from main import bot

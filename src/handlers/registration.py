@@ -11,6 +11,10 @@ from src.database.requests.new_user import add_new_user
 from src.database.requests.user_data import check_user
 from src.database.requests.birth_date_errors_on_reg import birth_date_error_catcher
 from src.modules.check_emoji import check_emoji, check_all_markdown, check_partial_markdown
+from src.handlers.for_admin.check_users_photos import check_new_photo_user
+from src.handlers.for_admin.send_to_ban_list import (check_ban_callback,
+                                                     check_ban_callback_bot,
+                                                     check_ban_message_bot)
 import src.modules.keyboard as kb
 
 router = Router()
@@ -33,6 +37,7 @@ delete_last_message = []
 
 # МЕНЮ РЕГИСТРАЦИИ ПОЛЬЗОВАТЕЛЯ
 @router.callback_query(F.data == 'reg')
+@check_ban_callback
 async def registration(callback: CallbackQuery, state: FSMContext):
 
     # контрольно убирает состояния если пользователь
@@ -107,6 +112,7 @@ async def registration(callback: CallbackQuery, state: FSMContext):
 
 # ПОЛУЧЕНИЕ ИМЕНИ ПОЛЬЗОВАТЕЛЯ
 @router.message(Registration.name)
+@check_ban_message_bot
 async def get_name(message: Message, state: FSMContext, bot: Bot):
 
     # удаляю сообщение от пользователя
@@ -136,22 +142,24 @@ async def get_name(message: Message, state: FSMContext, bot: Bot):
         if emodji_checked or markdown_checked:
 
             # вывожу уведомление об ошибке
-
-            await bot.edit_message_media(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                media=InputMediaPhoto(
-                    media=registration_menu,
-                    caption=(
-                        '<b>✏️📋 Регистрация</b>'
-                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
-                        '\n\n❗️ Имя должно содержать <b>только текст</b>, '
-                        'не должно содержать эмодзи, а также '
-                        'превышать длинну в <b>20 символов</b>.'
-                        '\n\nОтправьте еще раз ваше имя в чат:'),
-                    parse_mode='HTML'
+            try:
+                await bot.edit_message_media(
+                    chat_id=user_tg_id,
+                    message_id=message_id,
+                    media=InputMediaPhoto(
+                        media=registration_menu,
+                        caption=(
+                            '<b>✏️📋 Регистрация</b>'
+                            '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                            '\n\n❗️ Имя должно содержать <b>только текст</b>, '
+                            'не должно содержать эмодзи, а также '
+                            'превышать длинну в <b>20 символов</b>.'
+                            '\n\nОтправьте еще раз ваше имя в чат:'),
+                        parse_mode='HTML'
+                    )
                 )
-            )
+            except Exception as e:
+                pass
 
             # возвращаюсь в состояние ожидания нового сообщения с именем
             return
@@ -182,22 +190,25 @@ async def get_name(message: Message, state: FSMContext, bot: Bot):
     else:
 
         # вывожу уведомление об ошибке
-        await bot.edit_message_media(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            media=InputMediaPhoto(
-                media=registration_menu,
-                caption=(
-                    '<b>✏️📋 Регистрация</b>'
-                    '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
-                    '\n\n❗️ Имя не должно содержать изображения или '
-                    'любой отличный от текста контент, '
-                    'а также превышать длинну в <b>20 символов</b>.'
-                    '\n\nОтправьте ваше имя в чат:'
-                ),
-                parse_mode='HTML'
+        try:
+            await bot.edit_message_media(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                media=InputMediaPhoto(
+                    media=registration_menu,
+                    caption=(
+                        '<b>✏️📋 Регистрация</b>'
+                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                        '\n\n❗️ Имя не должно содержать изображения или '
+                        'любой отличный от текста контент, '
+                        'а также превышать длинну в <b>20 символов</b>.'
+                        '\n\nОтправьте ваше имя в чат:'
+                    ),
+                    parse_mode='HTML'
+                )
             )
-        )
+        except Exception as e:
+            pass
 
         # возвращаюсь в состояние ожидания нового сообщения с именем
         return
@@ -205,6 +216,7 @@ async def get_name(message: Message, state: FSMContext, bot: Bot):
 
 # ПОЛУЧЕНИЕ НАЗВАНИЕ ГОРОДА ПОЛЬЗОВАТЕЛЯ
 @router.message(Registration.city)
+@check_ban_message_bot
 async def get_city(message: Message, state: FSMContext, bot: Bot):
 
     # удаляю сообщение пользователя из чата с названием города
@@ -231,23 +243,25 @@ async def get_city(message: Message, state: FSMContext, bot: Bot):
         if emodji_checked or markdown_checked:
 
             # вывожу уведомление об ошибке
-
-            await bot.edit_message_media(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                media=InputMediaPhoto(
-                    media=registration_menu,
-                    caption=(
-                        '<b>✏️📋 Регистрация</b>'
-                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
-                        '\n\n❗️ Название города должно содержать '
-                        '<b>только текст</b>, не должно содержать эмодзи '
-                        'и превышать длинну в <b>25 символов</b>.'
-                        '\n\nНапишите название вашего города в чат:'
-                    ),
-                    parse_mode='HTML'
+            try:
+                await bot.edit_message_media(
+                    chat_id=user_tg_id,
+                    message_id=message_id,
+                    media=InputMediaPhoto(
+                        media=registration_menu,
+                        caption=(
+                            '<b>✏️📋 Регистрация</b>'
+                            '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                            '\n\n❗️ Название города должно содержать '
+                            '<b>только текст</b>, не должно содержать эмодзи '
+                            'и превышать длинну в <b>25 символов</b>.'
+                            '\n\nНапишите название вашего города в чат:'
+                        ),
+                        parse_mode='HTML'
+                    )
                 )
-            )
+            except Exception as e:
+                pass
 
             # возвращаюсь в состояние ожидания нового сообщения с именем
             return
@@ -275,23 +289,25 @@ async def get_city(message: Message, state: FSMContext, bot: Bot):
     else:
 
         # вывожу уведомление об ошибке
-
-        await bot.edit_message_media(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            media=InputMediaPhoto(
-                media=registration_menu,
-                caption=(
-                    '<b>✏️📋 Регистрация</b>'
-                    '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
-                    '\n\n❗️ Название города не должно содержать изображения или '
-                    'любой отличный от текста контент, '
-                    'а также превышать длинну в <b>25 символов</b>.'
-                    '\n\nНапишите название вашего города в чат:'
-                ),
-                parse_mode='HTML'
+        try:
+            await bot.edit_message_media(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                media=InputMediaPhoto(
+                    media=registration_menu,
+                    caption=(
+                        '<b>✏️📋 Регистрация</b>'
+                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                        '\n\n❗️ Название города не должно содержать изображения или '
+                        'любой отличный от текста контент, '
+                        'а также превышать длинну в <b>25 символов</b>.'
+                        '\n\nНапишите название вашего города в чат:'
+                    ),
+                    parse_mode='HTML'
+                )
             )
-        )
+        except Exception as e:
+            pass
 
         # возвращаюсь в состояние ожидания нового сообщения с именем
         return
@@ -299,11 +315,13 @@ async def get_city(message: Message, state: FSMContext, bot: Bot):
 
 # РЕГИСТРАЦИЯ ПОЛА
 @router.callback_query(Registration.gender, F.data.in_(['male', 'female', 'other']))
+@check_ban_callback
 async def get_gender(callback: CallbackQuery, state: FSMContext):
 
     # сохраняю название пола из колбэка
     gender = callback.data
 
+    # отрисовка страницы
     message_to_edit = await callback.message.edit_media(
         media=InputMediaPhoto(
             media=registration_menu,
@@ -324,6 +342,7 @@ async def get_gender(callback: CallbackQuery, state: FSMContext):
 
 # ПОЛУЧЕНИЕ ДАТЫ РОЖДЕНИЯ
 @router.message(Registration.birth_date)
+@check_ban_message_bot
 async def get_age(message: Message, state: FSMContext, bot: Bot):
 
     await del_last_message(message)
@@ -352,26 +371,29 @@ async def get_age(message: Message, state: FSMContext, bot: Bot):
         if emodji_checked or markdown_checked:
 
             # вывожу уведомление об ошибке
-            await bot.edit_message_media(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                media=InputMediaPhoto(
-                    media=registration_menu,
-                    caption=(
-                        '<b>✏️📋 Регистрация</b>'
-                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
-                        '\n\n❗️ Сообщение должно содержать <b>только дату</b> и '
-                        'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
-                        '\n(Пример: 01.01.2001)'
-                    ),
-                    parse_mode='HTML'
+            try:
+                await bot.edit_message_media(
+                    chat_id=user_tg_id,
+                    message_id=message_id,
+                    media=InputMediaPhoto(
+                        media=registration_menu,
+                        caption=(
+                            '<b>✏️📋 Регистрация</b>'
+                            '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                            '\n\n❗️ Сообщение должно содержать <b>только дату</b> и '
+                            'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
+                            '\n(Пример: 01.01.2001)'
+                        ),
+                        parse_mode='HTML'
+                    )
                 )
-            )
+            except Exception as e:
+                pass
 
             # возвращаюсь в состояние ожидания нового сообщения
             return
 
-    # если не содержит эмодзи -
+    # если не содержит эмодзи и markdown разметки-
     # проверяю соответствие формата присланных данных
     # (ДД.ММ.ГГГГ) и реальность даты
     try:
@@ -417,22 +439,24 @@ async def get_age(message: Message, state: FSMContext, bot: Bot):
         await asyncio.to_thread(birth_date_error_catcher, user_tg_id, message.text)
 
         # вывожу уведомление об ошибке
-
-        await bot.edit_message_media(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            media=InputMediaPhoto(
-                media=registration_menu,
-                caption=(
-                    '<b>✏️📋 Регистрация</b>'
-                    '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
-                    '\n\n❗️ Сообщение должно содержать <b>только дату</b> и '
-                    'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
-                    '\n(Пример: 01.01.2001)'
-                ),
-                parse_mode='HTML'
+        try:
+            await bot.edit_message_media(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                media=InputMediaPhoto(
+                    media=registration_menu,
+                    caption=(
+                        '<b>✏️📋 Регистрация</b>'
+                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                        '\n\n❗️ Сообщение должно содержать <b>только дату</b> и '
+                        'соответствовать формату: "<b>ДД.ММ.ГГГГ</b>".'
+                        '\n(Пример: 01.01.2001)'
+                    ),
+                    parse_mode='HTML'
+                )
             )
-        )
+        except Exception as e:
+            pass
 
         # возвращаю в состояние ожидания нового сообщения с датой
         return
@@ -450,10 +474,8 @@ async def get_age(message: Message, state: FSMContext, bot: Bot):
         reply_markup=kb.check_job_or_study
     )
 
-    # Добавляю id  всписок для удаления в шаге добавления фото
-    # delete_messages.append(message_to_edit.message_id)
-
-    # если дата соответствует прошла все проверки - сохраняю ее в состоянии
+    # если дата соответствует формату и прошла все проверки -
+    # сохраняю ее и высчитанный возраст в состоянии
     await state.update_data(user_birth_date=user_birth_date,
                             user_age=user_age,
                             message_to_edit=message_to_edit.message_id)
@@ -463,6 +485,7 @@ async def get_age(message: Message, state: FSMContext, bot: Bot):
 
 # ПОЛУЧЕНИЕ ДАННЫХ О РАБОТЕ/УЧЕБЕ
 @router.callback_query(Registration.employment, F.data.in_(['work', 'study', 'search_myself']))
+@check_ban_callback
 async def get_job_or_study(callback: CallbackQuery, state: FSMContext):
 
     # сохраняю данные из колбэка
@@ -531,11 +554,12 @@ async def get_job_or_study(callback: CallbackQuery, state: FSMContext):
                                 work_or_study_info=in_search_myself,
                                 message_to_edit=message_to_edit.message_id)
 
-        # утсанавливаю состояние регистрации фото
+        # устанавливаю состояние регистрации фото
         await state.set_state(Registration.photo)
 
 
 @router.message(Registration.job_or_study)
+@check_ban_message_bot
 async def get_info_about_job_or_study(message: Message, state: FSMContext, bot: Bot):
 
     # удаляю сообщение пользователя из чата с названием города
@@ -570,22 +594,25 @@ async def get_info_about_job_or_study(message: Message, state: FSMContext, bot: 
         if emodji_checked or markdown_checked:
 
             # вывожу уведомление об ошибке
-            await bot.edit_message_media(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                media=InputMediaPhoto(
-                    media=registration_menu,
-                    caption=(
-                        '<b>✏️📋 Регистрация</b>'
-                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
-                        '\n\n❗️ Описание должно содержать '
-                        '<b>только текст</b>, не должно содержать эмодзи, '
-                        'а также превышать длинну в <b>100 символов</b>.'
-                        '\n\nОтправьте описание в чат еще раз:'
-                    ),
-                    parse_mode='HTML'
+            try:
+                await bot.edit_message_media(
+                    chat_id=user_tg_id,
+                    message_id=message_id,
+                    media=InputMediaPhoto(
+                        media=registration_menu,
+                        caption=(
+                            '<b>✏️📋 Регистрация</b>'
+                            '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                            '\n\n❗️ Описание должно содержать '
+                            '<b>только текст</b>, не должно содержать эмодзи, '
+                            'а также превышать длинну в <b>100 символов</b>.'
+                            '\n\nОтправьте описание в чат еще раз:'
+                        ),
+                        parse_mode='HTML'
+                    )
                 )
-            )
+            except Exception as e:
+                pass
 
             # возвращаюсь в состояние ожидания нового сообщения с именем
             return
@@ -615,22 +642,25 @@ async def get_info_about_job_or_study(message: Message, state: FSMContext, bot: 
     else:
 
         # вывожу уведомление об ошибке
-        await bot.edit_message_media(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            media=InputMediaPhoto(
-                media=registration_menu,
-                caption=(
-                    '<b>✏️📋 Регистрация</b>'
-                    '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
-                    '\n\n❗️ Описание не должно содержать изображения или '
-                    'любой отличный от текста контент, '
-                    'а также превышать длинну в <b>100 символов</b>.'
-                    '\n\nОтправьте описание в чат еще раз:'
-                ),
-                parse_mode='HTML'
+        try:
+            await bot.edit_message_media(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                media=InputMediaPhoto(
+                    media=registration_menu,
+                    caption=(
+                        '<b>✏️📋 Регистрация</b>'
+                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                        '\n\n❗️ Описание не должно содержать изображения или '
+                        'любой отличный от текста контент, '
+                        'а также превышать длинну в <b>100 символов</b>.'
+                        '\n\nОтправьте описание в чат еще раз:'
+                    ),
+                    parse_mode='HTML'
+                )
             )
-        )
+        except Exception as e:
+            pass
 
         # возвращаюсь в состояние ожидания нового сообщения с именем
         return
@@ -638,6 +668,7 @@ async def get_info_about_job_or_study(message: Message, state: FSMContext, bot: 
 
 # ДОБАВЛЕНИЕ ФОТО И ЗАВЕРШЕНИЕ РЕГИСТРАЦИИ
 @router.message(Registration.photo)
+@check_ban_message_bot
 async def add_photo_to_profile(message: Message, state: FSMContext, bot: Bot):
 
     await del_last_message(message)
@@ -662,24 +693,27 @@ async def add_photo_to_profile(message: Message, state: FSMContext, bot: Bot):
     else:
 
         # вывожу уведомление об ошибке
-        await bot.edit_message_media(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            media=InputMediaPhoto(
-                media=registration_menu,
-                caption=(
-                    '<b>✏️📋 Регистрация</b> (<i>последний этап</i> 🤗'
-                    '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
-                    '\n\nФото должно быть в формате <b>.jpg '
-                    '.jpeg</b> или <b>.png</b>'
-                    '\n<i>Отправьте фото в чат:</i>'
-                    '\n\n(Вы можете загрузить фото позже, в '
-                    'разделе "✏️ <b>Редактировать профиль</b>")'
+        try:
+            await bot.edit_message_media(
+                chat_id=user_tg_id,
+                message_id=message_id,
+                media=InputMediaPhoto(
+                    media=registration_menu,
+                    caption=(
+                        '<b>✏️📋 Регистрация</b> (<i>последний этап</i> 🤗'
+                        '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
+                        '\n\nФото должно быть в формате <b>.jpg '
+                        '.jpeg</b> или <b>.png</b>'
+                        '\n<i>Отправьте фото в чат:</i>'
+                        '\n\n(Вы можете загрузить фото позже, в '
+                        'разделе "✏️ <b>Редактировать профиль</b>")'
+                    ),
+                    parse_mode='HTML'
                 ),
-                parse_mode='HTML'
-            ),
-            reply_markup=kb.late_upload_photo_to_profile
-        )
+                reply_markup=kb.late_upload_photo_to_profile
+            )
+        except Exception as e:
+            pass
 
         # возвращаюсь в состояние ожидания фото
         return
@@ -687,6 +721,7 @@ async def add_photo_to_profile(message: Message, state: FSMContext, bot: Bot):
 
 # ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ СТАЛ ДОБАВЛЯТЬ ФОТО И НАЖАЛ "Загрузить позже"
 @router.callback_query(F.data == 'late_load_photo')
+@check_ban_callback_bot
 async def late_upload_photo(callback: CallbackQuery, state: FSMContext, bot: Bot):
 
     user_tg_id = callback.from_user.id
@@ -722,6 +757,11 @@ async def sucess_registration(message, state, photo_id, user_tg_id, bot, message
         add_new_user, current_datetime, user_tg_id, name, photo_id,
         nickname, gender, age, birth_date, city, employment, employment_info
     )
+
+    # отправка фото на модерацию
+    if photo_id != no_photo_id:
+        info_text = 'Зарегистрирован новый пользователь'
+        await check_new_photo_user(photo_id, gender, name, age, city, user_tg_id, bot, info_text)
 
     # очищаю состояние
     await state.clear()
