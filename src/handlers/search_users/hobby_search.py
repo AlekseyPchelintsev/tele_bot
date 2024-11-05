@@ -10,7 +10,7 @@ from src.modules.pagination_logic import (load_bot_pagination_start_or_end_data,
                                           load_pagination_start_or_end_data, no_data_after_reboot_bot_reactions)
 
 from src.modules.delete_messages import del_last_message
-from src.modules.check_emoji import check_emoji, check_markdown_hobbies
+from src.modules.check_emoji_and_markdown import check_emoji, check_markdown_hobbies
 from src.database.requests.search_users import (get_stemmed_hobbies_list,
                                                 check_users_by_hobbies,
                                                 search_users)

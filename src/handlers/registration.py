@@ -10,7 +10,7 @@ from src.modules.delete_messages import del_last_message
 from src.database.requests.new_user import add_new_user
 from src.database.requests.user_data import check_user
 from src.database.requests.birth_date_errors_on_reg import birth_date_error_catcher
-from src.modules.check_emoji import check_emoji, check_all_markdown, check_partial_markdown
+from src.modules.check_emoji_and_markdown import check_emoji, check_all_markdown, check_partial_markdown
 from src.handlers.for_admin.check_users_photos import check_new_photo_user
 import src.modules.keyboard as kb
 

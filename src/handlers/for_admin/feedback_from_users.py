@@ -3,7 +3,7 @@ from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from src.modules.check_emoji import check_partial_markdown
+from src.modules.check_emoji_and_markdown import check_partial_markdown
 from src.modules.get_self_data import get_user_info
 from config import main_menu_logo, feedback_chat_id, feedback_menu_logo, exclude_text_message
 from src.modules.notifications import attention_message

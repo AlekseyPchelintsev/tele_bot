@@ -9,7 +9,7 @@ from src.modules.pagination_logic import no_data_after_reboot_bot_reactions
 from src.handlers.search_users.hobby_search import search_users_by_hobby
 from src.modules.delete_messages import del_last_message
 from src.modules.get_self_data import get_user_info
-from src.modules.check_emoji import check_emoji, check_all_markdown
+from src.modules.check_emoji_and_markdown import check_emoji, check_all_markdown
 from src.database.requests.search_users import (check_users_in_city)
 from src.handlers.search_users.error_handlers_search import wrong_search_city_name
 

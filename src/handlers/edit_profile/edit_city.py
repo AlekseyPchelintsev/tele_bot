@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from src.modules.get_self_data import get_user_info
 from src.modules.delete_messages import del_last_message
 from src.database.requests.city_data import change_city
-from src.modules.check_emoji import check_emoji, check_markdown_city_name
+from src.modules.check_emoji_and_markdown import check_emoji, check_markdown_city_name
 from src.modules.moving_through_sections import check_menu_command
 import src.modules.keyboard as kb
 from config import exclude_text_message

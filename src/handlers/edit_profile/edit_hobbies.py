@@ -11,7 +11,7 @@ from src.database.requests.hobbies_data import (check_hobby,
                                                 add_hobby_for_user,
                                                 delete_hobby)
 
-from src.modules.check_emoji import check_emoji, check_markdown_hobbies
+from src.modules.check_emoji_and_markdown import check_emoji, check_markdown_hobbies
 import src.modules.keyboard as kb
 
 router = Router()
