@@ -102,7 +102,7 @@ async def new_city(message: Message, state: FSMContext, bot: Bot):
         else:
 
             # обрабатываю команду очищая состояние и перехожу в пункт меню
-            await check_menu_command(message, new_city_name, state)
+            await check_menu_command(user_tg_id, message, new_city_name, state)
 
     # если входящее сообщение не является текстом (фото, анимации и т.д.)
     else:

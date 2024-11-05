@@ -259,7 +259,7 @@ async def changed_employment(message: Message, state: FSMContext, bot: Bot):
 
             # очищаю состояние, орабатываю ее и открываю
             # соответствующий пункт меню
-            await check_menu_command(message, employment_info, state)
+            await check_menu_command(user_tg_id, message, employment_info, state)
 
     else:
 

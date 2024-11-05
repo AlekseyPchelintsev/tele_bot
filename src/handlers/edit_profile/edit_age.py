@@ -165,7 +165,7 @@ async def change_age(user_tg_id, age, message, message_id, state, bot):
 
             # очищаю состояние, орабатываю ее и открываю
             # соответствующий пункт меню
-            await check_menu_command(message, age, state)
+            await check_menu_command(user_tg_id, message, age, state)
 
     # если входящее сообщение не является текстом (фото, анимации и т.д.)
     else:

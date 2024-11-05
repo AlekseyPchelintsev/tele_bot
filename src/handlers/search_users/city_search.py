@@ -253,7 +253,7 @@ async def search_by_city(message: Message, state: FSMContext, bot: Bot):
 
                 # обрабатываю ее очищая состояние и перехожу
                 # в пункт меню согласно команде
-                await check_menu_command(message, city_name, state)
+                await check_menu_command(user_tg_id, message, city_name, state)
 
         # если в сообщениии получен медиа контент вместо текста
         else:

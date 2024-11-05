@@ -222,7 +222,7 @@ async def edit_about_me_state(message: Message, state: FSMContext, bot: Bot):
 
             # очищаю состояние, орабатываю ее и открываю
             # соответствующий пункт меню
-            await check_menu_command(message, about_me_text, state)
+            await check_menu_command(user_tg_id, message, about_me_text, state)
 
     # если прислали не текст
     else:

@@ -19,48 +19,7 @@ class Registration(StatesGroup):
     feedback = State()
 
 
-'''
 # меню обратной связи
-@router.callback_query(F.data == 'feedback')
-async def feedback_from_users(callback: CallbackQuery, state: FSMContext):
-
-    # отрисовываю страницу
-    try:
-        message_to_edit = await callback.message.edit_media(
-            media=InputMediaPhoto(
-                media=feedback_menu_logo,
-                caption=(
-                    '<i>Здесь вы можете написать разработчикам свои отзывы и '
-                    'пожелания, а также сообщить о возникновении трудностей '
-                    'в процессе взаиимодействия с сервисом.</i>'
-                    '\n\n<b>Напишите ваше обращение в чат:</b>'
-                ),
-                parse_mode='HTML'
-            ),
-            reply_markup=kb.users
-        )
-    except:
-        message_to_edit = await callback.message.send_photo(
-            photo=feedback_menu_logo,
-            caption=(
-                '<i>Здесь вы можете написать разработчикам свои отзывы и '
-                'пожелания, а также сообщить о возникновении трудностей '
-                'в процессе взаиимодействия с сервисом.</i>'
-                '\n\n<b>Напишите ваше обращение в чат:</b>'
-            ),
-            parse_mode='HTML',
-            reply_markup=kb.users
-        )
-
-    # сохраняю в состоянии сообщение для редактирования и перехожу в состояние
-    # ожидания сообщения от пользователя
-    await state.update_data(message_to_edit=message_to_edit.message_id)
-    await state.set_state(Registration.feedback)
-'''
-
-# меню обратной связи
-
-
 @router.message(F.text == '📬 Оставить отзыв')
 async def feedback_menu(message: Message, state: FSMContext):
 
@@ -149,4 +108,4 @@ async def get_user_feedback(message: Message, state: FSMContext, bot: Bot):
     else:
 
         # проверяю сообщение в чате на наличие команды с клавиатуры
-        await check_menu_command(message, feedback_from_user, state)
+        await check_menu_command(user_tg_id, message, feedback_from_user, state)

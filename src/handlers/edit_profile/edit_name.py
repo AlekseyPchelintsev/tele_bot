@@ -104,7 +104,7 @@ async def edit_name(message: Message, state: FSMContext, bot: Bot):
 
             # очищаю состояние, орабатываю ее и открываю
             # соответствующий пункт меню
-            await check_menu_command(message, user_name, state)
+            await check_menu_command(user_tg_id, message, user_name, state)
 
     # если сообщение не текстовое (содержит фото, анимации и т.д.)
     else:

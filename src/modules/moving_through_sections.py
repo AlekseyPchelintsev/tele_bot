@@ -3,7 +3,7 @@ from src.handlers.reactions_menu.main_menu_reactions import all_reactions_menu
 from src.handlers.search_users.search_users_menu import check_users_menu
 
 
-async def check_menu_command(message, feedback_from_user, state):
+async def check_menu_command(user_tg_id, message, feedback_from_user, state):
 
     # мипорт внутри функции для избежания циклических зависимостей
     # в разделе обратной связи с администратором

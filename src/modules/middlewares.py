@@ -1,13 +1,14 @@
 from typing import Callable, Awaitable, Dict, Any
 from aiogram import BaseMiddleware, Bot
-from aiogram.types import TelegramObject, User, BotCommand, BotCommandScopeChat
+from aiogram.types import TelegramObject, User, BotCommand, BotCommandScopeChat, Message
 from aiogram.dispatcher.flags import get_flag
 from typing import Any, Awaitable, Callable, Dict
 from src.database.requests.redis_state.redis_get_data import redis_client
 from config import ADMIN_IDs
+from src.modules.notifications import attention_message
 
 
-# мидлварь для фильтра удалившихся пользователей
+# мидлварь для фильтра отключившихся пользователей
 class TurnOffUsersMiddleware(BaseMiddleware):
     async def __call__(
         self,
@@ -39,8 +40,22 @@ class TurnOffUsersMiddleware(BaseMiddleware):
                 return await handler(event, data)
 
         # Если пользователь не в списке удалённых:
+        # проверяю отправку команды для включения анкеты
+        # и в зависимости от этого - вывожу уведомление и
         # пропускаю в любой обработчик
-        return await handler(event, data)
+
+        turn_on_commands = ['🔌 Включить профиль',
+                            'Включить профиль', 'включить профиль']
+
+        if hasattr(event, 'text') and event.text in turn_on_commands:
+            await event.delete()
+            await attention_message(event, '⚠️ Если вы хотите внести изменения, перейдите '
+                                    'в раздел <b>"редактировать профиль"</b>', 3)
+            return await handler(event, data)
+
+        else:
+
+            return await handler(event, data)
 
 
 # мидлварь для забаненых пользователей

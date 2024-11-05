@@ -269,7 +269,7 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
 
             # очищаю состояние, орабатываю ее и открываю
             # соответствующий пункт меню
-            await check_menu_command(message, user_message, state)
+            await check_menu_command(user_tg_id, message, user_message, state)
 
 
 # УДАЛЕНИЕ ФОТО ПРОФИЛЯ (УДАЛЕНИЕ ИЗ БД И ОТРИСОВКА СТРАНИЦЫ)

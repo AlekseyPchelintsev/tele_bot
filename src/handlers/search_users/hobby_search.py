@@ -412,7 +412,7 @@ async def search_by_hobby(message: Message, state: FSMContext, bot: Bot):
 
                 # очищаю состояние, орабатываю ее и открываю
                 # соответствующий пункт меню
-                await check_menu_command(message, request, state)
+                await check_menu_command(user_tg_id, message, request, state)
 
         else:
             await wrong_search_hobby_name(user_tg_id, message_id, bot)

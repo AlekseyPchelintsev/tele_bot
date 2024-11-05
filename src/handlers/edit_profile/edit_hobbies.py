@@ -282,7 +282,7 @@ async def add_hobby(message: Message, state: FSMContext, bot: Bot):
 
             # очищаю состояние, орабатываю ее и открываю
             # соответствующий пункт меню
-            await check_menu_command(message, hobby, state)
+            await check_menu_command(user_tg_id, message, hobby, state)
 
     # если сообщение не текстовое (фото, анимация и т.д.)
     else:
