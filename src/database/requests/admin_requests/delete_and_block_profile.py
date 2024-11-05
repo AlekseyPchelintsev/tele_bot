@@ -43,7 +43,7 @@ def unban_user(user_tg_id):
                 cursor.execute(
                     """
                     UPDATE users
-                    SET ban_status = NULL
+                    SET ban_status = FALSE
                     WHERE user_tg_id = %s
                     """, (user_tg_id,)
                 )
