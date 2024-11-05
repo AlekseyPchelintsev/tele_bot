@@ -72,6 +72,6 @@ async def check_markdown_hobbies(text):
 async def check_markdown_city_name(text):
 
     # Шаблон для проверки специальных символов Markdown
-    markdown_pattern = r'([*_{}()\[\]~`>#+\.!?:%|<[\]])'
+    markdown_pattern = r'([*_{}/()\\~`>#+.!?:%|<[\]])'
 
     return re.search(markdown_pattern, text) is not None
