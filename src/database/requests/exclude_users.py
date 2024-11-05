@@ -1,5 +1,6 @@
 from psycopg2.extras import DictCursor
 from src.database.models import get_db_connection
+from src.database.requests.check_turn_off_or_ban import get_turn_off_users, get_users_in_ban
 
 
 # IDs ПОЛЬЗОВАТЕЛЕЙ НА ИСКЛЮЧЕНИЕ ИЗ ПОИСКА
@@ -94,11 +95,14 @@ def get_ignore_users_ids(user_tg_id):
 # общая функция обработчик
 def get_exclude_users_ids(user_tg_id):
 
-    # получаю списки пользователей для исключения
+    # получаю множества пользователей для исключения
     ignore_users_ids = get_ignore_users_ids(user_tg_id)
     liked_users_ids = get_liked_users_ids(user_tg_id)
+    # предварительно преобразую в множества (функции возвращают списки)
+    turned_off_users = set(get_turn_off_users())
+    banned_users = set(get_users_in_ban())
 
     # объединяю оба множества
-    ignore_list = ignore_users_ids | liked_users_ids
+    ignore_list = ignore_users_ids | liked_users_ids | turned_off_users | banned_users
 
     return ignore_list

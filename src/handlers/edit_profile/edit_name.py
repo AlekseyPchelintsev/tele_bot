@@ -8,6 +8,8 @@ from src.modules.get_self_data import get_user_info
 from src.database.requests.name_change import change_user_name
 from src.modules.delete_messages import del_last_message
 from src.modules.check_emoji import check_emoji, check_all_markdown
+from config import exclude_text_message
+from src.modules.moving_through_sections import check_menu_command
 import src.modules.keyboard as kb
 
 router = Router()
@@ -60,37 +62,49 @@ async def edit_name(message: Message, state: FSMContext, bot: Bot):
     # получаю свой id
     user_tg_id = message.from_user.id
 
-    # удаляю из чата присланное сообщение от пользователя с новым именем
-    await del_last_message(message)
-
     # получаю из состояния id сообщения для редактирования
     message_data = await state.get_data()
     message_id = message_data.get('message_id')
 
     # проверяю что сообщение текстовое и не более 20 символов
-    if message.content_type == 'text' and len(message.text) < 20:
+    if message.content_type == 'text' and len(message.text) < 25:
 
-        # сохраняю текст сообщения и привожу его к заглавному
-        user_name = message.text.title()
+        # сохраняю текст сообщения
+        user_name = message.text
 
-        # проверяю наличие эмодзи в сообщении
-        emodji_checked = await check_emoji(user_name)
-        markdown_checked = await check_all_markdown(user_name)
+        if user_name not in exclude_text_message:
 
-        # если эмодзи есть в сообщении
-        if emodji_checked or markdown_checked:
+            # удаляю из чата присланное сообщение от пользователя с новым именем
+            await del_last_message(message)
 
-            # вывожу уведомление об ошибке
-            await wrong_name(user_tg_id, message_id, bot)
+            # привожу имя к заглавному
+            user_name = message.text.title()
 
-            # возвращаюсь в состояние ожидания нового сообщения с именем
-            return
+            # проверяю наличие эмодзи в сообщении
+            emodji_checked = await check_emoji(user_name)
+            markdown_checked = await check_all_markdown(user_name)
 
-        # если все проверки прошли вношу изменение в бд и отрисовываю страницу
-        await change_name(user_tg_id, message, user_name, message_id, bot)
+            # если эмодзи есть в сообщении
+            if emodji_checked or markdown_checked:
 
-        # очищаю состояние
-        await state.clear()
+                # вывожу уведомление об ошибке
+                await wrong_name(user_tg_id, message_id, bot)
+
+                # возвращаюсь в состояние ожидания нового сообщения с именем
+                return
+
+            # если все проверки прошли вношу изменение в бд и отрисовываю страницу
+            await change_name(user_tg_id, message, user_name, message_id, bot)
+
+            # очищаю состояние
+            await state.clear()
+
+        # если текст содержит команду из клавиатуры
+        else:
+
+            # очищаю состояние, орабатываю ее и открываю
+            # соответствующий пункт меню
+            await check_menu_command(message, user_name, state)
 
     # если сообщение не текстовое (содержит фото, анимации и т.д.)
     else:
@@ -123,7 +137,7 @@ async def wrong_name(user_tg_id, message_id, bot):
                     '\n\n⚠️ <b>Неверный формат данных</b> ⚠️'
                     '\n\n❌ Имя должно содержать <b>только буквы</b>, не должно '
                     'содержать эмодзи и изображения, '
-                    'а так же превышать длинну в <b>20 символов</b>.'
+                    'а так же превышать длинну в <b>25 символов</b>.'
                 ),
                 parse_mode='HTML'
             ),

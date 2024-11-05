@@ -2,7 +2,6 @@ from aiogram.types import CallbackQuery, InputMediaPhoto
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from src.modules.delete_messages import del_last_message
-from src.handlers.for_admin.send_to_ban_list import check_ban_callback
 from config import main_menu_logo
 import src.modules.keyboard as kb
 
@@ -10,7 +9,6 @@ router = Router()
 
 
 @router.callback_query(F.data == 'main_menu')
-@check_ban_callback
 async def open_main_menu(callback: CallbackQuery, state: FSMContext):
 
     # очищаю состояние (на всякий случай)

@@ -4,7 +4,8 @@ from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from config import no_photo_id
+from config import no_photo_id, exclude_text_message
+from src.modules.moving_through_sections import check_menu_command
 from src.modules.get_self_data import get_user_info
 from src.modules.delete_messages import del_last_message
 from src.handlers.for_admin.check_users_photos import check_new_photo_user
@@ -152,11 +153,11 @@ async def get_new_photo(message: Message, state: FSMContext, bot: Bot):
 
 async def add_new_photo(user_tg_id, message, message_id, state, bot):
 
-    # удаляю последнее сообщение пользователя с фото из чата
-    await del_last_message(message)
-
     # если сообщение является фото
     if message.photo:
+
+        # удаляю последнее сообщение пользователя с фото из чата
+        await del_last_message(message)
 
         # получаю свои данные для отрисовки страницы
         user_info = await get_user_info(user_tg_id)
@@ -227,33 +228,48 @@ async def add_new_photo(user_tg_id, message, message_id, state, bot):
     # если сообщение не содержит фото
     else:
 
-        # получаю свои данные для отрисовки страницы с учетом изменений
-        user_info = await get_user_info(user_tg_id)
+        # сохраняю сообщение от пользователя
+        user_message = message.text
 
-        # Извлекаю свои данные для отрисовки страницы с учетом изменений
-        self_data = user_info['data']
-        self_photo = self_data[0][1]
+        if user_message not in exclude_text_message:
 
-        # отрисовка страницы
-        try:
-            await bot.edit_message_media(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                media=InputMediaPhoto(
-                    media=f'{self_photo}',
-                    caption=(
-                        '⚠️ <b>Неверный формат данных</b> ⚠️'
-                        '\n\nОтправьте фото в формате <b>.jpg .jpeg</b> '
-                        'или <b>.png</b>'
+            # удаляю последнее сообщение пользователя с фото из чата
+            await del_last_message(message)
+
+            # получаю свои данные для отрисовки страницы с учетом изменений
+            user_info = await get_user_info(user_tg_id)
+
+            # Извлекаю свои данные для отрисовки страницы с учетом изменений
+            self_data = user_info['data']
+            self_photo = self_data[0][1]
+
+            # отрисовка страницы
+            try:
+                await bot.edit_message_media(
+                    chat_id=user_tg_id,
+                    message_id=message_id,
+                    media=InputMediaPhoto(
+                        media=f'{self_photo}',
+                        caption=(
+                            '⚠️ <b>Неверный формат данных</b> ⚠️'
+                            '\n\nОтправьте фото в формате <b>.jpg .jpeg</b> '
+                            'или <b>.png</b>'
+                        ),
+                        parse_mode='HTML'
                     ),
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.back_to_photo
-            )
-        except Exception as e:
-            pass
+                    reply_markup=kb.back_to_photo
+                )
+            except Exception as e:
+                pass
 
-        return
+            return
+
+        # еслии текст содержит команду из клавиатуры
+        else:
+
+            # очищаю состояние, орабатываю ее и открываю
+            # соответствующий пункт меню
+            await check_menu_command(message, user_message, state)
 
 
 # УДАЛЕНИЕ ФОТО ПРОФИЛЯ (УДАЛЕНИЕ ИЗ БД И ОТРИСОВКА СТРАНИЦЫ)

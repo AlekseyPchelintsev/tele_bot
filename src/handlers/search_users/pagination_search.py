@@ -3,7 +3,9 @@ from aiogram.types import CallbackQuery
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
+from src.handlers.for_admin.send_complaint import send_complaint
 from src.handlers.reactions_menu.notice_reaction import bot_notification_about_like, bot_notification_about_dislike, bot_send_message_about_like, bot_send_message_matchs_likes
+from src.modules.notifications import attention_message
 from src.modules.pagination_logic import (no_data_after_reboot_bot_reactions,
                                           back_callback,
                                           load_pagination_start_or_end_data)
@@ -13,7 +15,6 @@ from src.database.requests.likes_users import (insert_reaction,
                                                check_matches_two_users,
                                                send_user_to_ignore_table)
 
-from src.database.requests.add_to_favorites import add_to_favorites
 import src.modules.keyboard as kb
 
 
@@ -80,7 +81,7 @@ async def reload_pagination_after_hide_or_like(callback,
          'menu',
          'like',
          'hide',
-         'to_favorite']
+         'complaint']
     ))
 )
 async def pagination_handler(
@@ -96,7 +97,7 @@ async def pagination_handler(
 
     # если бот ушел в ребут с открытой пагинацией у пользователя и данных нет
     if not data:
-        await no_data_after_reboot_bot_reactions(callback, 'search_users')
+        await no_data_after_reboot_bot_reactions(callback.message, 'search_users')
 
     # Загрузка пагинации если data не None
     else:
@@ -197,11 +198,15 @@ async def pagination_handler(
                 await bot_notification_about_dislike(callback.message,
                                                      text_info_hide_user)
 
-        # TODO обработка добавления в иизбранное
-        elif callback_data.action == 'to_favorite':
+        # TODO обработка "Пожаловаться"
+        elif callback_data.action == 'complaint':
 
-            await asyncio.to_thread(add_to_favorites, user_tg_id, current_user_id)
-            pass
+            # id текущего пользователя (просматриваемого)
+            current_user_id = data[page][0]
+
+            await send_complaint(current_user_id, bot, 'Жалоба на пользователя:')
+
+            await attention_message(callback.message, '📮 Жалоба отправлена администратору', 1.5)
 
         # обработка перелистывания анкет
         else:

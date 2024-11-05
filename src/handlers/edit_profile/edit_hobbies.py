@@ -5,7 +5,8 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from src.modules.delete_messages import del_last_message
 from src.modules.get_self_data import get_user_info
-
+from config import exclude_text_message
+from src.modules.moving_through_sections import check_menu_command
 from src.database.requests.hobbies_data import (check_hobby,
                                                 add_hobby_for_user,
                                                 delete_hobby)
@@ -81,7 +82,7 @@ async def check_hobbies_list(user_tg_id, callback):
                 reply_markup=kb.no_hobbies
             )
 
-    # если уже добавлено 5 увлечений (отрисовка с клавиатурой без кнопки добавить)
+    # если уже добавлено 7 увлечений (отрисовка с клавиатурой без кнопки добавить)
     elif len(hobbies_data) >= 7:
 
         try:
@@ -205,7 +206,7 @@ async def new_hobby_menu(callback, state):
             photo=f'{self_data[0][1]}',
             caption=(
                 f'\n<b>Список ваших увлечений:</b> {self_hobbies}'
-                '\n\n‼️ Добавьте <b>не более 5 увлечений</b>.'
+                '\n\n‼️ Добавьте <b>не более 7 увлечений</b>.'
                 '\n\n‼️ <u>Придерживайтесь принципа</u>:'
                 '\n<b>Одно увлечение - одно сообщение</b>'
                 '\n\n💬 Отправьте увлечение сообщением в чат, '
@@ -224,9 +225,6 @@ async def new_hobby_menu(callback, state):
 @router.message(Registration.hobby)
 async def add_hobby(message: Message, state: FSMContext, bot: Bot):
 
-    # удаляю сообщение пользователя из чата с новым увлечением
-    await del_last_message(message)
-
     # получаю свой id
     user_tg_id = message.from_user.id
 
@@ -237,39 +235,54 @@ async def add_hobby(message: Message, state: FSMContext, bot: Bot):
     # проверка длинны сообщения от пользователя и что оно является текстом
     if message.content_type == 'text' and len(message.text) <= 50:
 
-        #  сохраняю текст сообщения и привожу к нижнему регистру
-        hobby = message.text.lower()
+        #  сохраняю текст сообщения для проверки наличия команд из клавиатуры
+        hobby = message.text
 
-        # проверяю на наличие эмодзи в сообщении
-        emodji_checked = await check_emoji(hobby)
-        markdown_checked = await check_markdown_hobbies(hobby)
+        if hobby not in exclude_text_message:
 
-        # если в сообщении есть эмодзи
-        if emodji_checked or markdown_checked:
+            # удаляю сообщение пользователя из чата с новым увлечением
+            await del_last_message(message)
 
-            # вывожу уведомление об ошибке
-            await wrong_hobby_name(user_tg_id, message_id, bot)
+            #  сохраняю текст сообщения и привожу к нижнему регистру
+            hobby = message.text.lower()
 
-            # возвращаюсь в состояние ожидания сообщения с новым увлечением
-            return
+            # проверяю на наличие эмодзи в сообщении
+            emodji_checked = await check_emoji(hobby)
+            markdown_checked = await check_markdown_hobbies(hobby)
 
-        # проверяю есть ли у пользователя уже такое увлечение
-        checked = await asyncio.to_thread(check_hobby, user_tg_id, hobby)
+            # если в сообщении есть эмодзи
+            if emodji_checked or markdown_checked:
 
-        # если такое увлечение уже есть
-        if checked:
+                # вывожу уведомление об ошибке
+                await wrong_hobby_name(user_tg_id, message_id, bot)
 
-            # вывожу уведомление об ошибке
-            await hobby_already_exist(user_tg_id, message_id, bot)
+                # возвращаюсь в состояние ожидания сообщения с новым увлечением
+                return
 
-            # возвращаюсь в состояние ожидания сообщения с новым увлечением
-            return
+            # проверяю есть ли у пользователя уже такое увлечение
+            checked = await asyncio.to_thread(check_hobby, user_tg_id, hobby)
 
-        # если все проверки прошли успешно
+            # если такое увлечение уже есть
+            if checked:
+
+                # вывожу уведомление об ошибке
+                await hobby_already_exist(user_tg_id, message_id, bot)
+
+                # возвращаюсь в состояние ожидания сообщения с новым увлечением
+                return
+
+            # если все проверки прошли успешно
+            else:
+
+                # добавляю новое хобби в бд
+                await hobby_succesful_added(user_tg_id, state, message_id, bot, hobby)
+
+        # еслии текст содержит команду из клавиатуры
         else:
 
-            # добавляю новое хобби в бд
-            await hobby_succesful_added(user_tg_id, state, message_id, bot, hobby)
+            # очищаю состояние, орабатываю ее и открываю
+            # соответствующий пункт меню
+            await check_menu_command(message, hobby, state)
 
     # если сообщение не текстовое (фото, анимация и т.д.)
     else:

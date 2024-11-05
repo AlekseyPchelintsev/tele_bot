@@ -1,5 +1,7 @@
 config.py
 test.py
 .DS_Store
+.vscode
+redis-redis-f60370c
 .venv/
 __pycache__/

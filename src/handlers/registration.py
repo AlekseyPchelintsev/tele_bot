@@ -12,9 +12,6 @@ from src.database.requests.user_data import check_user
 from src.database.requests.birth_date_errors_on_reg import birth_date_error_catcher
 from src.modules.check_emoji import check_emoji, check_all_markdown, check_partial_markdown
 from src.handlers.for_admin.check_users_photos import check_new_photo_user
-from src.handlers.for_admin.send_to_ban_list import (check_ban_callback,
-                                                     check_ban_callback_bot,
-                                                     check_ban_message_bot)
 import src.modules.keyboard as kb
 
 router = Router()
@@ -37,8 +34,10 @@ delete_last_message = []
 
 # МЕНЮ РЕГИСТРАЦИИ ПОЛЬЗОВАТЕЛЯ
 @router.callback_query(F.data == 'reg')
-@check_ban_callback
 async def registration(callback: CallbackQuery, state: FSMContext):
+
+    # пытаюсь удалить предыдущее сообщение (если страница была удалена)
+    await del_last_message(callback.message)
 
     # контрольно убирает состояния если пользователь
     # попал в это меню после удаления анкеты
@@ -112,7 +111,6 @@ async def registration(callback: CallbackQuery, state: FSMContext):
 
 # ПОЛУЧЕНИЕ ИМЕНИ ПОЛЬЗОВАТЕЛЯ
 @router.message(Registration.name)
-@check_ban_message_bot
 async def get_name(message: Message, state: FSMContext, bot: Bot):
 
     # удаляю сообщение от пользователя
@@ -216,7 +214,6 @@ async def get_name(message: Message, state: FSMContext, bot: Bot):
 
 # ПОЛУЧЕНИЕ НАЗВАНИЕ ГОРОДА ПОЛЬЗОВАТЕЛЯ
 @router.message(Registration.city)
-@check_ban_message_bot
 async def get_city(message: Message, state: FSMContext, bot: Bot):
 
     # удаляю сообщение пользователя из чата с названием города
@@ -315,7 +312,6 @@ async def get_city(message: Message, state: FSMContext, bot: Bot):
 
 # РЕГИСТРАЦИЯ ПОЛА
 @router.callback_query(Registration.gender, F.data.in_(['male', 'female', 'other']))
-@check_ban_callback
 async def get_gender(callback: CallbackQuery, state: FSMContext):
 
     # сохраняю название пола из колбэка
@@ -342,7 +338,6 @@ async def get_gender(callback: CallbackQuery, state: FSMContext):
 
 # ПОЛУЧЕНИЕ ДАТЫ РОЖДЕНИЯ
 @router.message(Registration.birth_date)
-@check_ban_message_bot
 async def get_age(message: Message, state: FSMContext, bot: Bot):
 
     await del_last_message(message)
@@ -485,7 +480,6 @@ async def get_age(message: Message, state: FSMContext, bot: Bot):
 
 # ПОЛУЧЕНИЕ ДАННЫХ О РАБОТЕ/УЧЕБЕ
 @router.callback_query(Registration.employment, F.data.in_(['work', 'study', 'search_myself']))
-@check_ban_callback
 async def get_job_or_study(callback: CallbackQuery, state: FSMContext):
 
     # сохраняю данные из колбэка
@@ -559,7 +553,6 @@ async def get_job_or_study(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(Registration.job_or_study)
-@check_ban_message_bot
 async def get_info_about_job_or_study(message: Message, state: FSMContext, bot: Bot):
 
     # удаляю сообщение пользователя из чата с названием города
@@ -668,7 +661,6 @@ async def get_info_about_job_or_study(message: Message, state: FSMContext, bot: 
 
 # ДОБАВЛЕНИЕ ФОТО И ЗАВЕРШЕНИЕ РЕГИСТРАЦИИ
 @router.message(Registration.photo)
-@check_ban_message_bot
 async def add_photo_to_profile(message: Message, state: FSMContext, bot: Bot):
 
     await del_last_message(message)
@@ -721,7 +713,6 @@ async def add_photo_to_profile(message: Message, state: FSMContext, bot: Bot):
 
 # ЕСЛИ ПОЛЬЗОВАТЕЛЬ НЕ СТАЛ ДОБАВЛЯТЬ ФОТО И НАЖАЛ "Загрузить позже"
 @router.callback_query(F.data == 'late_load_photo')
-@check_ban_callback_bot
 async def late_upload_photo(callback: CallbackQuery, state: FSMContext, bot: Bot):
 
     user_tg_id = callback.from_user.id
@@ -769,40 +760,23 @@ async def sucess_registration(message, state, photo_id, user_tg_id, bot, message
     # удаляю сообщения из списка для удаления сообщений
     # await del_messages(user_tg_id, delete_messages)
 
-    # уведомление об успешной регистрации
     try:
-        await message.edit_media(
-            media=InputMediaPhoto(
-                media=f'{main_menu_logo}',
-                caption=(
-                    '<b>Вы успешно зарегистрированы!</b>'
-                    '\n\n📌 <b>Добавьте несколько увлечений</b>, чтобы быстрее '
-                    'найти интересные контакты и завести новые знакомства!'
-                    '\n\n📌 Расскажите более подробно о своём образовании, '
-                    'планах, личных качествах (да и вообще о чем угодно), '
-                    'заполнив раздел <b>"О себе"</b>.'
-                ),
-                parse_mode='HTML'
-            ),
-            reply_markup=kb.start_edit
-        )
-
+        await bot.delete_message(chat_id=user_tg_id, message_id=message_id)
     except:
+        pass
 
-        await bot.edit_message_media(
-            chat_id=user_tg_id,
-            message_id=message_id,
-            media=InputMediaPhoto(
-                media=f'{main_menu_logo}',
-                caption=(
-                    '<b>Вы успешно зарегистрированы!</b>'
-                    '\n\n📌 <b>Добавьте несколько увлечений</b>, чтобы быстрее '
-                    'найти интересные контакты и завести новые знакомства!'
-                    '\n\n📌 Расскажите более подробно о своём образовании, '
-                    'планах, личных качествах (да и вообще о чем угодно), '
-                    'заполнив раздел <b>"О себе"</b>.'
-                ),
-                parse_mode='HTML'
-            ),
-            reply_markup=kb.start_edit
-        )
+    await bot.send_photo(
+        chat_id=user_tg_id,
+        photo=f'{main_menu_logo}',
+        caption=(
+            '<b>Вы успешно зарегистрированы!</b>'
+            '\n\n👉 В разделе "<b>Редактировать профиль</b>" вы можете:'
+            '\n\n📌 <b>Добавить несколько увлечений</b>, чтобы быстрее '
+            'найти интересные контакты и завести новые знакомства!'
+            '\n\n📌 Рассказать более подробно о своём образовании, '
+            'планах, личных качествах (да и вообще о чем угодно), '
+            'заполнив раздел <b>"О себе"</b>.'
+        ),
+        parse_mode='HTML',
+        reply_markup=kb.users
+    )

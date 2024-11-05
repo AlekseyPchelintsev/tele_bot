@@ -7,7 +7,9 @@ from src.modules.get_self_data import get_user_info
 from src.modules.delete_messages import del_last_message
 from src.database.requests.city_data import change_city
 from src.modules.check_emoji import check_emoji, check_markdown_city_name
+from src.modules.moving_through_sections import check_menu_command
 import src.modules.keyboard as kb
+from config import exclude_text_message
 
 router = Router()
 
@@ -60,38 +62,53 @@ async def new_city(message: Message, state: FSMContext, bot: Bot):
     # получаю свой id
     user_tg_id = message.from_user.id
 
-    # удаляю сообщение от пользователя из чата (с названием нового города)
-    await del_last_message(message)
-
     # получаю id сообщения для редактирования из состояния
     message_data = await state.get_data()
     message_id = message_data.get('message_id')
 
     # проверяю является ли сообщение текстом
-    if message.content_type == 'text' and len(message.text) < 25:
+    if message.content_type == 'text' and len(message.text) <= 25:
 
         # сообщение от пользователя если прошло проверку на текст
-        new_city_name = message.text.title()
+        new_city_name = message.text
 
-        # проверяю не содержит ли сообщение эмодзи
-        emodji_checked = await check_emoji(new_city_name)
-        markdown_checked = await check_markdown_city_name(new_city_name)
+        # проверяю наличие в сообщении наличие команд с клавиатуры
+        if new_city_name not in exclude_text_message:
 
-        # если содержит эмодзи
-        if emodji_checked or markdown_checked:
+            # удаляю сообщение от пользователя из чата (с названием нового города)
+            await del_last_message(message)
 
-            # вывожу ошибку
-            await wrong_city_name(user_tg_id, message_id, bot)
+            # привожу к заглавноему название города
+            new_city_name = message.text.title()
 
-            # возвращаюсь в состояние ожидания нового сообщения
-            return
+            # проверяю не содержит ли сообщение эмодзи
+            emodji_checked = await check_emoji(new_city_name)
+            markdown_checked = await check_markdown_city_name(new_city_name)
 
-        # если не содержит эмодзи -
-        # передаю данные для внесения изменений в бд и отрисовки страницы
-        await change_city_name(user_tg_id, message, message_id, new_city_name, bot, state)
+            # если содержит эмодзи
+            if emodji_checked or markdown_checked:
+
+                # вывожу ошибку
+                await wrong_city_name(user_tg_id, message_id, bot)
+
+                # возвращаюсь в состояние ожидания нового сообщения
+                return
+
+            # если не содержит эмодзи -
+            # передаю данные для внесения изменений в бд и отрисовки страницы
+            await change_city_name(user_tg_id, message, message_id, new_city_name, bot, state)
+
+        # если была получена команда вместо названия города
+        else:
+
+            # обрабатываю команду очищая состояние и перехожу в пункт меню
+            await check_menu_command(message, new_city_name, state)
 
     # если входящее сообщение не является текстом (фото, анимации и т.д.)
     else:
+
+        # удаляю сообщение от пользователя из чата (с названием нового города)
+        await del_last_message(message)
 
         # вывожу уведомление
         await wrong_city_name(user_tg_id, message_id, bot)

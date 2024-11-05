@@ -1,6 +1,6 @@
 
-from psycopg2 import OperationalError
 import psycopg2
+from psycopg2 import OperationalError
 from config import user, password, database, host
 
 
@@ -24,7 +24,9 @@ def create_tables():
                         birth_date VARCHAR(10),
                         city VARCHAR(30),
                         date_time TIMESTAMP NOT NULL,
-                        last_active TIMESTAMP
+                        last_active TIMESTAMP,
+                        ban_status BOOLEAN,
+                        turn_off_profile BOOLEAN
                     )
                     """
                 )
@@ -79,7 +81,7 @@ def create_tables():
                     )
                     """
                 )
-
+                '''
                 # раздел "Избранное"
                 cursor.execute(
                     """
@@ -93,7 +95,7 @@ def create_tables():
                         )
                     """
                 )
-
+                '''
                 # скрытые пользователи
                 cursor.execute(
                     """
@@ -138,16 +140,6 @@ def create_tables():
                     id SERIAL PRIMARY KEY,
                     user_tg_id BIGINT NOT NULL,
                     wrong_birth_date TEXT
-                    );
-                    """
-                )
-
-                # список забаненых id
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS banlist (
-                    user_tg_id BIGINT NOT NULL PRIMARY KEY,
-                    UNIQUE (user_tg_id)
                     );
                     """
                 )

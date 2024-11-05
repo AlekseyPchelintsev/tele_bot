@@ -3,7 +3,9 @@ from aiogram.types import Message, CallbackQuery, InputMediaPhoto, InputMediaVid
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from config import city_search, hobby_search
+from config import city_search, hobby_search, exclude_text_message
+from src.modules.moving_through_sections import check_menu_command
+from src.modules.pagination_logic import no_data_after_reboot_bot_reactions
 from src.handlers.search_users.hobby_search import search_users_by_hobby
 from src.modules.delete_messages import del_last_message
 from src.modules.get_self_data import get_user_info
@@ -69,39 +71,62 @@ async def search_in_city(callback: CallbackQuery, state: FSMContext):
     search_gender = await state.get_data()
     gender_data = search_gender.get('type_of_gender')
 
-    if search_data == 'home_city':
+    # поверяю наличие gender_data в состоянии
+    if not gender_data:
 
-        # плучаю свои данные
-        user_info = await get_user_info(user_tg_id)
+        # уведомление об ошибке если данных в состоянии нет
+        # (непредвиденные происшествия с сервером)
+        await no_data_after_reboot_bot_reactions(callback.message, 'search_users')
 
-        # Извлекаю название своего города
-        city_data = user_info['data'][0][5]
+    else:
 
-        print(f'ВЫБРАН ПОИСК В МОЕМ ГОРОДЕ')
-        print(f'ДАННЫЕ ГОРОДА: {city_data}, ПОЛА:{gender_data}')
+        if search_data == 'home_city':
 
-        # проверяю наличие пользователей по запрошенному полу в своем городе
-        check_home_city_users = await asyncio.to_thread(check_users_in_city,
-                                                        user_tg_id,
-                                                        city_data,
-                                                        gender_data)
+            # плучаю свои данные
+            user_info = await get_user_info(user_tg_id)
 
-        if check_home_city_users:
+            # Извлекаю название своего города
+            city_data = user_info['data'][0][5]
 
-            print(f'ПОЛЬЗОВАТЕЛИ В МОЕМ ГОРОДЕ ПО ПОЛУ НАЙДЕНЫ')
+            print(f'ВЫБРАН ПОИСК В МОЕМ ГОРОДЕ')
+            print(f'ДАННЫЕ ГОРОДА: {city_data}, ПОЛА:{gender_data}')
 
-            # добавляю в состояние название своего города
-            await state.update_data(city_users=city_data)
-            await search_users_by_hobby(callback, state)
+            # проверяю наличие пользователей по запрошенному полу в своем городе
+            check_home_city_users = await asyncio.to_thread(check_users_in_city,
+                                                            user_tg_id,
+                                                            city_data,
+                                                            gender_data)
 
-        else:
+            if check_home_city_users:
 
-            print(f'ПОЛЬЗОВАТЕЛИ В МОЕМ ГОРОДЕ ПО ПОЛУ НЕ НАЙДЕНЫ')
+                print(f'ПОЛЬЗОВАТЕЛИ В МОЕМ ГОРОДЕ ПО ПОЛУ НАЙДЕНЫ')
 
-            try:
-                await callback.message.edit_media(
-                    media=InputMediaPhoto(
-                        media=f'{city_search}',
+                # добавляю в состояние название своего города
+                await state.update_data(city_users=city_data)
+                await search_users_by_hobby(callback, state)
+
+            else:
+
+                print(f'ПОЛЬЗОВАТЕЛИ В МОЕМ ГОРОДЕ ПО ПОЛУ НЕ НАЙДЕНЫ')
+
+                try:
+                    await callback.message.edit_media(
+                        media=InputMediaPhoto(
+                            media=f'{city_search}',
+                            caption=(
+                                '\n<b>Пользователи в вашем городе не найдены</b> 😔'
+                                '\n\n📌⌨️ Вы можете выбрать пункт <b>"Не важно"</b> '
+                                'чтобы посмотреть пользователей во всех городах'
+                                '\n\n📌💬 или <b>пришлите в чат</b> название города, '
+                                'чтобы найти в нем пользователей:'
+                            ),
+                            parse_mode='HTML'
+                        ),
+                        reply_markup=kb.search_in_city(city_data)
+                    )
+                except:
+                    await callback.message.answer_photo(
+                        photo=f'{city_search}',
                         caption=(
                             '\n<b>Пользователи в вашем городе не найдены</b> 😔'
                             '\n\n📌⌨️ Вы можете выбрать пункт <b>"Не важно"</b> '
@@ -109,31 +134,17 @@ async def search_in_city(callback: CallbackQuery, state: FSMContext):
                             '\n\n📌💬 или <b>пришлите в чат</b> название города, '
                             'чтобы найти в нем пользователей:'
                         ),
-                        parse_mode='HTML'
-                    ),
-                    reply_markup=kb.search_in_city(city_data)
-                )
-            except:
-                await callback.message.answer_photo(
-                    photo=f'{city_search}',
-                    caption=(
-                        '\n<b>Пользователи в вашем городе не найдены</b> 😔'
-                        '\n\n📌⌨️ Вы можете выбрать пункт <b>"Не важно"</b> '
-                        'чтобы посмотреть пользователей во всех городах'
-                        '\n\n📌💬 или <b>пришлите в чат</b> название города, '
-                        'чтобы найти в нем пользователей:'
-                    ),
-                    parse_mode='HTML',
-                    reply_markup=kb.search_in_city(city_data)
-                )
-            await state.set_state(Registration.search_city)
+                        parse_mode='HTML',
+                        reply_markup=kb.search_in_city(city_data)
+                    )
+                await state.set_state(Registration.search_city)
 
-    elif search_data == 'all_cities':
+        elif search_data == 'all_cities':
 
-        print('ВЫБРАН ПОИСК ПО ВСЕМ ГОРОДАМ')
+            print('ВЫБРАН ПОИСК ПО ВСЕМ ГОРОДАМ')
 
-        await state.update_data(city_users='all')
-        await search_users_by_hobby(callback, state)
+            await state.update_data(city_users='all')
+            await search_users_by_hobby(callback, state)
 
 
 # поиск по конкретному городу
@@ -158,66 +169,93 @@ async def search_by_city(message: Message, state: FSMContext, bot: Bot):
     search_gender = await state.get_data()
     gender_data = search_gender.get('type_of_gender')
 
-    # получаю id сообщения для редактирования
-    edit_message = await state.get_data()
-    message_id = edit_message.get('message_id')
+    # поверяю наличие gender_data в состоянии
+    if not gender_data:
 
-    # проверка что сообщение текстовое, а не медиа (картинки, стикеры и т.д.)
-    if message.content_type == 'text':
-        city_name = message.text.title()
+        # уведомление об ошибке если данных в состоянии нет
+        # (непредвиденные происшествия с сервером)
+        await no_data_after_reboot_bot_reactions(message, 'search_users')
 
-        # проверка на наличие смайлов в сообщении
-        emodji_checked = await check_emoji(city_name)
-        markdown_checked = await check_all_markdown(city_name)
+    else:
 
-        if emodji_checked or markdown_checked:
+        # получаю id сообщения для редактирования
+        edit_message = await state.get_data()
+        message_id = edit_message.get('message_id')
+
+        # проверка что сообщение текстовое, а не медиа (картинки, стикеры и т.д.)
+        if message.content_type == 'text':
+
+            # получаю текст сообщения для проверки на команды реплай клавиатуры
+            city_name = message.text
+
+            # проверяю наличие команд из клавиатуры
+            if city_name not in exclude_text_message:
+
+                # если сообщение не содержит команд - продолжаю его обработку
+                city_name = message.text.title()
+
+                # проверка на наличие смайлов в сообщении
+                emodji_checked = await check_emoji(city_name)
+                markdown_checked = await check_all_markdown(city_name)
+
+                if emodji_checked or markdown_checked:
+                    await wrong_search_city_name(user_tg_id, message_id, bot)
+                    return
+
+                # проверяю наличие хотя бы одного пользователя по уловиям
+                check_users_city = await asyncio.to_thread(check_users_in_city,
+                                                           user_tg_id,
+                                                           city_name,
+                                                           gender_data)
+
+                if check_users_city:
+
+                    await bot.edit_message_media(
+                        chat_id=user_tg_id,
+                        message_id=message_id,
+                        media=InputMediaPhoto(
+                            media=f'{hobby_search}',
+                            caption=(
+                                '\n🔎 <b>Какие увлечения?</b>'
+                                '\n\n📌💬 Пришлите <b>увлечение</b> в чат'
+                                '\n\n📌⌨️ или <b>выберите один из вариантов</b> ниже'
+                            ),
+                            parse_mode='HTML'
+                        ),
+                        reply_markup=kb.hobbies_search
+                    )
+
+                    await state.update_data(city_users=city_name)
+                    await state.set_state(Registration.search_hobby)
+
+                else:
+
+                    await bot.edit_message_media(
+                        chat_id=user_tg_id,
+                        message_id=message_id,
+                        media=InputMediaPhoto(
+                            media=f'{city_search}',
+                            caption=(
+                                '\n🔎 <b>В каком городе?</b>'
+                                f'\n\n❌ Пользователи в городе <b>"{
+                                    city_name}"</b> '
+                                '<u>не найдены.</u>'
+                                '\n\n📌💬 Попробуйте поискать в <b>других городах</b>'
+                                '\n\n📌⌨️ или <b>выберите один из вариантов</b> ниже'
+                            ),
+                            parse_mode='HTML'
+                        ),
+                        reply_markup=kb.search_in_city(city_data)
+                    )
+
+            # если была прислана команда из клавиатуры
+            else:
+
+                # обрабатываю ее очищая состояние и перехожу
+                # в пункт меню согласно команде
+                await check_menu_command(message, city_name, state)
+
+        # если в сообщениии получен медиа контент вместо текста
+        else:
             await wrong_search_city_name(user_tg_id, message_id, bot)
             return
-
-        # проверяю наличие хотя бы одного пользователя по уловиям
-        check_users_city = await asyncio.to_thread(check_users_in_city,
-                                                   user_tg_id,
-                                                   city_name,
-                                                   gender_data)
-
-        if check_users_city:
-
-            await bot.edit_message_media(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                media=InputMediaPhoto(
-                    media=f'{hobby_search}',
-                    caption=(
-                        '\n🔎 <b>Какие увлечения?</b>'
-                        '\n\n📌💬 Пришлите <b>увлечение</b> в чат'
-                        '\n\n📌⌨️ или <b>выберите один из вариантов</b> ниже'
-                    ),
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.hobbies_search
-            )
-
-            await state.update_data(city_users=city_name)
-            await state.set_state(Registration.search_hobby)
-
-        else:
-
-            await bot.edit_message_media(
-                chat_id=user_tg_id,
-                message_id=message_id,
-                media=InputMediaPhoto(
-                    media=f'{city_search}',
-                    caption=(
-                        '\n🔎 <b>В каком городе?</b>'
-                        f'\n\n❌ Пользователи в городе <b>"{city_name}"</b> '
-                        '<u>не найдены.</u>'
-                        '\n\n📌💬 Попробуйте поискать в <b>других городах</b>'
-                        '\n\n📌⌨️ или <b>выберите один из вариантов</b> ниже'
-                    ),
-                    parse_mode='HTML'
-                ),
-                reply_markup=kb.search_in_city(city_data)
-            )
-    else:
-        await wrong_search_city_name(user_tg_id, message_id, bot)
-        return

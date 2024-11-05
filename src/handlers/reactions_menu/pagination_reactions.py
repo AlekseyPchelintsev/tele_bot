@@ -10,7 +10,7 @@ from src.modules.pagination_logic import (no_data_after_reboot_bot_reactions,
                                           load_pagination_start_or_end_data)
 
 from src.modules.notifications import attention_message
-from config import ADMIN_ID
+from config import ADMIN_IDs
 from src.database.requests.user_data import check_user
 from src.database.requests.likes_users import (insert_reaction,
                                                get_reaction,
@@ -105,7 +105,7 @@ async def pagination_handler_likes(
     if not data:
 
         print(f'СРАБОТАЛ БЛОК IF NOT DATA В ПАГИНАЦИИ РЕАКЦИЙ: {data}')
-        await no_data_after_reboot_bot_reactions(callback, 'back_reactions')
+        await no_data_after_reboot_bot_reactions(callback.message, 'back_reactions')
 
     else:
 
@@ -309,11 +309,14 @@ F.data – message with CallData (this was processed in the previous article).
 # админом получаю id медиа и вывожу ошибку для остальных юзеров
 
 
-@router.message(F.photo | F.video | F.animation)
+@router.message(F.photo | F.video | F.animation | F.text)
 async def handle_media_message(message: Message):
-    if message.from_user.id == ADMIN_ID:
-        data = message.photo[-1] if message.photo else message.video if message.video else message.animation
-        await message.answer(f'id этого файла:\n{data.file_id}')
+    if message.from_user.id in ADMIN_IDs:
+        try:
+            data = message.photo[-1] if message.photo else message.video if message.video else message.animation
+            await message.answer(f'id этого файла:\n{data.file_id}')
+        except:
+            await message.delete()
     else:
         await message.delete()
         user_tg_id = message.from_user.id
@@ -325,12 +328,12 @@ async def handle_media_message(message: Message):
                                     'в раздел <b>"редактировать профиль"</b>', 3)
         else:
             await attention_message(message, '⚠️ Чтобы взаимодействовать с сервисом, '
-                                    'вам необходимо <b>зарегистрироваться</b>', 3)
+                                    'отправьте команду <b>/start</b> в чат.', 3)
 
 # вывожу ошибку для остального контента для всех
 
 
-@router.message(F.text | F.contact | F.document | F.sticker)
+@router.message(F.contact | F.document | F.sticker, flags={"allow_deleted": True})
 async def handle_text_message(message: Message):
     await message.delete()
     user_tg_id = message.from_user.id
@@ -342,4 +345,4 @@ async def handle_text_message(message: Message):
                                 'в раздел <b>"редактировать профиль"</b>', 3)
     else:
         await attention_message(message, '⚠️ Чтобы взаимодействовать с сервисом, '
-                                'вам необходимо <b>зарегистрироваться</b>', 3)
+                                'отправьте команду <b>/start</b> в чат.', 3)

@@ -5,15 +5,14 @@ from config import in_progress, search_menu
 from aiogram.types import InputMediaPhoto
 from src.modules import keyboard as kb
 
+
 # если бот ушел в ребут во время открытой пагинации у пользователя
-
-
 async def no_data_after_reboot_bot_reactions(callback, keyboard_name):
 
     keyboard = getattr(kb, keyboard_name, None)
 
     try:
-        await callback.message.edit_media(
+        await callback.edit_media(
             media=InputMediaPhoto(
                 media=f'{in_progress}',
                 caption=('<b>Что-то пошло не так :(</b> \n\n'
@@ -24,16 +23,14 @@ async def no_data_after_reboot_bot_reactions(callback, keyboard_name):
             reply_markup=keyboard
         )
     except:
-        await callback.message.answer_photo(photo=f'{in_progress}',
-                                            caption=('<b>Что-то пошло не так :(</b> \n\n'
-                                                     '<b>Попробуйте пожалуйста позже.</b>'),
-                                            parse_mode='HTML',
-                                            reply_markup=keyboard)
+        await callback.answer_photo(photo=f'{in_progress}',
+                                    caption=('<b>Что-то пошло не так :(</b> \n\n'
+                                             '<b>Попробуйте пожалуйста позже.</b>'),
+                                    parse_mode='HTML',
+                                    reply_markup=keyboard)
 
 
 # выход из пагинации и уведомление если список пользователей пуст
-
-
 async def back_callback(callback_data, keyboard_name, check_data_loading='', text_info=''):
 
     keyboard = getattr(kb, keyboard_name, None)
@@ -72,7 +69,6 @@ async def back_callback(callback_data, keyboard_name, check_data_loading='', tex
 
 
 # загрузка пагинации из оработчика callback
-
 '''
 # загрузка пагинации для конца/начала списка (разная клавиатура) и если 1 запись
 async def load_pagination_start_or_end_data(callback_data,
@@ -181,9 +177,8 @@ async def load_pagination_start_or_end_data(callback_data,
             )
 '''
 
+
 # загрузка пагинации для конца/начала списка (разная клавиатура) и если 1 запись
-
-
 async def load_pagination_start_or_end_data(
         callback_data,
         data,
@@ -275,9 +270,8 @@ async def load_pagination_start_or_end_data(
                 )
             )
 
+
 # загрузка пагинации (для message с передачей bot)
-
-
 async def load_bot_pagination_start_or_end_data(bot,
                                                 user_tg_id,
                                                 message_id,

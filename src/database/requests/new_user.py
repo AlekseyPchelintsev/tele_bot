@@ -48,6 +48,16 @@ def add_new_user(date_time,
                         VALUES (%s, %s, %s)
                     """, (user_tg_id, work_or_study, work_or_study_info)
                 )
+
+                # если пользователь был зарегистрирован и удалил анкету -
+                # удаляю запись из таблицы удаленных пользователей
+                cursor.execute(
+                    """
+                        DELETE FROM deleteusers
+                        WHERE user_tg_id = %s
+                    """, (user_tg_id,)
+                )
+
     except Exception as e:
         print(f'ERROR ADD USER: {e}')
 

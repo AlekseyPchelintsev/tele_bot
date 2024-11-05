@@ -5,7 +5,7 @@ from aiogram.fsm.state import State, StatesGroup
 from src.modules.check_gender import check_gender
 from src.modules.get_self_data import get_user_info
 from src.database.requests.photo_data import delete_user_photo
-from config import admins_chat_id, somthing_wrong
+from config import check_photo_chat_id, somthing_wrong
 
 import src.handlers.for_admin.admin_keyboards as kb_admin
 import src.modules.keyboard as kb
@@ -31,7 +31,7 @@ async def check_new_photo_user(photo,
     gender = await check_gender(gender)
 
     await bot.send_photo(
-        chat_id=admins_chat_id,
+        chat_id=check_photo_chat_id,
         photo=photo,
         caption=(
             f'<b>{info_text}</b>'

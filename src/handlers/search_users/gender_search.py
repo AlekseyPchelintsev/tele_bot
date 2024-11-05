@@ -1,3 +1,4 @@
+from src.modules.pagination_logic import no_data_after_reboot_bot_reactions
 from src.handlers.search_users.all_users_search import search_all_users
 from src.handlers.search_users.city_search import serach_users_by_city
 from aiogram.types import CallbackQuery
@@ -26,6 +27,14 @@ async def choise_gender_for_search(callback: CallbackQuery, state: FSMContext):
 
     data = await state.get_data()
     search_data = data.get('type_of_search')
+
+    # поверяю наличие search_data в состоянии
+    if not search_data:
+
+        # уведомление об ошибке если данных в состоянии нет
+        # (непредвиденные происшествия с сервером)
+        await no_data_after_reboot_bot_reactions(callback.message, 'search_users')
+
     gender_data = callback.data
 
     # изменение callback.data из-за конфликта с другой клавиатурой
