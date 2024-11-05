@@ -8,7 +8,7 @@ from src.database.requests.user_data import check_user
 from config import main_menu_logo
 
 # /test
-from src.database.requests.admin_requests.delete_and_block_profile import ban_user, unban_user
+from src.database.requests.admin_requests.ban_and_unban_users import ban_user, unban_user
 from src.database.requests.redis_state.redis_get_data import (
     redis_client,
     remove_unbaned_user_from_redis,

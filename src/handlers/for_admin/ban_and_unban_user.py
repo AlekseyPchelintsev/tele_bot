@@ -4,7 +4,7 @@ from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from src.modules.get_self_data import get_user_info
 from config import ban_user_image
-from src.database.requests.admin_requests.delete_and_block_profile import ban_user, unban_user
+from src.database.requests.admin_requests.ban_and_unban_users import ban_user, unban_user
 import src.handlers.for_admin.admin_keyboards as kb_admin
 
 router = Router()

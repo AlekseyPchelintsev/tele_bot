@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from src.modules.delete_messages import del_last_message
-from src.database.requests.admin_requests.delete_and_block_profile import ban_user, unban_user
+from src.database.requests.admin_requests.ban_and_unban_users import ban_user, unban_user
 
 import src.handlers.for_admin.admin_keyboards as kb_admin
 from config import admin_menu_image, ban_user_image, unban_user_image, ban_info_chat_id
