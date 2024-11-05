@@ -3,9 +3,10 @@ from aiogram.types import Message, CallbackQuery, InputMediaPhoto
 from aiogram import F, Router, Bot
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
+from src.modules.check_emoji import check_partial_markdown
 from src.modules.get_self_data import get_user_info
 from config import main_menu_logo, feedback_chat_id, feedback_menu_logo, exclude_text_message
-from src.modules.notifications import notification
+from src.modules.notifications import attention_message
 from src.modules.delete_messages import del_last_message
 from src.modules.moving_through_sections import check_menu_command
 
@@ -60,52 +61,86 @@ async def get_user_feedback(message: Message, state: FSMContext, bot: Bot):
         # удаляю сообщение пользователя из чата
         await del_last_message(message)
 
-        # получаю данные пользователя для отрисовки страницы
-        user_info = await get_user_info(user_tg_id)
+        if message.content_type == 'text':
 
-        # извлекаю данные пользователя для отрисовки страницы
-        user_data = user_info['data']
-        gender = user_info['gender']
-        photo = user_data[0][1]
-        name = user_data[0][0]
-        age = user_data[0][4]
-        city = user_data[0][5]
+            feedback = message.text
 
-        # получаю данные для редактирования сообщения
-        message_to_edit = await state.get_data()
-        message_id = message_to_edit.get('message_to_edit')
+            if feedback not in exclude_text_message:
 
-        # удаляю предыдущее сообщение с формой отправкии обращения
-        await bot.delete_message(chat_id=user_tg_id, message_id=message_id)
+                # удаляю из чата присланное сообщение от пользователя
+                await del_last_message(message)
 
-        # отрисовка страницы пользователя после отправки обращения
-        await bot.send_photo(
-            chat_id=user_tg_id,
-            photo=main_menu_logo,
-            caption='✅<b>Отзыв отправлен.</b>',
-            parse_mode='HTML',
-            reply_markup=kb.users
-        )
+                # проверяю наличие эмодзи в сообщении
+                markdown_checked = await check_partial_markdown(feedback)
 
-        # оптравляю сообщение в чат админам
-        await bot.send_photo(
-            chat_id=feedback_chat_id,
-            photo=photo,
-            caption=(
-                '<b>Сообщение от пользователя:</b>'
-                f'\n\n<b>id пользователя:</b> {user_tg_id}'
-                f'\n{gender}'  # пол
-                f' • {name}'  # имя
-                f' • {age}'  # возраст
-                f' • {city}'  # город
-                f'\n\n{feedback_from_user}'),
-            parse_mode='HTML'
-        )
+                # если эмодзи есть в сообщении
+                if markdown_checked:
 
-        # очищаю состояние
-        await state.clear()
+                    # вывожу уведомление об ошибке
+                    await attention_message(message, 'Не используйте в тексте специальные символы.', 3)
 
-    else:
+                    # возвращаюсь в состояние ожидания нового сообщения с именем
+                    return
 
-        # проверяю сообщение в чате на наличие команды с клавиатуры
-        await check_menu_command(user_tg_id, message, feedback_from_user, state)
+                # если все проверки прошли вношу изменение в бд и отрисовываю страницу
+                # получаю данные пользователя для отрисовки страницы
+                user_info = await get_user_info(user_tg_id)
+
+                # извлекаю данные пользователя для отрисовки страницы
+                user_data = user_info['data']
+                gender = user_info['gender']
+                photo = user_data[0][1]
+                name = user_data[0][0]
+                age = user_data[0][4]
+                city = user_data[0][5]
+
+                # получаю данные для редактирования сообщения
+                message_to_edit = await state.get_data()
+                message_id = message_to_edit.get('message_to_edit')
+
+                # удаляю предыдущее сообщение с формой отправкии обращения
+                # await bot.delete_message(chat_id=user_tg_id, message_id=message_id)
+
+                # отрисовка страницы пользователя после отправки обращения
+                await bot.edit_message_media(
+                    chat_id=user_tg_id,
+                    message_id=message_id,
+                    media=InputMediaPhoto(
+                        media=main_menu_logo,
+                        caption='✅<b>Отзыв отправлен.</b>',
+                        parse_mode='HTML')
+                )
+
+                # оптравляю сообщение в чат админам
+                await bot.send_photo(
+                    chat_id=feedback_chat_id,
+                    photo=photo,
+                    caption=(
+                        '<b>Сообщение от пользователя:</b>'
+                        f'\n\n<b>id пользователя:</b> {user_tg_id}'
+                        f'\n{gender}'  # пол
+                        f' • {name}'  # имя
+                        f' • {age}'  # возраст
+                        f' • {city}'  # город
+                        f'\n\n{feedback_from_user}'),
+                    parse_mode='HTML'
+                )
+
+                # очищаю состояние
+                await state.clear()
+
+            # если текст содержит команду из клавиатуры
+            else:
+
+                # очищаю состояние, орабатываю ее и открываю
+                # соответствующий пункт меню
+                await check_menu_command(user_tg_id, message, feedback, state)
+
+        # если сообщение не текстовое (содержит фото, анимации и т.д.)
+        else:
+
+            # вывожу уведомление об ошибке
+            await attention_message(message, 'Сообщение должно содержать только текст и эмодзи 🙃', 3)
+
+            # возвращаюсь в состояние ожидания нового сообщения с именем
+            return

@@ -1,6 +1,8 @@
 from src.handlers.my_profile import about_me
 from src.handlers.reactions_menu.main_menu_reactions import all_reactions_menu
 from src.handlers.search_users.search_users_menu import check_users_menu
+from config import main_menu_logo
+import src.modules.keyboard as kb
 
 
 async def check_menu_command(user_tg_id, message, feedback_from_user, state):
