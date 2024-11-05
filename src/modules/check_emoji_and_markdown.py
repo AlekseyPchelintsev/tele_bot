@@ -53,7 +53,7 @@ async def check_all_markdown(text):
 async def check_partial_markdown(text):
 
     # Шаблон для проверки специальных символов Markdown
-    markdown_pattern = r'([*_{}/$~`>#+\\.|<%]$begin:math:display$$end:math:display$)'
+    markdown_pattern = r'([*_{}/$~`>#+\\.|<%$begin:math:display$$end:math:display$])'
 
     return re.search(markdown_pattern, text) is not None
 
@@ -62,7 +62,7 @@ async def check_partial_markdown(text):
 async def check_markdown_hobbies(text):
 
     # Шаблон для проверки специальных символов Markdown
-    markdown_pattern = r'([*_{}/()$~`>#+\-\\.!?|<%]$begin:math:display$$end:math:display$)'
+    markdown_pattern = r'([*_{}/()$~`>#+\-\\.!?|<%$begin:math:display$$end:math:display$])'
 
     return re.search(markdown_pattern, text) is not None
 
@@ -72,6 +72,6 @@ async def check_markdown_hobbies(text):
 async def check_markdown_city_name(text):
 
     # Шаблон для проверки специальных символов Markdown
-    markdown_pattern = r'([*_{}()\[\]~`>#+\.!?:%|<]$begin:math:display$$end:math:display$)'
+    markdown_pattern = r'([*_{}()\[\]~`>#+\.!?:%|<$begin:math:display$$end:math:display$])'
 
     return re.search(markdown_pattern, text) is not None
