@@ -60,6 +60,8 @@ bot = Bot(token=TOKEN)
 
 async def main():
     await asyncio.to_thread(create_tables)
+
+    # добавляю администраторам дополнительные команды в меню
     await set_admin_commands_menu(bot, ADMIN_IDs)
 
     dp = Dispatcher()
