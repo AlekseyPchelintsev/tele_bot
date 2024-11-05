@@ -99,9 +99,10 @@ async def get_user_feedback(message: Message, state: FSMContext, bot: Bot):
                 message_id = message_to_edit.get('message_to_edit')
 
                 # удаляю предыдущее сообщение с формой отправкии обращения
-                # await bot.delete_message(chat_id=user_tg_id, message_id=message_id)
+                await bot.delete_message(chat_id=user_tg_id, message_id=message_id)
 
                 # отрисовка страницы пользователя после отправки обращения
+                '''                
                 await bot.edit_message_media(
                     chat_id=user_tg_id,
                     message_id=message_id,
@@ -109,6 +110,15 @@ async def get_user_feedback(message: Message, state: FSMContext, bot: Bot):
                         media=main_menu_logo,
                         caption='✅<b>Отзыв отправлен.</b>',
                         parse_mode='HTML')
+                )
+                '''
+
+                await bot.send_photo(
+                    chat_id=user_tg_id,
+                    photo=main_menu_logo,
+                    caption='✅<b>Отзыв отправлен.</b>',
+                    parse_mode='HTML',
+                    reply_markup=kb.users
                 )
 
                 # оптравляю сообщение в чат админам
